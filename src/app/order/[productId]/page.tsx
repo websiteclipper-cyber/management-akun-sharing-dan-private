@@ -266,6 +266,22 @@ export default function OrderPage() {
           </div>
         ) : (
           <div className="order-form-card">
+            <Link href="/" style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.85rem',
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              marginBottom: '16px',
+              fontWeight: 500,
+              transition: 'color 0.2s',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+            onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+            >
+              ← Kembali
+            </Link>
             <h2>Konfirmasi Pesanan</h2>
             <div className="order-product-summary">
               <div className="platform" style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--brand-accent)' }}>
