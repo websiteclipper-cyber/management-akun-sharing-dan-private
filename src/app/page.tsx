@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
 import Link from 'next/link';
+import PromoPopup from '@/components/PromoPopup';
 
 interface Promo {
   id: string;
@@ -75,6 +76,7 @@ export default function HomePage() {
 
   return (
     <div className="public-layout">
+      <PromoPopup />
       <header className="public-header" style={{ justifyContent: 'space-between' }}>
         <span className="brand">✦ pastipremium.store</span>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
