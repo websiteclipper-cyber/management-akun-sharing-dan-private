@@ -107,8 +107,8 @@ export default function HomePage() {
         </div>
       ) : !selectedCategory ? (
         <div className="products-grid">
-          {Array.from(new Set(products.map(p => p.platform_name))).map(category => {
-            const count = products.filter(p => p.platform_name === category).length;
+          {Array.from(new Set(products.map(p => p.platform_name.toUpperCase()))).map(category => {
+            const count = products.filter(p => p.platform_name.toUpperCase() === category).length;
             return (
               <div 
                 key={category} 
@@ -142,7 +142,7 @@ export default function HomePage() {
             <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Varian {selectedCategory}</h2>
           </div>
           <div className="products-grid">
-            {products.filter(p => p.platform_name === selectedCategory).map(product => {
+            {products.filter(p => p.platform_name.toUpperCase() === selectedCategory).map(product => {
               const promo = promos.find(pr => {
                 const now = new Date();
                 return pr.product_id === product.id && new Date(pr.start_date) <= now && new Date(pr.end_date) >= now;
