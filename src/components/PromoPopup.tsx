@@ -29,10 +29,6 @@ export default function PromoPopup() {
   const [closing, setClosing] = useState(false);
 
   useEffect(() => {
-    // Only show once per session
-    const dismissed = sessionStorage.getItem('promo_popup_dismissed');
-    if (dismissed) return;
-
     loadActiveCampaign();
   }, []);
 
@@ -93,7 +89,6 @@ export default function PromoPopup() {
     setTimeout(() => {
       setVisible(false);
       setCampaign(null);
-      sessionStorage.setItem('promo_popup_dismissed', '1');
     }, 400);
   }
 
