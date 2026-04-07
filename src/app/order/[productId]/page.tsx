@@ -13,6 +13,16 @@ interface BuyerSession {
   phone: string;
 }
 
+interface DiscountInfo {
+  campaign_id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  discount_amount: number;
+  base_price: number;
+  final_price: number;
+}
+
 export default function OrderPage() {
   const params = useParams();
   const router = useRouter();
@@ -21,8 +31,14 @@ export default function OrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [buyer, setBuyer] = useState<BuyerSession | null>(null);
   const [promo, setPromo] = useState<any>(null);
-  const [result, setResult] = useState<{ order_number: string; amount: number } | null>(null);
+  const [result, setResult] = useState<{ order_number: string; amount: number; discount_amount?: number } | null>(null);
   const [error, setError] = useState('');
+
+  // Discount code states
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountInfo, setDiscountInfo] = useState<DiscountInfo | null>(null);
+  const [discountError, setDiscountError] = useState('');
+  const [discountLoading, setDiscountLoading] = useState(false);
 
   useEffect(() => {
     const session = localStorage.getItem('buyer_session');
@@ -52,6 +68,41 @@ export default function OrderPage() {
     load();
   }, [params.productId, router]);
 
+  async function handleApplyDiscount() {
+    if (!discountCode.trim() || !product || !buyer) return;
+    setDiscountLoading(true);
+    setDiscountError('');
+    setDiscountInfo(null);
+
+    try {
+      const res = await fetch('/api/public/discounts/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: discountCode.trim(),
+          product_id: product.id,
+          buyer_id: buyer.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setDiscountError(data.error || 'Kode diskon tidak valid');
+      } else {
+        setDiscountInfo(data);
+      }
+    } catch {
+      setDiscountError('Gagal memvalidasi kode diskon');
+    } finally {
+      setDiscountLoading(false);
+    }
+  }
+
+  function handleRemoveDiscount() {
+    setDiscountInfo(null);
+    setDiscountCode('');
+    setDiscountError('');
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!buyer) return;
@@ -76,11 +127,12 @@ export default function OrderPage() {
           buyer_phone: buyer.phone,
           product_id: product!.id,
           ref_code: refCode,
+          discount_code: discountInfo ? discountInfo.code : '',
         }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Gagal membuat pesanan'); setSubmitting(false); return; }
-      setResult({ order_number: data.order_number, amount: data.amount });
+      setResult({ order_number: data.order_number, amount: data.amount, discount_amount: data.discount_amount });
     } catch {
       setError('Terjadi kesalahan koneksi');
       setSubmitting(false);
@@ -95,8 +147,6 @@ export default function OrderPage() {
     window.location.href = pakasirUrl;
   }
 
-
-
   function formatPrice(price: number) {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
   }
@@ -105,6 +155,7 @@ export default function OrderPage() {
   if (!product) return <div className="public-layout"><div className="empty-state"><h3>Produk tidak ditemukan</h3><Link href="/" className="btn btn-primary">Kembali</Link></div></div>;
 
   const displayPrice = promo ? promo.promo_price : product.price;
+  const finalDisplayPrice = discountInfo ? discountInfo.final_price : displayPrice;
 
   return (
     <div className="public-layout">
@@ -134,17 +185,32 @@ export default function OrderPage() {
             <div style={{
               background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
               border: '1px solid var(--border-primary)', padding: '16px', marginBottom: '24px',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
-              <div>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                  Order #{result.order_number}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: result.discount_amount ? '12px' : '0' }}>
+                <div>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    Order #{result.order_number}
+                  </div>
+                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{product.name}</div>
                 </div>
-                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{product.name}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--brand-success)' }}>
+                  {formatPrice(result.amount)}
+                </div>
               </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--brand-success)' }}>
-                {formatPrice(result.amount)}
-              </div>
+              {result.discount_amount !== undefined && result.discount_amount > 0 && (
+                <div style={{
+                  borderTop: '1px solid var(--border-primary)', paddingTop: '10px',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                }}>
+                  <span style={{
+                    background: 'rgba(74,222,128,0.12)', color: '#4ade80', fontSize: '0.7rem',
+                    fontWeight: 700, padding: '3px 8px', borderRadius: '6px',
+                  }}>DISKON</span>
+                  <span style={{ fontSize: '0.8rem', color: '#4ade80', fontWeight: 600 }}>
+                    Hemat {formatPrice(result.discount_amount)}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* PAKASIR Payment Button */}
@@ -250,11 +316,149 @@ export default function OrderPage() {
               </div>
             </div>
 
+            {/* ===== DISCOUNT CODE SECTION ===== */}
+            <div style={{
+              background: 'var(--bg-secondary)',
+              borderRadius: 'var(--radius-md)',
+              border: `1px solid ${discountInfo ? 'rgba(74,222,128,0.4)' : 'var(--border-primary)'}`,
+              padding: '16px',
+              marginBottom: '20px',
+              transition: 'all 0.3s ease',
+            }}>
+              <div style={{
+                fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '10px',
+                display: 'flex', alignItems: 'center', gap: '6px',
+              }}>
+                <span>🎟️</span> Kode Promo / Voucher
+              </div>
+
+              {discountInfo ? (
+                /* === Successfully applied discount === */
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: 'rgba(74,222,128,0.08)',
+                  borderRadius: '8px', padding: '10px 14px',
+                  border: '1px solid rgba(74,222,128,0.2)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{
+                      fontSize: '1.4rem', lineHeight: 1,
+                      filter: 'drop-shadow(0 0 4px rgba(74,222,128,0.4))',
+                    }}>✅</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#4ade80', letterSpacing: '0.5px' }}>
+                        {discountInfo.code}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {discountInfo.discount_type === 'percentage'
+                          ? `Diskon ${discountInfo.discount_value}%`
+                          : `Potongan ${formatPrice(discountInfo.discount_value)}`}
+                        {' '}&mdash; Hemat <strong style={{ color: '#4ade80' }}>{formatPrice(discountInfo.discount_amount)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveDiscount}
+                    style={{
+                      background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)',
+                      color: '#f87171', borderRadius: '8px', padding: '4px 12px',
+                      fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(248,113,113,0.2)')}
+                    onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(248,113,113,0.1)')}
+                  >
+                    Hapus
+                  </button>
+                </div>
+              ) : (
+                /* === Input field for code === */
+                <div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={discountCode}
+                      onChange={(e) => { setDiscountCode(e.target.value.toUpperCase()); setDiscountError(''); }}
+                      placeholder="Masukkan kode promo..."
+                      style={{
+                        flex: 1, fontWeight: 600, letterSpacing: '1px',
+                        textTransform: 'uppercase', fontSize: '0.9rem',
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleApplyDiscount(); } }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={handleApplyDiscount}
+                      disabled={discountLoading || !discountCode.trim()}
+                      style={{
+                        minWidth: '90px', justifyContent: 'center',
+                        opacity: discountLoading || !discountCode.trim() ? 0.5 : 1,
+                      }}
+                    >
+                      {discountLoading ? <span className="loading-spinner" style={{ width: '16px', height: '16px' }} /> : 'Apply'}
+                    </button>
+                  </div>
+                  {discountError && (
+                    <div style={{
+                      marginTop: '8px', fontSize: '0.78rem', color: '#f87171',
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      animation: 'fadeIn 0.2s ease',
+                    }}>
+                      <span>⚠️</span> {discountError}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ===== PRICE SUMMARY ===== */}
+            <div style={{
+              background: 'var(--bg-secondary)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-primary)',
+              padding: '16px',
+              marginBottom: '20px',
+            }}>
+              <div style={{
+                fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '10px',
+              }}>
+                Ringkasan Harga
+              </div>
+              <div style={{ display: 'grid', gap: '8px', fontSize: '0.9rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Harga {promo ? '(Promo)' : ''}</span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{formatPrice(displayPrice)}</span>
+                </div>
+                {discountInfo && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '0.75rem' }}>🎟️</span> Diskon [{discountInfo.code}]
+                    </span>
+                    <span style={{ color: '#4ade80', fontWeight: 700 }}>-{formatPrice(discountInfo.discount_amount)}</span>
+                  </div>
+                )}
+                <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Total Bayar</span>
+                  <span style={{
+                    color: discountInfo ? '#4ade80' : 'var(--brand-success)',
+                    fontWeight: 800, fontSize: '1.1rem',
+                  }}>
+                    {formatPrice(finalDisplayPrice)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {error && <div className="login-error">{error}</div>}
 
             <form onSubmit={handleSubmit}>
               <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center' }} disabled={submitting}>
-                {submitting ? <span className="loading-spinner" /> : '🛒 Konfirmasi & Buat Pesanan'}
+                {submitting ? <span className="loading-spinner" /> : `🛒 Konfirmasi & Bayar ${formatPrice(finalDisplayPrice)}`}
               </button>
             </form>
 
@@ -270,6 +474,13 @@ export default function OrderPage() {
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

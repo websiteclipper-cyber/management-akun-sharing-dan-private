@@ -86,6 +86,8 @@ export interface Order {
   order_status: OrderStatus;
   paid_at: string | null;
   delivered_at: string | null;
+  discount_campaign_id: string | null;
+  discount_amount: number;
   created_at: string;
   updated_at: string;
   // Joined
@@ -201,6 +203,26 @@ export interface ResellerCommission {
   status: 'unpaid' | 'paid';
   paid_at: string | null;
   created_at: string;
+}
+
+// ===== Discount Campaigns =====
+export type DiscountType = 'fixed' | 'percentage';
+
+export interface DiscountCampaign {
+  id: string;
+  code: string;
+  discount_type: DiscountType;
+  discount_value: number;
+  product_id: number | null;
+  max_uses: number | null;
+  current_uses: number;
+  valid_from: string;
+  valid_until: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  product?: Product;
 }
 
 // ===== Dashboard Stats =====

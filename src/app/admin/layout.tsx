@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Produk', href: '/admin/products', icon: '📦' },
   { label: 'Stok Akun', href: '/admin/stock-accounts', icon: '🔑' },
   { label: 'Promo & Diskon', href: '/admin/promos', icon: '🏷️' },
+  { label: 'Kode Diskon', href: '/admin/discounts', icon: '🎟️' },
   { section: 'Transaksi' },
   { label: 'Pesanan', href: '/admin/orders', icon: '🛒' },
   { label: 'Assignment', href: '/admin/assignments', icon: '🔗' },

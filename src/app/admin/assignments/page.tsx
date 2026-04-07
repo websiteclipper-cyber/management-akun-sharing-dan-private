@@ -14,7 +14,7 @@ export default function AssignmentsPage() {
   async function loadAssignments() {
     const { data } = await supabase
       .from('account_assignments')
-      .select('*, order:orders(order_number), buyer:buyers(name), stock_account:stock_accounts(account_identifier)')
+      .select('*, order:orders(order_number), buyer:buyers(name), stock_account:stock_accounts(account_identifier, account_type)')
       .order('created_at', { ascending: false });
     setAssignments(data || []);
     setLoading(false);
@@ -44,13 +44,20 @@ export default function AssignmentsPage() {
     return map[status] || 'badge-neutral';
   }
 
+  function getModelBadge(accountType: string) {
+    if (accountType === 'sharing') return 'badge-info';
+    if (accountType === 'private') return 'badge-primary';
+    return 'badge-neutral';
+  }
+
   const filteredAssignments = assignments.filter((a: any) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     const accountStr = (a.stock_account?.account_identifier || '').toLowerCase();
     const buyerStr = (a.buyer?.name || '').toLowerCase();
     const orderStr = (a.order?.order_number || '').toLowerCase();
-    return accountStr.includes(q) || buyerStr.includes(q) || orderStr.includes(q);
+    const modelStr = (a.stock_account?.account_type || '').toLowerCase();
+    return accountStr.includes(q) || buyerStr.includes(q) || orderStr.includes(q) || modelStr.includes(q);
   });
 
   return (
@@ -78,6 +85,7 @@ export default function AssignmentsPage() {
                   <th>Order</th>
                   <th>Buyer</th>
                   <th>Akun</th>
+                  <th>Model</th>
                   <th>Tipe</th>
                   <th>Mulai</th>
                   <th>Expired</th>
@@ -93,6 +101,11 @@ export default function AssignmentsPage() {
                     <td style={{ fontFamily: 'monospace', color: 'var(--brand-primary-light)' }}>{(a.order as Record<string, string>)?.order_number || '-'}</td>
                     <td style={{ color: 'var(--text-primary)' }}>{(a.buyer as Record<string, string>)?.name || '-'}</td>
                     <td style={{ fontFamily: 'monospace', color: 'var(--brand-accent)' }}>{(a.stock_account as Record<string, string>)?.account_identifier || '-'}</td>
+                    <td>
+                      <span className={`badge ${getModelBadge((a.stock_account as Record<string, string>)?.account_type || '')}`}>
+                        {(a.stock_account as Record<string, string>)?.account_type === 'sharing' ? '👥 Sharing' : (a.stock_account as Record<string, string>)?.account_type === 'private' ? '🔒 Private' : '-'}
+                      </span>
+                    </td>
                     <td><span className={`badge ${(a.assignment_type as string) === 'auto' ? 'badge-info' : (a.assignment_type as string) === 'manual' ? 'badge-warning' : 'badge-primary'}`}>{a.assignment_type as string}</span></td>
                     <td style={{ fontSize: '0.8rem' }}>{new Date(a.start_at as string).toLocaleDateString('id-ID')}</td>
                     <td style={{ fontSize: '0.8rem' }}>{new Date(a.expired_at as string).toLocaleDateString('id-ID')}</td>
@@ -106,7 +119,7 @@ export default function AssignmentsPage() {
                   </tr>
                 ))}
                 {filteredAssignments.length === 0 && (
-                  <tr><td colSpan={10} className="empty-state"><div className="icon">🔍</div><h3>Tidak ada assignment ditemukan</h3></td></tr>
+                  <tr><td colSpan={11} className="empty-state"><div className="icon">🔍</div><h3>Tidak ada assignment ditemukan</h3></td></tr>
                 )}
               </tbody>
             </table>

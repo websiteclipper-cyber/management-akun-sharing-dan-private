@@ -4,7 +4,7 @@ import { sendTelegramNotification } from '@/lib/telegram';
 
 export async function POST(request: NextRequest) {
   try {
-    const { buyer_name, buyer_email, buyer_phone, product_id, ref_code } = await request.json();
+    const { buyer_name, buyer_email, buyer_phone, product_id, ref_code, discount_code } = await request.json();
 
     if (!buyer_name || !product_id) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 });
@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString();
 
+    // Check for active promo (sale price)
     const { data: promo } = await supabase
       .from('promos')
       .select('*')
@@ -115,7 +116,70 @@ export async function POST(request: NextRequest) {
       .gte('end_date', now)
       .maybeSingle();
 
-    const finalPrice = promo ? promo.promo_price : product.price;
+    const basePrice = promo ? Number(promo.promo_price) : Number(product.price);
+
+    // ===== DISCOUNT CODE HANDLING =====
+    let discountCampaignId: string | null = null;
+    let discountAmount = 0;
+
+    if (discount_code) {
+      const trimmedCode = discount_code.toUpperCase().trim();
+
+      // Validate discount campaign
+      const { data: campaign } = await supabase
+        .from('discount_campaigns')
+        .select('*')
+        .eq('code', trimmedCode)
+        .eq('is_active', true)
+        .lte('valid_from', now)
+        .gte('valid_until', now)
+        .maybeSingle();
+
+      if (campaign) {
+        // Check product restriction
+        const productMatch = !campaign.product_id || campaign.product_id === product.id;
+
+        // Check usage quota
+        const quotaOk = campaign.max_uses === null || campaign.current_uses < campaign.max_uses;
+
+        // Check buyer hasn't used this code before
+        let buyerUsedBefore = false;
+        const { data: prevOrder } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('buyer_id', buyer.id)
+          .eq('discount_campaign_id', campaign.id)
+          .in('payment_status', ['paid', 'pending_payment'])
+          .maybeSingle();
+
+        if (prevOrder) buyerUsedBefore = true;
+
+        if (productMatch && quotaOk && !buyerUsedBefore) {
+          // Calculate discount
+          if (campaign.discount_type === 'percentage') {
+            discountAmount = Math.round(basePrice * Number(campaign.discount_value) / 100);
+          } else {
+            discountAmount = Number(campaign.discount_value);
+          }
+          // Cap discount at base price
+          discountAmount = Math.min(discountAmount, basePrice);
+          discountCampaignId = campaign.id;
+
+          // Increment campaign usage atomically
+          await supabase
+            .from('discount_campaigns')
+            .update({
+              current_uses: campaign.current_uses + 1,
+              updated_at: now,
+            })
+            .eq('id', campaign.id);
+        }
+        // If conditions not met, silently proceed without discount
+        // (validation was already done on the frontend)
+      }
+    }
+
+    const finalPrice = basePrice - discountAmount;
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -123,11 +187,13 @@ export async function POST(request: NextRequest) {
         order_number: orderNumber,
         buyer_id: buyer.id,
         product_id: product.id,
-        unit_price: finalPrice,
+        unit_price: basePrice,
         total_amount: finalPrice,
         payment_status: 'pending_payment',
         order_status: 'pending',
         reseller_id: resellerId,
+        discount_campaign_id: discountCampaignId,
+        discount_amount: discountAmount,
         created_at: now,
         updated_at: now,
       })
@@ -142,12 +208,14 @@ export async function POST(request: NextRequest) {
     // This prevents phantom commissions from unpaid/expired orders
 
     // Send Telegram Notification
-    // Don't wait for it to finish (fire and forget) to speed up response
+    const discountLabel = discountAmount > 0 ? `\n<b>Diskon:</b> -Rp ${discountAmount.toLocaleString('id-ID')}` : '';
     sendTelegramNotification(
       `🛒 <b>PESANAN BARU! (Belum Bayar)</b>\n\n` +
       `<b>Order:</b> <code>${orderNumber}</code>\n` +
       `<b>Produk:</b> ${product.name}\n` +
-      `<b>Harga:</b> Rp ${finalPrice.toLocaleString('id-ID')}\n\n` +
+      `<b>Harga:</b> Rp ${basePrice.toLocaleString('id-ID')}` +
+      discountLabel +
+      `\n<b>Total:</b> Rp ${finalPrice.toLocaleString('id-ID')}\n\n` +
       `<b>Buyer:</b> ${buyer.name}\n` +
       `<b>WA:</b> ${buyer.phone}` +
       (reseller ? `\n\n🤝 <b>Via Reseller:</b> ${reseller.name} (${reseller.ref_code})` : '')
@@ -159,6 +227,7 @@ export async function POST(request: NextRequest) {
       payment_status: order.payment_status,
       order_status: order.order_status,
       amount: order.total_amount,
+      discount_amount: discountAmount,
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
