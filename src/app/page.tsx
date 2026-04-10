@@ -80,6 +80,7 @@ export default function HomePage() {
       <header className="public-header" style={{ justifyContent: 'space-between' }}>
         <span className="brand">✦ pastipremium.store</span>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <Link href="/reseller/login" className="btn btn-secondary btn-sm" style={{ backgroundColor: 'transparent', border: 'none', fontSize: '0.8rem' }}>🤝 Portal Mitra</Link>
           {buyer ? (
             <>
               <Link href="/buyer/lookup" className="btn btn-secondary btn-sm" style={{ backgroundColor: 'transparent', border: 'none' }}>📦 Pesanan Saya</Link>
