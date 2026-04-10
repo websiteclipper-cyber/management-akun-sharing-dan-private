@@ -30,6 +30,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [buyer, setBuyer] = useState<BuyerSession | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [supportWa, setSupportWa] = useState('');
 
   useEffect(() => {
     loadProducts();
@@ -53,6 +54,12 @@ export default function HomePage() {
         localStorage.removeItem('ref_code_ts');
       }
     }
+
+    // Load support WA number
+    fetch('/api/public/settings')
+      .then(res => res.json())
+      .then(data => setSupportWa(data.support_whatsapp || ''))
+      .catch(() => {});
   }, []);
 
   async function loadProducts() {
@@ -197,6 +204,23 @@ export default function HomePage() {
       )}
 
       <footer style={{ textAlign: 'center', padding: '40px 20px', borderTop: '1px solid var(--border-secondary)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+        {supportWa && (
+          <div style={{ marginBottom: '16px' }}>
+            <a
+              href={`https://wa.me/${supportWa.startsWith('0') ? '62' + supportWa.substring(1) : supportWa}?text=${encodeURIComponent('Halo admin pastipremium.store, saya butuh bantuan.')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                background: '#25D366', color: '#fff', padding: '10px 24px',
+                borderRadius: '999px', fontWeight: 600, fontSize: '0.85rem',
+                textDecoration: 'none', transition: 'opacity 0.2s',
+              }}
+            >
+              💬 Butuh Bantuan? Chat WA Kami
+            </a>
+          </div>
+        )}
         <p>© 2024 pastipremium.store. All rights reserved.</p>
       </footer>
     </div>

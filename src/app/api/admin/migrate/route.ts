@@ -102,12 +102,32 @@ export async function POST(request: Request) {
       results.push('✅ reseller_commissions table checked/created');
     }
 
-    // 5. Reload PostgREST schema cache
+    // 5. Create site_settings table if not exists
     const { error: e5 } = await supabaseAdmin.rpc('exec_sql', {
-      sql_query: `NOTIFY pgrst, 'reload schema';`
+      sql_query: `
+        CREATE TABLE IF NOT EXISTS site_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          label TEXT,
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        INSERT INTO site_settings (key, value, label) VALUES
+          ('support_whatsapp', '082244046330', 'Nomor WhatsApp Support')
+        ON CONFLICT (key) DO NOTHING;
+      `
     });
     if (e5) {
-      results.push('⚠️ Schema reload: ' + e5.message);
+      results.push('⚠️ site_settings: ' + e5.message);
+    } else {
+      results.push('✅ site_settings table checked/created + seeded');
+    }
+
+    // 6. Reload PostgREST schema cache
+    const { error: e6 } = await supabaseAdmin.rpc('exec_sql', {
+      sql_query: `NOTIFY pgrst, 'reload schema';`
+    });
+    if (e6) {
+      results.push('⚠️ Schema reload: ' + e6.message);
     } else {
       results.push('✅ Schema cache reloaded');
     }

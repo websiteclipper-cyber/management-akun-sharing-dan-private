@@ -284,8 +284,14 @@ function BuyerLookupPage() {
               </div>
             )}
 
-            {/* Support Ticket */}
-            <SupportTicketForm buyerId={selectedOrder.buyer_id as number} orderId={selectedOrder.id as number} />
+            {/* Support / Complaint via WhatsApp */}
+            <SupportSection 
+              buyerId={selectedOrder.buyer_id as number} 
+              orderId={selectedOrder.id as number}
+              orderNumber={selectedOrder.order_number as string}
+              productName={((selectedOrder.product as Record<string, unknown>)?.name as string) || '-'}
+              buyerName={buyer?.name || '-'}
+            />
           </div>
         )}
 
@@ -377,59 +383,97 @@ function PasswordReveal({ encrypted }: { encrypted: string }) {
   );
 }
 
-function SupportTicketForm({ buyerId, orderId }: { buyerId: number; orderId: number }) {
-  const [showForm, setShowForm] = useState(false);
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [saving, setSaving] = useState(false);
+function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName }: { 
+  buyerId: number; orderId: number; orderNumber: string; productName: string; buyerName: string;
+}) {
+  const [waNumber, setWaNumber] = useState('');
+  const [loadingWa, setLoadingWa] = useState(true);
+  const [complaintType, setComplaintType] = useState('');
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    const now = new Date().toISOString();
-    await supabase.from('support_tickets').insert({
-      buyer_id: buyerId,
-      order_id: orderId,
-      subject,
-      message,
-      status: 'open',
-      created_at: now,
-      updated_at: now,
-    });
-    setSubmitted(true);
-    setSaving(false);
+  useEffect(() => {
+    fetch('/api/public/settings')
+      .then(res => res.json())
+      .then(data => {
+        setWaNumber(data.support_whatsapp || '082244046330');
+      })
+      .catch(() => setWaNumber('082244046330'))
+      .finally(() => setLoadingWa(false));
+  }, []);
+
+  function openWhatsApp() {
+    let phone = waNumber.replace(/[^0-9]/g, '');
+    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
+
+    const issueText = complaintType || 'Masalah dengan akun';
+    const text = `Halo Admin pastipremium.store,\n\nSaya ingin melaporkan masalah:\n\n📋 *Order:* ${orderNumber}\n📦 *Produk:* ${productName}\n👤 *Nama:* ${buyerName}\n⚠️ *Masalah:* ${issueText}\n\nMohon bantuannya. Terima kasih! 🙏`;
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
   }
+
+  const complaintOptions = [
+    { value: 'Login gagal / password salah', icon: '🔑' },
+    { value: 'Akun tidak bisa diakses', icon: '🚫' },
+    { value: 'Akun expired sebelum waktunya', icon: '⏰' },
+    { value: 'Profil / PIN salah', icon: '👤' },
+    { value: 'Masalah lainnya', icon: '❓' },
+  ];
 
   return (
     <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-secondary)', paddingTop: '24px' }}>
-      {submitted ? (
-        <div style={{ textAlign: 'center', color: 'var(--brand-success)' }}>
-          <p>✅ Ticket berhasil dikirim! Kami akan segera menghubungi kamu.</p>
-        </div>
-      ) : !showForm ? (
-        <button className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setShowForm(true)}>
-          🎫 Butuh Bantuan? Buat Ticket
-        </button>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          <h4 style={{ marginBottom: '12px', fontSize: '0.9rem', fontWeight: 700 }}>Buat Support Ticket</h4>
-          <div className="form-group">
-            <label className="form-label">Subjek</label>
-            <input className="form-input" value={subject} onChange={e => setSubject(e.target.value)} placeholder="Masalah login akun..." required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Pesan</label>
-            <textarea className="form-textarea" value={message} onChange={e => setMessage(e.target.value)} placeholder="Jelaskan masalah kamu..." required />
-          </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Batal</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? <span className="loading-spinner" /> : 'Kirim Ticket'}
-            </button>
-          </div>
-        </form>
-      )}
+      <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '12px' }}>
+        ⚠️ Ada Masalah dengan Akun?
+      </h4>
+      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
+        Pilih jenis masalah di bawah ini, lalu klik tombol untuk langsung chat WhatsApp dengan admin kami.
+      </p>
+
+      {/* Complaint type selector */}
+      <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
+        {complaintOptions.map(opt => (
+          <button
+            key={opt.value}
+            onClick={() => setComplaintType(opt.value)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '12px 16px', borderRadius: 'var(--radius-md)',
+              background: complaintType === opt.value ? 'rgba(37,211,102,0.12)' : 'var(--bg-secondary)',
+              border: complaintType === opt.value ? '1px solid rgba(37,211,102,0.4)' : '1px solid var(--border-secondary)',
+              color: 'var(--text-primary)', cursor: 'pointer',
+              fontSize: '0.85rem', fontWeight: complaintType === opt.value ? 600 : 400,
+              textAlign: 'left', transition: 'all 0.2s',
+            }}
+          >
+            <span style={{ fontSize: '1.1rem' }}>{opt.icon}</span>
+            {opt.value}
+            {complaintType === opt.value && (
+              <span style={{ marginLeft: 'auto', color: '#25D366', fontWeight: 700 }}>✓</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* WhatsApp button */}
+      <button
+        onClick={openWhatsApp}
+        disabled={!complaintType || loadingWa}
+        className="btn btn-lg"
+        style={{
+          width: '100%', justifyContent: 'center',
+          background: complaintType ? '#25D366' : 'var(--bg-tertiary)',
+          color: complaintType ? '#fff' : 'var(--text-muted)',
+          border: 'none', fontWeight: 700, fontSize: '0.95rem',
+          padding: '14px', transition: 'all 0.3s',
+          opacity: complaintType ? 1 : 0.6,
+          cursor: complaintType ? 'pointer' : 'not-allowed',
+        }}
+      >
+        {loadingWa ? <span className="loading-spinner" /> : '💬 Chat WhatsApp Admin'}
+      </button>
+
+      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
+        Anda akan diarahkan ke WhatsApp dengan detail pesanan otomatis terisi.
+      </p>
     </div>
   );
 }
+

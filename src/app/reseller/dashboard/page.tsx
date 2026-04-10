@@ -57,6 +57,7 @@ export default function ResellerDashboardPage() {
   const [tab, setTab] = useState<'overview' | 'commissions' | 'rates'>('overview');
   const [copied, setCopied] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
+  const [supportWa, setSupportWa] = useState('');
 
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -69,6 +70,12 @@ export default function ResellerDashboardPage() {
     }
     setSession(JSON.parse(sessionStr));
     loadDashboard(token);
+
+    // Load support WA
+    fetch('/api/public/settings')
+      .then(res => res.json())
+      .then(d => setSupportWa(d.support_whatsapp || ''))
+      .catch(() => {});
   }, [router]);
 
   async function loadDashboard(token: string) {
@@ -324,6 +331,38 @@ export default function ResellerDashboardPage() {
                 ))}
               </div>
             </div>
+
+            {/* Report Buyer Issue */}
+            {supportWa && (
+              <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-secondary)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '24px',
+                marginTop: '16px',
+              }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '8px' }}>📞 Laporkan Masalah Buyer</h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
+                  Jika ada buyer Anda yang mengalami masalah dengan akun, laporkan langsung ke admin melalui WhatsApp.
+                </p>
+                <button
+                  className="btn btn-lg"
+                  onClick={() => {
+                    let phone = supportWa.replace(/[^0-9]/g, '');
+                    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
+                    const text = `Halo Admin pastipremium.store,\n\nSaya mitra *${session?.name || ''}* (${session?.ref_code || ''}).\n\nSaya ingin melaporkan masalah dari buyer saya:\n\n👤 *Nama Buyer:* \n📋 *Nomor Order:* \n⚠️ *Masalah:* \n\nMohon bantuannya. Terima kasih! 🙏`;
+                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+                  }}
+                  style={{
+                    width: '100%', justifyContent: 'center',
+                    background: '#25D366', color: '#fff',
+                    border: 'none', fontWeight: 700, fontSize: '0.9rem',
+                  }}
+                >
+                  💬 Chat Admin via WhatsApp
+                </button>
+              </div>
+            )}
           </div>
         )}
 

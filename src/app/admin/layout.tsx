@@ -21,6 +21,8 @@ const navItems = [
   { label: 'Buyer', href: '/admin/buyers', icon: '👥' },
   { label: 'Support Tickets', href: '/admin/support', icon: '🎫' },
   { label: 'Audit Logs', href: '/admin/audit-logs', icon: '📋' },
+  { section: 'Sistem' },
+  { label: 'Pengaturan Umum', href: '/admin/settings', icon: '⚙️' },
 ];
 
 interface RealtimeNotification {
