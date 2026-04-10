@@ -11,7 +11,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [assigning, setAssigning] = useState(false);
+  const [assigningOrderId, setAssigningOrderId] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [syncing, setSyncing] = useState(false);
 
@@ -54,18 +54,18 @@ export default function OrdersPage() {
   }
 
   async function handleManualAssign(order: Order) {
-    setAssigning(true);
+    setAssigningOrderId(order.id);
     const result = await adminRpc('assign_account_for_order', { p_order_id: order.id });
     
     if (result.error) {
       alert('Error: ' + result.error.message);
-      setAssigning(false);
+      setAssigningOrderId(null);
       return;
     }
     const data = result.data;
     if (data && !data.success) {
       alert('Gagal: ' + (data.error || 'Tidak ada stok tersedia'));
-      setAssigning(false);
+      setAssigningOrderId(null);
       return;
     }
 
@@ -78,7 +78,7 @@ export default function OrdersPage() {
       alert('Berhasil di-assign, tapi buyer tidak punya nomor WhatsApp untuk dikirim pesan.');
     }
 
-    setAssigning(false);
+    setAssigningOrderId(null);
     setSelectedOrder(null);
   }
 
@@ -329,8 +329,8 @@ export default function OrdersPage() {
                             <button className="btn btn-success btn-sm" onClick={() => handleApprovePayment(o)}>✅ Konfirmasi</button>
                           )}
                           {o.payment_status === 'paid' && o.order_status === 'paid' && (
-                            <button className="btn btn-sm" style={{ backgroundColor: '#25D366', color: '#fff', border: 'none', fontWeight: 600 }} onClick={() => handleManualAssign(o)} disabled={assigning}>
-                              {assigning ? <span className="loading-spinner" style={{ width: '14px', height: '14px' }} /> : '📞 Assign & Kirim WA'}
+                            <button className="btn btn-sm" style={{ backgroundColor: '#25D366', color: '#fff', border: 'none', fontWeight: 600 }} onClick={() => handleManualAssign(o)} disabled={assigningOrderId !== null}>
+                              {assigningOrderId === o.id ? <span className="loading-spinner" style={{ width: '14px', height: '14px' }} /> : '📞 Assign & Kirim WA'}
                             </button>
                           )}
                           {(o.order_status === 'assigned' || o.order_status === 'delivered') && (
