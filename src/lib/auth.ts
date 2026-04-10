@@ -17,7 +17,7 @@ interface BuyerPayload {
 }
 
 type TokenPayload = {
-  type: 'admin' | 'buyer';
+  type: 'admin' | 'buyer' | 'reseller';
   id: number;
   name: string;
   email: string;
@@ -108,4 +108,23 @@ export function getBuyerFromRequest(request: Request): BuyerPayload | null {
   if (!payload || payload.type !== 'buyer') return null;
 
   return payload as BuyerPayload;
+}
+
+interface ResellerPayload {
+  id: string;
+  name: string;
+  ref_code: string;
+  phone: string;
+}
+
+// Helper to extract and verify reseller token from request headers
+export function getResellerFromRequest(request: Request): ResellerPayload | null {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) return null;
+
+  const token = authHeader.slice(7);
+  const payload = verifyToken(token);
+  if (!payload || payload.type !== 'reseller') return null;
+
+  return payload as unknown as ResellerPayload;
 }

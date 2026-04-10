@@ -9,6 +9,7 @@ interface Reseller {
   name: string;
   phone: string;
   ref_code: string;
+  pin?: string;
   default_commission_type: 'fixed' | 'percentage';
   default_commission_value: number;
   status: string;
@@ -32,6 +33,7 @@ interface Commission {
   paid_at: string | null;
   created_at: string;
   order?: { order_number: string; total_amount: number; buyer: { name: string } };
+  reseller?: { name: string; ref_code: string };
 }
 
 interface Product {
@@ -64,6 +66,7 @@ export default function AdminResellersPage() {
     name: '',
     phone: '',
     ref_code: '',
+    pin: '',
     default_commission_type: 'fixed' as 'fixed' | 'percentage',
     default_commission_value: 3000,
     status: 'active',
@@ -92,7 +95,7 @@ export default function AdminResellersPage() {
     setLoading(true);
     let query = supabase
       .from('reseller_commissions')
-      .select('*, order:orders(order_number, total_amount, buyer:buyers(name))')
+      .select('*, order:orders(order_number, total_amount, buyer:buyers(name)), reseller:resellers(name, ref_code)')
       .order('created_at', { ascending: false });
 
     if (resellerId) {
@@ -124,19 +127,23 @@ export default function AdminResellersPage() {
 
     let result;
     if (editingId) {
-      result = await adminUpdate('resellers', {
+      const updatePayload: Record<string, any> = {
         name: form.name,
         phone: form.phone,
         default_commission_type: form.default_commission_type,
         default_commission_value: form.default_commission_value,
         status: form.status,
         updated_at: new Date().toISOString(),
-      }, { id: editingId });
+      };
+      if (form.pin) updatePayload.pin = form.pin;
+
+      result = await adminUpdate('resellers', updatePayload, { id: editingId });
     } else {
       result = await adminInsert('resellers', {
         name: form.name,
         phone: form.phone,
         ref_code: form.ref_code.toUpperCase().replace(/[^A-Z0-9]/g, ''),
+        pin: form.pin || '123456',
         default_commission_type: form.default_commission_type,
         default_commission_value: form.default_commission_value,
         status: form.status,
@@ -148,7 +155,7 @@ export default function AdminResellersPage() {
       return;
     }
 
-    setForm({ name: '', phone: '', ref_code: '', default_commission_type: 'fixed', default_commission_value: 3000, status: 'active' });
+    setForm({ name: '', phone: '', ref_code: '', pin: '', default_commission_type: 'fixed', default_commission_value: 3000, status: 'active' });
     setEditingId(null);
     setShowForm(false);
     loadResellers();
@@ -160,6 +167,7 @@ export default function AdminResellersPage() {
       name: r.name,
       phone: r.phone || '',
       ref_code: r.ref_code,
+      pin: r.pin || '',
       default_commission_type: r.default_commission_type || 'fixed',
       default_commission_value: r.default_commission_value || 0,
       status: r.status,
@@ -169,8 +177,19 @@ export default function AdminResellersPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Hapus reseller ini? Semua data komisinya juga akan terhapus.')) return;
+    
+    // Trik hapus foreign key (manual cleanup) jika ON DELETE CASCADE tidak aktif
+    const oRes = await adminUpdate('orders', { reseller_id: null }, { reseller_id: id });
+    if (oRes.error) { alert('DB Update Orders failed: ' + JSON.stringify(oRes.error)); return; }
+
+    const rcRes = await adminDelete('reseller_commissions', { reseller_id: id });
+    if (rcRes.error) { alert('DB Delete RC failed: ' + JSON.stringify(rcRes.error)); return; }
+
+    const rpcRes = await adminDelete('reseller_product_commissions', { reseller_id: id });
+    if (rpcRes.error) { alert('DB Delete RPC failed: ' + JSON.stringify(rpcRes.error)); return; }
+
     const result = await adminDelete('resellers', { id });
-    if (result.error) { alert('Gagal menghapus: ' + result.error.message); return; }
+    if (result.error) { alert('Gagal menghapus Reseller: ' + JSON.stringify(result.error)); return; }
     loadResellers();
   }
 
@@ -213,6 +232,16 @@ export default function AdminResellersPage() {
   }
 
   const totalUnpaid = resellers.reduce((sum, r) => sum + r.unpaid_commission, 0);
+  const totalPaid = resellers.reduce((sum, r) => sum + (r.total_commission - r.unpaid_commission), 0);
+  const pendingCount = resellers.filter(r => r.status === 'pending').length;
+  const MIN_WITHDRAW = 50000;
+
+  async function handleApprove(r: Reseller) {
+    if (!confirm(`Setujui ${r.name} sebagai mitra aktif?`)) return;
+    const result = await adminUpdate('resellers', { status: 'active', updated_at: new Date().toISOString() }, { id: r.id });
+    if (result.error) { alert('Gagal Setujui: ' + JSON.stringify(result.error)); return; }
+    loadResellers();
+  }
 
   async function handleApplyToAll(productId: number, pName: string, cType: string, cVal: number) {
     if (!confirm(`Konfirmasi: Terapkan komisi ${formatCommission(cType, cVal)} untuk produk "${pName}" ke SELURUH reseller yang aktif?`)) return;
@@ -244,13 +273,13 @@ export default function AdminResellersPage() {
   }
 
   return (
-    <div>
+    <div style={{ padding: '32px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Reseller / Mitra</h1>
           <p style={{ color: 'var(--text-muted)' }}>Kelola karyawan freelance & komisi penjualan mereka.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ name: '', phone: '', ref_code: '', default_commission_type: 'fixed', default_commission_value: 3000, status: 'active' }); }}>
+        <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ name: '', phone: '', ref_code: '', pin: '', default_commission_type: 'fixed', default_commission_value: 3000, status: 'active' }); }}>
           {showForm ? 'Tutup Form' : '+ Tambah Reseller'}
         </button>
       </div>
@@ -272,6 +301,18 @@ export default function AdminResellersPage() {
           <div className="stat-value" style={{ color: totalUnpaid > 0 ? '#eab308' : 'var(--brand-success)' }}>{formatPrice(totalUnpaid)}</div>
           <div className="stat-icon">💸</div>
         </div>
+        <div className="stat-card">
+          <div className="stat-label">TOTAL SUDAH DIBAYAR</div>
+          <div className="stat-value" style={{ color: 'var(--brand-success)' }}>{formatPrice(totalPaid)}</div>
+          <div className="stat-icon">✅</div>
+        </div>
+        {pendingCount > 0 && (
+          <div className="stat-card" style={{ border: '1px solid rgba(234,179,8,0.3)' }}>
+            <div className="stat-label">MENUNGGU APPROVAL</div>
+            <div className="stat-value" style={{ color: '#eab308' }}>{pendingCount}</div>
+            <div className="stat-icon">⏳</div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -302,16 +343,30 @@ export default function AdminResellersPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Kode Referral (Unik)</label>
-                <input
-                  required={!editingId}
-                  disabled={!!editingId}
-                  className="form-input"
-                  placeholder="Contoh: ANDI"
-                  value={form.ref_code}
-                  onChange={e => setForm({ ...form, ref_code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
-                  style={editingId ? { opacity: 0.5 } : {}}
-                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <input
+                      required={!editingId}
+                      disabled={!!editingId}
+                      className="form-input"
+                      placeholder="Contoh: ANDI"
+                      value={form.ref_code}
+                      onChange={e => setForm({ ...form, ref_code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
+                      style={{ width: '100%', ...(editingId ? { opacity: 0.5 } : {}) }}
+                    />
+                  </div>
+                  <div>
+                    <input
+                      className="form-input"
+                      placeholder="PIN (Default: 123456)"
+                      value={form.pin}
+                      onChange={e => setForm({ ...form, pin: e.target.value })}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
                 {!editingId && <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Huruf besar & angka saja. Ini akan jadi link unik reseller.</p>}
+                {editingId && <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Anda dapat melihat atau mengubah PIN reseller ini.</p>}
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div className="form-group" style={{ flex: 1 }}>
@@ -344,9 +399,9 @@ export default function AdminResellersPage() {
                 <tr>
                   <th>Nama</th>
                   <th>Kode Ref</th>
-                  <th>Default Komisi</th>
                   <th>Penjualan</th>
                   <th>Belum Dibayar</th>
+                  <th>Sudah Dibayar</th>
                   <th>Status</th>
                   <th>Aksi</th>
                 </tr>
@@ -366,29 +421,54 @@ export default function AdminResellersPage() {
                         </button>
                       </div>
                     </td>
-                    <td style={{ color: 'var(--accent)' }}>
-                      <span className="badge badge-secondary">
-                        {formatCommission(r.default_commission_type || 'fixed', r.default_commission_value || 0)}
-                      </span>
-                    </td>
                     <td style={{ fontWeight: 700 }}>{r.total_sales}</td>
-                    <td style={{ color: r.unpaid_commission > 0 ? '#eab308' : 'var(--text-muted)', fontWeight: 700 }}>
-                      {formatPrice(r.unpaid_commission)}
+                    <td style={{ minWidth: '150px' }}>
+                      <div style={{ fontWeight: 700, color: r.unpaid_commission > 0 ? '#eab308' : 'var(--text-muted)', marginBottom: '6px' }}>
+                        {formatPrice(r.unpaid_commission)}
+                      </div>
+                      {r.unpaid_commission > 0 && (
+                        <div>
+                          <div style={{
+                            width: '100%', height: '6px', borderRadius: '3px',
+                            background: 'rgba(255,255,255,0.06)', overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              width: `${Math.min((r.unpaid_commission / MIN_WITHDRAW) * 100, 100)}%`,
+                              height: '100%', borderRadius: '3px',
+                              background: r.unpaid_commission >= MIN_WITHDRAW
+                                ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+                                : 'linear-gradient(90deg, #eab308, #f59e0b)',
+                              transition: 'width 0.5s ease'
+                            }} />
+                          </div>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '3px' }}>
+                            {r.unpaid_commission >= MIN_WITHDRAW
+                              ? '✅ Bisa dicairkan'
+                              : `${Math.round((r.unpaid_commission / MIN_WITHDRAW) * 100)}% dari ${formatPrice(MIN_WITHDRAW)}`}
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ fontWeight: 700, color: 'var(--brand-success)' }}>
+                      {formatPrice(r.total_commission - r.unpaid_commission)}
                     </td>
                     <td>
-                      <span className={`badge ${r.status === 'active' ? 'badge-success' : 'badge-danger'}`}>{r.status}</span>
+                      <span className={`badge ${r.status === 'active' ? 'badge-success' : r.status === 'pending' ? 'badge-warning' : 'badge-danger'}`} style={r.status === 'pending' ? { background: 'rgba(234,179,8,0.15)', color: '#eab308', border: '1px solid rgba(234,179,8,0.3)' } : {}}>{r.status}</span>
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        <button className="btn btn-secondary btn-sm" onClick={() => editProductCommissions(r)}>⚙️ Atur Komisi</button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => viewCommissions(r)}>📊 Detail</button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(r)}>Edit</button>
+                        {r.status === 'pending' && (
+                          <button className="btn btn-sm" style={{ background: '#22c55e', color: '#fff', border: 'none', fontWeight: 600 }} onClick={() => handleApprove(r)}>✅ Setujui</button>
+                        )}
+                        <button className="btn btn-secondary btn-sm" onClick={() => editProductCommissions(r)} title="Atur Komisi">⚙️ Komisi</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => viewCommissions(r)} title="Riwayat Komisi">📊 Riwayat</button>
                         {r.unpaid_commission > 0 && (
-                          <button className="btn btn-sm" style={{ background: '#22c55e', color: '#fff', border: 'none', fontWeight: 600 }} onClick={() => handlePayAll(r)}>
+                          <button className="btn btn-sm" style={{ background: '#22c55e', color: '#fff', border: 'none', fontWeight: 600 }} onClick={() => handlePayAll(r)} title="Bayar Lunas">
                             💰 Bayar
                           </button>
                         )}
-                        <button className="btn btn-secondary btn-sm" style={{ color: '#ef4444' }} onClick={() => handleDelete(r.id)}>Hapus</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(r)} title="Edit Reseller" style={{ padding: '6px 8px' }}>✏️</button>
+                        <button className="btn btn-secondary btn-sm" style={{ color: '#ef4444', padding: '6px 8px' }} onClick={() => handleDelete(r.id)} title="Hapus">🗑️</button>
                       </div>
                     </td>
                   </tr>
@@ -544,6 +624,7 @@ export default function AdminResellersPage() {
                 <thead>
                   <tr>
                     <th>Tanggal</th>
+                    <th>Mitra</th>
                     <th>Order & Pembeli</th>
                     <th>Produk</th>
                     <th>Harga & Rate</th>
@@ -555,6 +636,12 @@ export default function AdminResellersPage() {
                   {commissions.map(c => (
                     <tr key={c.id}>
                       <td style={{ fontSize: '0.8rem' }}>{new Date(c.created_at).toLocaleString('id-ID')}</td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.reseller?.name || '-'}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          {c.reseller?.ref_code ? <code style={{ background: 'var(--accent-soft)', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px', fontSize: '0.65rem' }}>{c.reseller.ref_code}</code> : '-'}
+                        </div>
+                      </td>
                       <td>
                         <div><code style={{ color: 'var(--accent)' }}>{c.order?.order_number || '-'}</code></div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{(c.order?.buyer as any)?.name || '-'}</div>
@@ -573,7 +660,7 @@ export default function AdminResellersPage() {
                     </tr>
                   ))}
                   {commissions.length === 0 && (
-                    <tr><td colSpan={6} className="empty-state"><div className="icon">📊</div><h3>Belum ada riwayat komisi</h3></td></tr>
+                    <tr><td colSpan={7} className="empty-state"><div className="icon">📊</div><h3>Belum ada riwayat komisi</h3></td></tr>
                   )}
                 </tbody>
               </table>

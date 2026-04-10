@@ -17,6 +17,7 @@ const navItems = [
   { label: 'Assignment', href: '/admin/assignments', icon: '🔗' },
   { section: 'Manajemen' },
   { label: 'Reseller / Mitra', href: '/admin/resellers', icon: '🤝' },
+  { label: 'Pengaturan Komisi', href: '/admin/commissions', icon: '⚙️' },
   { label: 'Buyer', href: '/admin/buyers', icon: '👥' },
   { label: 'Support Tickets', href: '/admin/support', icon: '🎫' },
   { label: 'Audit Logs', href: '/admin/audit-logs', icon: '📋' },
