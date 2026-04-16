@@ -17,6 +17,13 @@ interface Promo {
   is_active: boolean;
 }
 
+interface LeaderboardEntry {
+  mitra_name: string;
+  commission_today: number;
+  rank_position: number;
+  avatar_emoji: string;
+}
+
 interface BuyerSession {
   id: number;
   name: string;
@@ -31,6 +38,7 @@ export default function HomePage() {
   const [buyer, setBuyer] = useState<BuyerSession | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [supportWa, setSupportWa] = useState('');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   useEffect(() => {
     loadProducts();
@@ -59,6 +67,12 @@ export default function HomePage() {
     fetch('/api/public/settings')
       .then(res => res.json())
       .then(data => setSupportWa(data.support_whatsapp || ''))
+      .catch(() => {});
+
+    // Load leaderboard
+    fetch('/api/public/leaderboard')
+      .then(res => res.json())
+      .then(data => setLeaderboard(data.entries || []))
       .catch(() => {});
   }, []);
 
@@ -106,6 +120,133 @@ export default function HomePage() {
         <h1>Premium Accounts<br /><span>Instant Delivery</span></h1>
         <p>Dapatkan akun premium favorit kamu dengan harga terbaik. Akun dikirim otomatis setelah pembayaran berhasil.</p>
       </section>
+
+      {/* Leaderboard Mitra */}
+      {leaderboard.length > 0 && (
+        <section style={{
+          maxWidth: '600px',
+          margin: '0 auto 40px',
+          padding: '0 24px',
+        }}>
+          <div style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-secondary)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '28px 24px',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Decorative glow */}
+            <div style={{
+              position: 'absolute', top: '-60px', right: '-40px',
+              width: '200px', height: '200px',
+              background: 'radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            }} />
+
+            <div style={{ textAlign: 'center', marginBottom: '20px', position: 'relative' }}>
+              <div style={{
+                fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '2px', color: '#fbbf24', marginBottom: '4px',
+              }}>
+                🏆 Perolehan Komisi Mitra Hari Ini
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative' }}>
+              {leaderboard.map((entry, idx) => {
+                const isFirst = entry.rank_position === 1;
+                const isSecond = entry.rank_position === 2;
+                const isThird = entry.rank_position === 3;
+                const medalBg = isFirst
+                  ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
+                  : isSecond
+                    ? 'linear-gradient(135deg, #94a3b8, #cbd5e1)'
+                    : isThird
+                      ? 'linear-gradient(135deg, #d97706, #b45309)'
+                      : 'var(--bg-tertiary)';
+
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '14px',
+                      background: isFirst
+                        ? 'linear-gradient(135deg, rgba(251,191,36,0.06), rgba(245,158,11,0.02))'
+                        : 'var(--bg-secondary)',
+                      border: isFirst
+                        ? '1px solid rgba(251,191,36,0.25)'
+                        : '1px solid var(--border-secondary)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '12px 16px',
+                      transition: 'all 0.3s ease',
+                      animation: isFirst ? 'fadeIn 0.6s ease' : `fadeIn ${0.3 + idx * 0.1}s ease`,
+                    }}
+                  >
+                    {/* Rank Medal */}
+                    <div style={{
+                      width: '32px', height: '32px', borderRadius: '50%',
+                      background: medalBg,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.75rem', fontWeight: 800,
+                      color: entry.rank_position <= 3 ? '#fff' : 'var(--text-muted)',
+                      flexShrink: 0,
+                      boxShadow: isFirst ? '0 0 12px rgba(251,191,36,0.3)' : 'none',
+                    }}>
+                      {entry.rank_position}
+                    </div>
+
+                    {/* Name */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{
+                        fontWeight: isFirst ? 700 : 600,
+                        fontSize: isFirst ? '0.95rem' : '0.88rem',
+                        color: 'var(--text-primary)',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>
+                        {entry.avatar_emoji} {entry.mitra_name}
+                      </div>
+                    </div>
+
+                    {/* Commission */}
+                    <div style={{
+                      fontWeight: 800,
+                      fontSize: isFirst ? '0.95rem' : '0.88rem',
+                      color: 'var(--brand-success)',
+                      flexShrink: 0,
+                    }}>
+                      {formatPrice(entry.commission_today)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* CTA */}
+            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+              <Link
+                href="/reseller/register"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  fontSize: '0.8rem', fontWeight: 600,
+                  color: '#fbbf24',
+                  textDecoration: 'none',
+                  padding: '8px 20px',
+                  borderRadius: 'var(--radius-full)',
+                  background: 'rgba(251,191,36,0.08)',
+                  border: '1px solid rgba(251,191,36,0.2)',
+                  transition: 'all 0.3s',
+                }}
+              >
+                🚀 Gabung Jadi Mitra & Dapatkan Komisi
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {loading ? (
         <div className="loading-page"><div className="loading-spinner" /></div>

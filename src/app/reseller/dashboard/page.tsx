@@ -11,6 +11,13 @@ interface ResellerSession {
   phone: string;
 }
 
+interface LeaderboardEntry {
+  mitra_name: string;
+  commission_today: number;
+  rank_position: number;
+  avatar_emoji: string;
+}
+
 interface Commission {
   id: string;
   product_name?: string;
@@ -58,6 +65,7 @@ export default function ResellerDashboardPage() {
   const [copied, setCopied] = useState(false);
   const [filter, setFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
   const [supportWa, setSupportWa] = useState('');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -75,6 +83,12 @@ export default function ResellerDashboardPage() {
     fetch('/api/public/settings')
       .then(res => res.json())
       .then(d => setSupportWa(d.support_whatsapp || ''))
+      .catch(() => {});
+
+    // Load leaderboard
+    fetch('/api/public/leaderboard')
+      .then(res => res.json())
+      .then(d => setLeaderboard(d.entries || []))
       .catch(() => {});
   }, [router]);
 
@@ -301,6 +315,70 @@ export default function ResellerDashboardPage() {
                 </div>
               )}
             </div>
+
+            {/* Leaderboard Widget */}
+            {leaderboard.length > 0 && (
+              <div style={{
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-secondary)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '24px',
+                marginTop: '16px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}>
+                {/* Decorative glow */}
+                <div style={{
+                  position: 'absolute', top: '-40px', right: '-30px',
+                  width: '150px', height: '150px',
+                  background: 'radial-gradient(circle, rgba(251,191,36,0.06) 0%, transparent 70%)',
+                  pointerEvents: 'none',
+                }} />
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '16px', position: 'relative' }}>
+                  🏆 Leaderboard Komisi Hari Ini
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative' }}>
+                  {leaderboard.slice(0, 5).map((entry, idx) => {
+                    const isFirst = entry.rank_position === 1;
+                    const medalBg = isFirst
+                      ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
+                      : entry.rank_position === 2
+                        ? 'linear-gradient(135deg, #94a3b8, #cbd5e1)'
+                        : entry.rank_position === 3
+                          ? 'linear-gradient(135deg, #d97706, #b45309)'
+                          : 'var(--bg-tertiary)';
+                    return (
+                      <div key={idx} style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        background: isFirst ? 'rgba(251,191,36,0.05)' : 'var(--bg-secondary)',
+                        border: isFirst ? '1px solid rgba(251,191,36,0.2)' : '1px solid var(--border-secondary)',
+                        borderRadius: 'var(--radius-md)', padding: '10px 14px',
+                      }}>
+                        <div style={{
+                          width: '28px', height: '28px', borderRadius: '50%',
+                          background: medalBg,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.7rem', fontWeight: 800,
+                          color: entry.rank_position <= 3 ? '#fff' : 'var(--text-muted)',
+                          flexShrink: 0,
+                        }}>
+                          {entry.rank_position}
+                        </div>
+                        <div style={{ flex: 1, fontWeight: 600, fontSize: '0.85rem' }}>
+                          {entry.avatar_emoji} {entry.mitra_name}
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--brand-success)', flexShrink: 0 }}>
+                          {formatPrice(entry.commission_today)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '12px' }}>
+                  Tingkatkan penjualan Anda untuk naik ke puncak! 🚀
+                </p>
+              </div>
+            )}
 
             {/* Tips Section */}
             <div style={{
