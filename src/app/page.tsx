@@ -111,94 +111,87 @@ export default function HomePage() {
     ? `https://wa.me/${supportWa.startsWith('0') ? '62' + supportWa.substring(1) : supportWa}?text=${encodeURIComponent('Halo admin pastipremium.store, saya butuh bantuan.')}`
     : null;
 
+  // Apple-inspired colors
+  const C_BG = '#fbfbfd';
+  const C_TEXT = '#1d1d1f';
+  const C_TEXT_MUTED = '#86868b';
+  const C_BLUE = '#0071e3';
+  const C_BLUE_HOVER = '#0077ed';
+  const C_CARD = '#ffffff';
+  const C_SHADOW = '0 8px 30px rgba(0,0,0,0.04)';
+  const C_SHADOW_HOVER = '0 12px 40px rgba(0,0,0,0.08)';
+
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg-base)',
-      fontFamily: "'Inter', sans-serif",
+      background: C_BG,
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif",
+      color: C_TEXT,
       position: 'relative',
       maxWidth: '100vw',
       overflowX: 'hidden',
     }}>
       <PromoPopup />
 
-      {/* ── HEADER ── */}
+      {/* ── HEADER (Apple Glassmorphism) ── */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(9,9,11,0.88)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        background: 'rgba(255,255,255,0.72)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        borderBottom: '1px solid rgba(0,0,0,0.05)',
         padding: '0 16px',
         height: '56px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            width: '28px', height: '28px', borderRadius: '8px',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.75rem', fontWeight: 800, color: '#fff',
-          }}>✦</div>
-          <span style={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-            pastipremium
+          <span style={{ fontWeight: 600, fontSize: '1.05rem', letterSpacing: '-0.01em', color: C_TEXT }}>
+            PastiPremium
           </span>
         </div>
 
         {/* Nav actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <Link
             href="/reseller/login"
             style={{
-              fontSize: '0.75rem', fontWeight: 600,
-              color: 'var(--text-muted)', padding: '6px 10px',
-              background: 'transparent', borderRadius: 'var(--radius-md)',
-              textDecoration: 'none', transition: 'color 0.15s',
+              fontSize: '0.8rem', fontWeight: 500,
+              color: C_TEXT_MUTED, textDecoration: 'none', transition: 'color 0.2s',
             }}
           >Mitra</Link>
 
           {buyer ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Link
                 href="/buyer/lookup"
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
-                  background: 'var(--bg-card)', border: '1px solid var(--border-primary)',
-                  borderRadius: 'var(--radius-full)', padding: '5px 12px 5px 6px',
-                  fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)',
-                  textDecoration: 'none',
+                  background: '#f2f2f2', borderRadius: '20px', padding: '6px 14px',
+                  fontSize: '0.8rem', fontWeight: 500, color: C_TEXT,
+                  textDecoration: 'none', transition: 'background 0.2s'
                 }}
               >
-                <div style={{
-                  width: '22px', height: '22px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.6rem', fontWeight: 800, color: '#fff',
-                }}>
-                  📦
-                </div>
                 Pesanan Saya
               </Link>
               <button
                 onClick={handleLogout}
                 style={{
-                  fontSize: '0.75rem', fontWeight: 600,
-                  color: 'var(--brand-danger)', padding: '6px',
-                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  fontSize: '0.8rem', fontWeight: 500,
+                  color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer',
                 }}
-              >🚪</button>
+              >Keluar</button>
             </div>
           ) : (
             <Link
               href="/buyer/login"
               style={{
-                background: 'var(--accent)', color: '#fff',
-                padding: '7px 14px', borderRadius: 'var(--radius-md)',
-                fontSize: '0.78rem', fontWeight: 700,
-                textDecoration: 'none', transition: 'background 0.15s',
+                background: C_BLUE, color: '#fff',
+                padding: '6px 16px', borderRadius: '20px',
+                fontSize: '0.8rem', fontWeight: 500,
+                textDecoration: 'none', transition: 'background 0.2s',
               }}
-            >Masuk</Link>
+            >Login</Link>
           )}
         </div>
       </header>
@@ -207,240 +200,147 @@ export default function HomePage() {
       <section
         ref={heroRef}
         style={{
-          padding: '48px 20px 36px',
+          padding: '80px 20px 60px',
           textAlign: 'center',
-          position: 'relative',
-          overflow: 'hidden',
+          maxWidth: '800px', margin: '0 auto',
         }}
       >
-        {/* Background blobs */}
-        <div style={{
-          position: 'absolute', top: '-100px', left: '50%', transform: 'translateX(-50%)',
-          width: '500px', height: '500px',
-          background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 65%)',
-          pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', top: '20px', right: '-80px',
-          width: '200px', height: '200px',
-          background: 'radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }} />
-
-        {/* Badge */}
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '6px',
-          background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)',
-          borderRadius: 'var(--radius-full)', padding: '4px 12px',
-          fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.5px',
-          color: 'var(--accent)', marginBottom: '20px',
-          textTransform: 'uppercase',
-        }}>
-          ⚡ Pengiriman Otomatis
-        </div>
-
         <h1 style={{
-          fontSize: 'clamp(1.9rem, 8vw, 2.6rem)',
-          fontWeight: 900,
-          letterSpacing: '-0.035em',
-          lineHeight: 1.15,
-          marginBottom: '16px',
-          color: 'var(--text-primary)',
-          position: 'relative',
+          fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
+          fontWeight: 700,
+          letterSpacing: '-0.04em',
+          lineHeight: 1.05,
+          marginBottom: '20px',
+          color: C_TEXT,
         }}>
-          Akun Premium<br />
-          <span style={{
-            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}>Harga Terbaik</span>
+          Premium.<br/>
+          Tanpa kompromi.
         </h1>
-
         <p style={{
-          fontSize: '0.9rem', color: 'var(--text-muted)',
-          lineHeight: 1.7, maxWidth: '300px',
-          margin: '0 auto 28px', position: 'relative',
+          fontSize: '1.1rem', color: C_TEXT_MUTED,
+          lineHeight: 1.5, maxWidth: '400px',
+          margin: '0 auto 36px', fontWeight: 400,
         }}>
-          Nikmati streaming favorit tanpa batas. Akun terkirim otomatis setelah bayar.
+          Akses instant ke platform streaming dan produktivitas terkemuka dunia. Garansi penuh.
         </p>
 
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', position: 'relative' }}>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
           <button
             onClick={() => {
               const el = document.getElementById('katalog');
-              el?.scrollIntoView({ behavior: 'smooth' });
+              if (el) {
+                const y = el.getBoundingClientRect().top + window.scrollY - 70;
+                window.scrollTo({ top: y, behavior: 'smooth' });
+              }
             }}
             style={{
-              background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
-              color: '#fff', border: 'none',
-              padding: '12px 24px', borderRadius: 'var(--radius-md)',
-              fontSize: '0.88rem', fontWeight: 700,
-              cursor: 'pointer', boxShadow: '0 4px 20px rgba(59,130,246,0.3)',
-              transition: 'all 0.2s',
+              background: C_BLUE, color: '#fff', border: 'none',
+              padding: '14px 28px', borderRadius: '30px',
+              fontSize: '0.95rem', fontWeight: 500,
+              cursor: 'pointer', transition: 'all 0.2s',
             }}
-          >Lihat Produk →</button>
+          >Lihat Katalog</button>
           {waUrl && (
             <a
               href={waUrl} target="_blank" rel="noopener noreferrer"
               style={{
-                background: 'var(--bg-card)', color: 'var(--text-secondary)',
-                border: '1px solid var(--border-primary)',
-                padding: '12px 20px', borderRadius: 'var(--radius-md)',
-                fontSize: '0.88rem', fontWeight: 600,
+                background: 'rgba(0,0,0,0.05)', color: C_TEXT,
+                border: 'none',
+                padding: '14px 28px', borderRadius: '30px',
+                fontSize: '0.95rem', fontWeight: 500,
                 textDecoration: 'none', transition: 'all 0.2s',
               }}
-            >💬 Tanya Dulu</a>
+            >Bantuan</a>
           )}
-        </div>
-
-        {/* Trust pills */}
-        <div style={{
-          display: 'flex', gap: '8px', justifyContent: 'center',
-          flexWrap: 'wrap', marginTop: '24px', position: 'relative',
-        }}>
-          {[
-            { icon: '⚡', text: 'Instant' },
-            { icon: '🔒', text: 'Aman' },
-            { icon: '💬', text: 'Support 24/7' },
-            { icon: '✅', text: 'Terpercaya' },
-          ].map(item => (
-            <div key={item.text} style={{
-              display: 'flex', alignItems: 'center', gap: '5px',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-secondary)',
-              borderRadius: 'var(--radius-full)',
-              padding: '5px 12px',
-              fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)',
-            }}>
-              <span>{item.icon}</span>
-              <span>{item.text}</span>
-            </div>
-          ))}
         </div>
       </section>
 
-      {/* ── LEADERBOARD ── */}
+      {/* ── LEADERBOARD (Apple Style Widget) ── */}
       {leaderboard.length > 0 && (
-        <section style={{ padding: '0 16px 24px' }}>
+        <section style={{ padding: '0 20px 40px', maxWidth: '1000px', margin: '0 auto' }}>
           <div style={{
-            background: 'linear-gradient(135deg, rgba(251,191,36,0.05), rgba(245,158,11,0.02))',
-            border: '1px solid rgba(251,191,36,0.15)',
-            borderRadius: 'var(--radius-xl)',
-            padding: '20px 16px',
-            position: 'relative', overflow: 'hidden',
+            background: C_CARD,
+            borderRadius: '24px',
+            padding: '28px 32px',
+            boxShadow: C_SHADOW,
+            border: '1px solid rgba(0,0,0,0.03)',
+            display: 'flex', flexDirection: 'column', gap: '20px',
+            position: 'relative', overflow: 'hidden'
           }}>
-            <div style={{
-              position: 'absolute', top: '-40px', right: '-30px',
-              width: '150px', height: '150px',
-              background: 'radial-gradient(circle, rgba(251,191,36,0.07) 0%, transparent 70%)',
-              pointerEvents: 'none',
-            }} />
-
-            <div style={{ marginBottom: '14px', position: 'relative' }}>
-              <div style={{
-                fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase',
-                letterSpacing: '1.8px', color: '#fbbf24', marginBottom: '2px',
-              }}>🏆 Komisi Mitra Hari Ini</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '16px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 600, letterSpacing: '-0.01em', marginBottom: '4px' }}>Top Partners</h3>
+                <p style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, margin: 0 }}>Komisi harian tertinggi hari ini.</p>
               </div>
+              <Link href="/reseller/register" style={{ fontSize: '0.85rem', fontWeight: 500, color: C_BLUE, textDecoration: 'none' }}>
+                Join Program →
+              </Link>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', position: 'relative' }}>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
               {leaderboard.map((entry, idx) => {
-                const isFirst = entry.rank_position === 1;
-                const medalBg = entry.rank_position === 1
-                  ? 'linear-gradient(135deg, #fbbf24, #f59e0b)'
-                  : entry.rank_position === 2
-                    ? 'linear-gradient(135deg, #94a3b8, #cbd5e1)'
-                    : entry.rank_position === 3
-                      ? 'linear-gradient(135deg, #d97706, #b45309)'
-                      : 'var(--bg-tertiary)';
-
+                const isTop = entry.rank_position === 1;
                 return (
                   <div key={idx} style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    background: isFirst ? 'rgba(251,191,36,0.04)' : 'rgba(255,255,255,0.02)',
-                    borderRadius: 'var(--radius-md)', padding: '10px 12px',
-                    transition: 'background 0.2s',
+                    display: 'flex', alignItems: 'center', gap: '16px',
+                    padding: '12px 16px', borderRadius: '16px',
+                    background: isTop ? 'rgba(0,113,227,0.04)' : 'transparent',
                   }}>
                     <div style={{
-                      width: '28px', height: '28px', borderRadius: '50%',
-                      background: medalBg, flexShrink: 0,
+                      width: '40px', height: '40px', borderRadius: '50%',
+                      background: isTop ? C_BLUE : '#f2f2f2', flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.68rem', fontWeight: 800,
-                      color: entry.rank_position <= 3 ? '#fff' : 'var(--text-muted)',
-                      boxShadow: isFirst ? '0 0 10px rgba(251,191,36,0.3)' : 'none',
+                      fontSize: '0.9rem', fontWeight: 600,
+                      color: isTop ? '#fff' : C_TEXT_MUTED,
                     }}>{entry.rank_position}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        fontWeight: isFirst ? 700 : 600,
-                        fontSize: '0.85rem', color: 'var(--text-primary)',
+                        fontWeight: 600, fontSize: '0.95rem', color: C_TEXT,
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                       }}>
                         {entry.avatar_emoji} {entry.mitra_name}
                       </div>
+                      <div style={{ fontWeight: 500, fontSize: '0.85rem', color: C_TEXT_MUTED }}>
+                        {formatPrice(entry.commission_today)}
+                      </div>
                     </div>
-                    <div style={{
-                      fontWeight: 800, fontSize: '0.82rem',
-                      color: 'var(--brand-success)', flexShrink: 0,
-                    }}>{formatPrice(entry.commission_today)}</div>
                   </div>
                 );
               })}
             </div>
-
-            <Link
-              href="/reseller/register"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                marginTop: '14px',
-                background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
-                borderRadius: 'var(--radius-md)', padding: '10px',
-                fontSize: '0.78rem', fontWeight: 700, color: '#fbbf24',
-                textDecoration: 'none', transition: 'all 0.2s',
-              }}
-            >🚀 Gabung Mitra & Dapat Komisi</Link>
           </div>
         </section>
       )}
 
       {/* ── KATALOG ── */}
-      <section id="katalog" style={{ padding: '0 16px 100px' }}>
+      <section id="katalog" style={{ padding: '0 20px 100px', maxWidth: '1200px', margin: '0 auto' }}>
         {loading ? (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            height: '160px', flexDirection: 'column', gap: '12px',
+            height: '200px', flexDirection: 'column', gap: '16px',
           }}>
-            <div className="loading-spinner" />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Memuat produk...</span>
+            <div style={{ width: '24px', height: '24px', border: '3px solid #f2f2f2', borderTopColor: C_BLUE, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
           </div>
 
         ) : products.length === 0 ? (
-          <div className="empty-state">
-            <div className="icon">📦</div>
-            <h3>Belum ada produk</h3>
-            <p>Produk akan segera tersedia. Stay tuned!</p>
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: C_TEXT_MUTED }}>
+            <h3 style={{ fontWeight: 600, fontSize: '1.2rem', marginBottom: '8px', color: C_TEXT }}>Katalog Kosong</h3>
+            <p>Produk belum ditambahkan oleh admin.</p>
           </div>
 
         ) : !selectedCategory ? (
           <>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: '14px',
-            }}>
-              <h2 style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.01em' }}>
-                Kategori Akun
+            <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+              <h2 style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '8px' }}>
+                Pilih Platform.
               </h2>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                {categories.length} kategori
-              </span>
+              <p style={{ fontSize: '1rem', color: C_TEXT_MUTED }}>Tersedia {categories.length} kategori eksklusif.</p>
             </div>
+            
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '10px',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '20px',
             }}>
               {categories.map(category => {
                 const count = products.filter(p => p.platform_name.toUpperCase() === category).length;
@@ -450,51 +350,37 @@ export default function HomePage() {
                     key={category}
                     onClick={() => setSelectedCategory(category)}
                     style={{
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border-secondary)',
-                      borderRadius: 'var(--radius-lg)',
-                      padding: '18px 14px',
+                      background: C_CARD,
+                      borderRadius: '24px',
+                      padding: '28px 24px',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex', flexDirection: 'column', gap: '10px',
-                      position: 'relative', overflow: 'hidden',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+                      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+                      border: '1px solid rgba(0,0,0,0.04)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = C_SHADOW_HOVER;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.03)';
                     }}
                   >
-                    {/* Subtle top gradient */}
                     <div style={{
-                      position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
-                      background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-                      borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-                    }} />
-
-                    <div style={{
-                      width: '44px', height: '44px', borderRadius: '12px',
-                      background: 'var(--accent-soft)',
+                      width: '64px', height: '64px', borderRadius: '20px',
+                      background: '#f5f5f7',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '1.4rem',
+                      fontSize: '2rem', marginBottom: '16px'
                     }}>{emoji}</div>
 
-                    <div>
-                      <div style={{
-                        fontWeight: 700, fontSize: '0.9rem',
-                        color: 'var(--text-primary)', marginBottom: '3px',
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                      }}>{category}</div>
-                      <div style={{
-                        fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500,
-                      }}>{count} paket tersedia</div>
-                    </div>
-
-                    <div style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      marginTop: '2px',
-                    }}>
-                      <span style={{
-                        fontSize: '0.7rem', fontWeight: 700, color: 'var(--accent)',
-                        letterSpacing: '0.3px',
-                      }}>Lihat paket</span>
-                      <span style={{ color: 'var(--accent)', fontSize: '0.8rem' }}>→</span>
-                    </div>
+                    <h3 style={{ fontWeight: 600, fontSize: '1.2rem', color: C_TEXT, marginBottom: '4px' }}>
+                      {category}
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, fontWeight: 400, }}>
+                      {count} varian tersedia
+                    </p>
                   </div>
                 );
               })}
@@ -502,35 +388,36 @@ export default function HomePage() {
           </>
         ) : (
           <>
-            {/* Back + category title */}
+            {/* Category Header */}
             <div style={{
-              display: 'flex', alignItems: 'center', gap: '12px',
-              marginBottom: '16px',
+              display: 'flex', alignItems: 'center', gap: '16px',
+              marginBottom: '32px', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '24px'
             }}>
               <button
                 onClick={() => setSelectedCategory(null)}
                 style={{
-                  width: '36px', height: '36px',
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border-secondary)',
-                  borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer', color: 'var(--text-primary)',
+                  width: '40px', height: '40px',
+                  background: '#f2f2f2', borderRadius: '50%',
+                  cursor: 'pointer', color: C_TEXT, border: 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1rem', flexShrink: 0,
+                  fontSize: '1.2rem', flexShrink: 0, transition: 'background 0.2s'
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#e5e5e5'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#f2f2f2'}
               >←</button>
               <div>
-                <h2 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '2px' }}>
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '2px' }}>
                   {getPlatformEmoji(selectedCategory)} {selectedCategory}
                 </h2>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
-                  {products.filter(p => p.platform_name.toUpperCase() === selectedCategory).length} paket tersedia
-                </p>
               </div>
             </div>
 
-            {/* Product cards — single column for mobile */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Product cards */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+              gap: '24px' 
+            }}>
               {products.filter(p => p.platform_name.toUpperCase() === selectedCategory).map(product => {
                 const promo = promos.find(pr => {
                   const now = new Date();
@@ -543,109 +430,95 @@ export default function HomePage() {
                   <div
                     key={product.id}
                     style={{
-                      background: 'var(--bg-card)',
-                      border: promo
-                        ? '1px solid rgba(239,68,68,0.3)'
-                        : '1px solid var(--border-secondary)',
-                      borderRadius: 'var(--radius-lg)',
-                      padding: '18px',
-                      boxShadow: promo ? '0 0 16px rgba(239,68,68,0.08)' : 'none',
-                      position: 'relative', overflow: 'hidden',
+                      background: C_CARD,
+                      borderRadius: '24px',
+                      padding: '28px',
+                      boxShadow: promo ? '0 8px 30px rgba(239,68,68,0.08)' : C_SHADOW,
+                      border: promo ? '1px solid rgba(239,68,68,0.2)' : '1px solid rgba(0,0,0,0.03)',
+                      display: 'flex', flexDirection: 'column',
+                      position: 'relative'
                     }}
                   >
-                    {/* Top accent bar */}
-                    <div style={{
-                      position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
-                      background: promo
-                        ? 'linear-gradient(90deg, #ef4444, #f97316)'
-                        : 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-                    }} />
+                    {promo && (
+                      <div style={{
+                        position: 'absolute', top: '-12px', left: '28px',
+                        background: '#ef4444', color: '#fff',
+                        padding: '4px 12px', borderRadius: '12px',
+                        fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.5px',
+                        textTransform: 'uppercase', boxShadow: '0 4px 12px rgba(239,68,68,0.3)'
+                      }}>
+                        {promo.promo_label}
+                      </div>
+                    )}
 
                     <div style={{
-                      display: 'flex', justifyContent: 'space-between',
-                      alignItems: 'flex-start', marginBottom: '10px',
+                      fontSize: '0.75rem', fontWeight: 600, color: C_TEXT_MUTED,
+                      textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px',
+                      marginTop: promo ? '8px' : '0'
                     }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{
-                          fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase',
-                          letterSpacing: '1px', color: 'var(--accent)', marginBottom: '4px',
-                        }}>{product.platform_name}</div>
-                        <h3 style={{
-                          fontSize: '0.95rem', fontWeight: 700,
-                          color: 'var(--text-primary)', margin: 0,
-                          lineHeight: 1.3,
-                        }}>{product.name}</h3>
-                      </div>
-                      {promo && (
-                        <span style={{
-                          background: 'rgba(239,68,68,0.15)',
-                          color: 'var(--brand-danger)',
-                          border: '1px solid rgba(239,68,68,0.25)',
-                          borderRadius: 'var(--radius-full)',
-                          padding: '3px 8px',
-                          fontSize: '0.62rem', fontWeight: 800,
-                          letterSpacing: '0.5px', textTransform: 'uppercase',
-                          animation: 'pulse 2s infinite', flexShrink: 0, marginLeft: '8px',
-                        }}>
-                          {promo.promo_label}
-                        </span>
-                      )}
+                      {product.platform_name}
                     </div>
+                    
+                    <h3 style={{
+                      fontSize: '1.25rem', fontWeight: 600, color: C_TEXT,
+                      marginBottom: '12px', lineHeight: 1.3, letterSpacing: '-0.01em'
+                    }}>{product.name}</h3>
 
                     {product.description && (
                       <p style={{
-                        fontSize: '0.78rem', color: 'var(--text-muted)',
-                        marginBottom: '14px', lineHeight: 1.55,
+                        fontSize: '0.9rem', color: C_TEXT_MUTED,
+                        marginBottom: '24px', lineHeight: 1.5, flex: 1,
                       }}>{product.description}</p>
                     )}
 
                     <div style={{
-                      display: 'flex', alignItems: 'center',
-                      justifyContent: 'space-between', marginBottom: '14px',
-                      flexWrap: 'wrap', gap: '6px',
+                      display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+                      marginBottom: '24px', marginTop: 'auto'
                     }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div>
                         {promo ? (
                           <>
-                            <div style={{
-                              fontSize: '0.75rem', color: 'var(--text-muted)',
-                              textDecoration: 'line-through', fontWeight: 500,
-                            }}>{formatPrice(promo.original_price)}</div>
-                            <div style={{
-                              fontSize: '1.25rem', fontWeight: 900,
-                              color: 'var(--brand-danger)', letterSpacing: '-0.02em',
-                            }}>{formatPrice(promo.promo_price)}</div>
+                            <div style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'line-through', marginBottom: '2px' }}>
+                              {formatPrice(promo.original_price)}
+                            </div>
+                            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#ef4444', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                              {formatPrice(promo.promo_price)}
+                            </div>
                           </>
                         ) : (
-                          <div style={{
-                            fontSize: '1.25rem', fontWeight: 900,
-                            color: 'var(--text-primary)', letterSpacing: '-0.02em',
-                          }}>{formatPrice(product.price)}</div>
+                          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: C_TEXT, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                            {formatPrice(product.price)}
+                          </div>
                         )}
                       </div>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span style={{
-                          fontSize: '0.72rem', color: 'var(--text-muted)',
-                          background: 'var(--bg-secondary)',
-                          padding: '3px 8px', borderRadius: 'var(--radius-full)',
-                        }}>{product.duration_days} hari</span>
-                        <span className={`badge ${product.account_type === 'sharing' ? 'badge-info' : 'badge-primary'}`}>
+                      
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.8rem', color: C_TEXT, fontWeight: 500, marginBottom: '4px' }}>
+                          {product.duration_days} Hari
+                        </div>
+                        <div style={{ 
+                          fontSize: '0.75rem', color: C_TEXT_MUTED, background: '#f5f5f7', 
+                          padding: '4px 10px', borderRadius: '12px', display: 'inline-block',
+                          textTransform: 'capitalize'
+                        }}>
                           {product.account_type}
-                        </span>
+                        </div>
                       </div>
                     </div>
 
                     <Link
                       href={`/order/${product.id}`}
                       style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
-                        color: '#fff', borderRadius: 'var(--radius-md)',
-                        padding: '12px', fontWeight: 700, fontSize: '0.88rem',
-                        textDecoration: 'none', transition: 'opacity 0.2s',
-                        boxShadow: '0 4px 16px rgba(59,130,246,0.25)',
+                        display: 'block', textAlign: 'center',
+                        background: C_BLUE, color: '#fff', 
+                        borderRadius: '14px', padding: '14px', 
+                        fontWeight: 500, fontSize: '0.95rem',
+                        textDecoration: 'none', transition: 'background 0.2s',
+                        width: '100%'
                       }}
-                    >Beli Sekarang →</Link>
+                      onMouseEnter={(e) => e.currentTarget.style.background = C_BLUE_HOVER}
+                      onMouseLeave={(e) => e.currentTarget.style.background = C_BLUE}
+                    >Pilih Paket</Link>
                   </div>
                 );
               })}
@@ -664,13 +537,14 @@ export default function HomePage() {
             position: 'fixed', bottom: '20px', right: '16px', zIndex: 200,
             display: 'flex', alignItems: 'center', gap: '8px',
             background: '#25D366', color: '#fff',
-            padding: '12px 16px', borderRadius: 'var(--radius-full)',
-            fontWeight: 700, fontSize: '0.82rem',
+            padding: '12px 16px', borderRadius: '30px',
+            fontWeight: 600, fontSize: '0.85rem',
             textDecoration: 'none',
             boxShadow: '0 4px 20px rgba(37,211,102,0.4)',
-            animation: 'fadeIn 0.5s ease',
-            transition: 'transform 0.2s, box-shadow 0.2s',
+            transition: 'transform 0.2s',
           }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
@@ -681,33 +555,23 @@ export default function HomePage() {
 
       {/* ── FOOTER ── */}
       <footer style={{
-        padding: '24px 20px',
-        borderTop: '1px solid var(--border-secondary)',
-        textAlign: 'center',
+        padding: '32px 20px',
+        borderTop: '1px solid rgba(0,0,0,0.06)',
+        textAlign: 'center', background: '#f5f5f7'
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           gap: '6px', marginBottom: '8px',
         }}>
-          <div style={{
-            width: '20px', height: '20px', borderRadius: '6px',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '0.6rem', fontWeight: 800, color: '#fff',
-          }}>✦</div>
-          <span style={{ fontWeight: 700, fontSize: '0.8rem' }}>pastipremium.store</span>
+          <span style={{ fontWeight: 600, fontSize: '0.85rem', color: C_TEXT }}>PastiPremium</span>
         </div>
-        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
-          © 2025 pastipremium.store · All rights reserved
+        <p style={{ fontSize: '0.8rem', color: C_TEXT_MUTED, margin: 0, fontWeight: 400 }}>
+          Copyright © 2025 PastiPremium. Hak cipta dilindungi undang-undang.
         </p>
       </footer>
 
       <style>{`
-        @media (min-width: 600px) {
-          #katalog > div:last-child {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
