@@ -4,23 +4,26 @@ import { getAdminFromRequest } from '@/lib/auth';
 
 // Ensure table exists
 async function ensureTable() {
-  await supabase.rpc('exec_sql', {
-    sql: `
-      CREATE TABLE IF NOT EXISTS dummy_leaderboard (
-        id SERIAL PRIMARY KEY,
-        mitra_name TEXT NOT NULL,
-        commission_today BIGINT NOT NULL DEFAULT 0,
-        rank_position INT NOT NULL DEFAULT 1,
-        avatar_emoji TEXT DEFAULT '🤝',
-        is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      );
-    `
-  }).catch(() => {
-    // RPC might not exist
-  });
+  try {
+    await supabase.rpc('exec_sql', {
+      sql: `
+        CREATE TABLE IF NOT EXISTS dummy_leaderboard (
+          id SERIAL PRIMARY KEY,
+          mitra_name TEXT NOT NULL,
+          commission_today BIGINT NOT NULL DEFAULT 0,
+          rank_position INT NOT NULL DEFAULT 1,
+          avatar_emoji TEXT DEFAULT '🤝',
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+      `
+    });
+  } catch {
+    // RPC might not exist — table likely already exists
+  }
 }
+
 
 // GET: List all leaderboard entries
 export async function GET(request: NextRequest) {
