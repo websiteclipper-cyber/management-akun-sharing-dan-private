@@ -159,14 +159,15 @@ export default function HomePage() {
           >Mitra</Link>
 
           {buyer ? (
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Link
+                href="/buyer/lookup"
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
                   background: 'var(--bg-card)', border: '1px solid var(--border-primary)',
-                  borderRadius: 'var(--radius-full)', padding: '5px 10px 5px 6px',
-                  cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)',
+                  borderRadius: 'var(--radius-full)', padding: '5px 12px 5px 6px',
+                  fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)',
+                  textDecoration: 'none',
                 }}
               >
                 <div style={{
@@ -175,42 +176,18 @@ export default function HomePage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '0.6rem', fontWeight: 800, color: '#fff',
                 }}>
-                  {buyer.name.charAt(0).toUpperCase()}
+                  📦
                 </div>
-                {buyer.name.split(' ')[0]}
-              </button>
-
-              {menuOpen && (
-                <div style={{
-                  position: 'absolute', top: '110%', right: 0,
-                  background: 'var(--bg-card)', border: '1px solid var(--border-primary)',
-                  borderRadius: 'var(--radius-lg)', padding: '8px',
-                  minWidth: '160px', boxShadow: 'var(--shadow-lg)', zIndex: 200,
-                  animation: 'slideUp 0.15s ease',
-                }}>
-                  <Link
-                    href="/buyer/lookup"
-                    onClick={() => setMenuOpen(false)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '9px 12px', borderRadius: 'var(--radius-md)',
-                      fontSize: '0.8rem', color: 'var(--text-secondary)',
-                      textDecoration: 'none', transition: 'background 0.1s',
-                    }}
-                  >📦 Pesanan Saya</Link>
-                  <button
-                    onClick={handleLogout}
-                    style={{
-                      width: '100%', textAlign: 'left',
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '9px 12px', borderRadius: 'var(--radius-md)',
-                      fontSize: '0.8rem', color: 'var(--brand-danger)',
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      transition: 'background 0.1s',
-                    }}
-                  >🚪 Logout</button>
-                </div>
-              )}
+                Pesanan Saya
+              </Link>
+              <button
+                onClick={handleLogout}
+                style={{
+                  fontSize: '0.75rem', fontWeight: 600,
+                  color: 'var(--brand-danger)', padding: '6px',
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                }}
+              >🚪</button>
             </div>
           ) : (
             <Link
