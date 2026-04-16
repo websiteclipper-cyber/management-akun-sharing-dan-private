@@ -5,10 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
 import Link from 'next/link';
 import PromoPopup from '@/components/PromoPopup';
-import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva } from 'react-icons/si';
+import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiGooglegemini } from 'react-icons/si';
 import { BsDisplay, BsStars } from 'react-icons/bs';
 import { FiMonitor } from 'react-icons/fi';
-import { TbBrandOpenai, TbBrandDisney, TbBrandAmazon } from 'react-icons/tb';
+import { TbBrandOpenai, TbBrandDisney, TbBrandAmazon, TbRobot, TbScissors, TbPhotoVideo } from 'react-icons/tb';
 
 interface Promo {
   id: string;
@@ -47,6 +47,10 @@ const PLATFORM_ICONS: Record<string, React.ReactNode> = {
   APPLE: <SiApple color="#000000" />,
   CANVA: <SiCanva color="#00C4CC" />,
   CHATGPT: <TbBrandOpenai color="#10A37F" />,
+  GEMINI: <SiGooglegemini color="#8E75B2" />,
+  GROK: <TbRobot color="#000000" />,
+  CAPCUT: <TbScissors color="#000000" />,
+  WINK: <TbPhotoVideo color="#FF0055" />,
   DEFAULT: <BsStars color="#F59E0B" />,
 };
 
