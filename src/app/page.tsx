@@ -5,6 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
 import Link from 'next/link';
 import PromoPopup from '@/components/PromoPopup';
+import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva } from 'react-icons/si';
+import { BsDisplay, BsStars } from 'react-icons/bs';
+import { FiMonitor } from 'react-icons/fi';
+import { TbBrandOpenai, TbBrandDisney, TbBrandAmazon } from 'react-icons/tb';
 
 interface Promo {
   id: string;
@@ -31,19 +35,27 @@ interface BuyerSession {
   phone: string;
 }
 
-// Platform emoji map
-const PLATFORM_EMOJI: Record<string, string> = {
-  NETFLIX: '🎬', SPOTIFY: '🎵', YOUTUBE: '▶️', DISNEY: '🏰',
-  VIDIO: '📺', VIU: '🎭', PRIME: '📦', APPLE: '🍎',
-  CANVA: '🎨', CHATGPT: '🤖', DEFAULT: '⭐',
+// Platform icons map
+const PLATFORM_ICONS: Record<string, React.ReactNode> = {
+  NETFLIX: <SiNetflix color="#E50914" />,
+  SPOTIFY: <SiSpotify color="#1DB954" />,
+  YOUTUBE: <SiYoutube color="#FF0000" />,
+  DISNEY: <TbBrandDisney color="#113CCF" />,
+  VIDIO: <FiMonitor color="#FF0055" />,
+  VIU: <BsDisplay color="#FFCC00" />,
+  PRIME: <TbBrandAmazon color="#00A8E1" />,
+  APPLE: <SiApple color="#000000" />,
+  CANVA: <SiCanva color="#00C4CC" />,
+  CHATGPT: <TbBrandOpenai color="#10A37F" />,
+  DEFAULT: <BsStars color="#F59E0B" />,
 };
 
-function getPlatformEmoji(name: string) {
+function getPlatformIcon(name: string) {
   const upper = name.toUpperCase();
-  for (const [key, emoji] of Object.entries(PLATFORM_EMOJI)) {
-    if (upper.includes(key)) return emoji;
+  for (const [key, icon] of Object.entries(PLATFORM_ICONS)) {
+    if (upper.includes(key)) return icon;
   }
-  return PLATFORM_EMOJI.DEFAULT;
+  return PLATFORM_ICONS.DEFAULT;
 }
 
 export default function HomePage() {
@@ -344,7 +356,7 @@ export default function HomePage() {
             }}>
               {categories.map(category => {
                 const count = products.filter(p => p.platform_name.toUpperCase() === category).length;
-                const emoji = getPlatformEmoji(category);
+                const icon = getPlatformIcon(category);
                 return (
                   <div
                     key={category}
@@ -373,7 +385,7 @@ export default function HomePage() {
                       background: '#f5f5f7',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '2rem', marginBottom: '16px'
-                    }}>{emoji}</div>
+                    }}>{icon}</div>
 
                     <h3 style={{ fontWeight: 600, fontSize: '1.2rem', color: C_TEXT, marginBottom: '4px' }}>
                       {category}
@@ -406,8 +418,8 @@ export default function HomePage() {
                 onMouseLeave={(e) => e.currentTarget.style.background = '#f2f2f2'}
               >←</button>
               <div>
-                <h2 style={{ fontSize: '1.8rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '2px' }}>
-                  {getPlatformEmoji(selectedCategory)} {selectedCategory}
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {getPlatformIcon(selectedCategory)} {selectedCategory}
                 </h2>
               </div>
             </div>
