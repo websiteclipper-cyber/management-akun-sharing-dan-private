@@ -45,6 +45,7 @@ export interface Product {
   platform_name: string;
   account_type: AccountType;
   price: number;
+  newcomer_price: number | null;
   duration_days: number;
   default_max_slot: number;
   description: string | null;

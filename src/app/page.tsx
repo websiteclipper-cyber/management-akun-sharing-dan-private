@@ -229,15 +229,15 @@ export default function HomePage() {
           marginBottom: '20px',
           color: C_TEXT,
         }}>
-          Premium.<br/>
-          Tanpa kompromi.
+          Tingkatkan Produktivitas.<br/>
+          Nikmati Hiburan.
         </h1>
         <p style={{
           fontSize: '1.1rem', color: C_TEXT_MUTED,
           lineHeight: 1.5, maxWidth: '400px',
           margin: '0 auto 36px', fontWeight: 400,
         }}>
-          Akses instant ke platform streaming dan produktivitas terkemuka dunia. Garansi penuh.
+          Solusi akun premium murah, aman, dan instan untuk menemani keseharian Anda.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
@@ -442,6 +442,8 @@ export default function HomePage() {
                     new Date(pr.end_date) >= now;
                 });
 
+                const hasNewcomerPrice = product.newcomer_price !== null && product.newcomer_price !== undefined;
+
                 return (
                   <div
                     key={product.id}
@@ -449,8 +451,8 @@ export default function HomePage() {
                       background: C_CARD,
                       borderRadius: '24px',
                       padding: '28px',
-                      boxShadow: promo ? '0 8px 30px rgba(239,68,68,0.08)' : C_SHADOW,
-                      border: promo ? '1px solid rgba(239,68,68,0.2)' : '1px solid rgba(0,0,0,0.03)',
+                      boxShadow: promo ? '0 8px 30px rgba(239,68,68,0.08)' : hasNewcomerPrice ? '0 8px 30px rgba(59,130,246,0.08)' : C_SHADOW,
+                      border: promo ? '1px solid rgba(239,68,68,0.2)' : hasNewcomerPrice ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(0,0,0,0.03)',
                       display: 'flex', flexDirection: 'column',
                       position: 'relative'
                     }}
@@ -467,10 +469,22 @@ export default function HomePage() {
                       </div>
                     )}
 
+                    {hasNewcomerPrice && !promo && (
+                      <div style={{
+                        position: 'absolute', top: '-12px', left: '28px',
+                        background: 'linear-gradient(135deg, #3b82f6, #6366f1)', color: '#fff',
+                        padding: '4px 12px', borderRadius: '12px',
+                        fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.5px',
+                        textTransform: 'uppercase', boxShadow: '0 4px 12px rgba(59,130,246,0.3)'
+                      }}>
+                        🆕 Harga Buyer Baru
+                      </div>
+                    )}
+
                     <div style={{
                       fontSize: '0.75rem', fontWeight: 600, color: C_TEXT_MUTED,
                       textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px',
-                      marginTop: promo ? '8px' : '0'
+                      marginTop: (promo || hasNewcomerPrice) ? '8px' : '0'
                     }}>
                       {product.platform_name}
                     </div>
@@ -499,6 +513,18 @@ export default function HomePage() {
                             </div>
                             <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#ef4444', letterSpacing: '-0.02em', lineHeight: 1 }}>
                               {formatPrice(promo.promo_price)}
+                            </div>
+                          </>
+                        ) : hasNewcomerPrice ? (
+                          <>
+                            <div style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'line-through', marginBottom: '2px' }}>
+                              {formatPrice(product.price)}
+                            </div>
+                            <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#3b82f6', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                              {formatPrice(product.newcomer_price!)}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 500, marginTop: '4px' }}>
+                              Pembelian pertama • Normal {formatPrice(product.price)}
                             </div>
                           </>
                         ) : (

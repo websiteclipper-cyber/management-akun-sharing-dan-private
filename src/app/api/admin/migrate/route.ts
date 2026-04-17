@@ -122,7 +122,27 @@ export async function POST(request: Request) {
       results.push('✅ site_settings table checked/created + seeded');
     }
 
-    // 6. Reload PostgREST schema cache
+    // 6. Add newcomer_price column to products (if not exists)
+    const { error: e6a } = await supabaseAdmin.rpc('exec_sql', {
+      sql_query: `
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'products' AND column_name = 'newcomer_price'
+          ) THEN
+            ALTER TABLE products ADD COLUMN newcomer_price numeric DEFAULT NULL;
+          END IF;
+        END $$;
+      `
+    });
+    if (e6a) {
+      results.push('⚠️ newcomer_price: ' + e6a.message);
+    } else {
+      results.push('✅ newcomer_price column checked/added to products');
+    }
+
+    // 7. Reload PostgREST schema cache
     const { error: e6 } = await supabaseAdmin.rpc('exec_sql', {
       sql_query: `NOTIFY pgrst, 'reload schema';`
     });

@@ -44,6 +44,9 @@ function PaymentSuccessPage() {
 
     // Check if paid or delivered
     if (orderData.payment_status === 'paid' || orderData.order_status === 'delivered' || orderData.order_status === 'completed') {
+      // Mark local storage to disable newcomer promo in the future for this browser
+      localStorage.setItem('pastipremium_newcomer_claimed', '1');
+
       setStatus('delivered');
 
       // Load account assignments

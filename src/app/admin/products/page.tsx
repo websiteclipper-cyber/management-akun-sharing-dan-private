@@ -44,6 +44,7 @@ export default function ProductsPage() {
                   <th>Platform</th>
                   <th>Tipe</th>
                   <th>Harga</th>
+                  <th>Harga Buyer Baru</th>
                   <th>Durasi</th>
                   <th>Max Slot</th>
                   <th>Status</th>
@@ -62,6 +63,9 @@ export default function ProductsPage() {
                       </span>
                     </td>
                     <td style={{ color: 'var(--brand-success)' }}>{formatPrice(p.price)}</td>
+                    <td style={{ color: p.newcomer_price ? '#3b82f6' : 'var(--text-muted)' }}>
+                      {p.newcomer_price ? formatPrice(p.newcomer_price) : '—'}
+                    </td>
                     <td>{p.duration_days} hari</td>
                     <td>{p.default_max_slot}</td>
                     <td>
@@ -90,7 +94,7 @@ export default function ProductsPage() {
                   </tr>
                 ))}
                 {products.length === 0 && (
-                  <tr><td colSpan={9} className="empty-state"><div className="icon">📦</div><h3>Belum ada produk</h3></td></tr>
+                  <tr><td colSpan={10} className="empty-state"><div className="icon">📦</div><h3>Belum ada produk</h3></td></tr>
                 )}
               </tbody>
             </table>
@@ -117,6 +121,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
     platform_name: product?.platform_name || '',
     account_type: product?.account_type || 'sharing',
     price: product?.price?.toString() || '',
+    newcomer_price: product?.newcomer_price?.toString() || '',
     duration_days: product?.duration_days?.toString() || '30',
     default_max_slot: product?.default_max_slot?.toString() || '4',
     description: product?.description || '',
@@ -136,6 +141,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
       platform_name: form.platform_name,
       account_type: form.account_type,
       price: parseFloat(form.price),
+      newcomer_price: form.newcomer_price ? parseFloat(form.newcomer_price) : null,
       duration_days: parseInt(form.duration_days),
       default_max_slot: form.account_type === 'private' ? 1 : parseInt(form.default_max_slot),
       description: form.description || null,
@@ -196,6 +202,13 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
               <label className="form-label">Harga (IDR)</label>
               <input type="number" className="form-input" value={form.price} onChange={e => setForm({...form, price: e.target.value})} placeholder="50000" required />
             </div>
+            <div className="form-group">
+              <label className="form-label">Harga Buyer Baru (IDR)</label>
+              <input type="number" className="form-input" value={form.newcomer_price} onChange={e => setForm({...form, newcomer_price: e.target.value})} placeholder="Kosongkan jika tidak ada" />
+              <small style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>Harga spesial untuk pembelian pertama. Kosongkan jika tidak pakai.</small>
+            </div>
+          </div>
+          <div className="form-row">
             <div className="form-group">
               <label className="form-label">Durasi (hari)</label>
               <input type="number" className="form-input" value={form.duration_days} onChange={e => setForm({...form, duration_days: e.target.value})} required />

@@ -53,12 +53,37 @@ export async function POST(request: NextRequest) {
     // Get product price to calculate the discount
     const { data: product } = await supabase
       .from('products')
-      .select('price')
+      .select('price, newcomer_price')
       .eq('id', product_id)
       .single();
 
     if (!product) {
       return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 });
+    }
+
+    // Check if buyer is a newcomer (no paid orders)
+    let isNewcomer = false;
+    if (buyer_id) {
+      const { count } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('buyer_id', buyer_id)
+        .eq('payment_status', 'paid');
+      isNewcomer = count === 0 || count === null;
+    }
+
+    // ===== ANTI ABUSE: LEVEL 2 (IP ADDRESS) =====
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '';
+    if (isNewcomer && clientIp) {
+      const { count: ipOrderCount, error: ipError } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('client_ip', clientIp)
+        .eq('payment_status', 'paid');
+        
+      if (!ipError && ipOrderCount && ipOrderCount > 0) {
+        isNewcomer = false; 
+      }
     }
 
     // Check for active promo (sale price)
@@ -71,7 +96,13 @@ export async function POST(request: NextRequest) {
       .gte('end_date', now)
       .maybeSingle();
 
-    const basePrice = promo ? Number(promo.promo_price) : Number(product.price);
+    // Determine base price: newcomer_price > promo > regular
+    let basePrice: number;
+    if (isNewcomer && product.newcomer_price !== null && product.newcomer_price !== undefined) {
+      basePrice = Number(product.newcomer_price);
+    } else {
+      basePrice = promo ? Number(promo.promo_price) : Number(product.price);
+    }
 
     // Calculate discount amount
     let discountAmount = 0;

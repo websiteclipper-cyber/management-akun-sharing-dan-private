@@ -31,6 +31,7 @@ export default function OrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [buyer, setBuyer] = useState<BuyerSession | null>(null);
   const [promo, setPromo] = useState<any>(null);
+  const [isNewcomer, setIsNewcomer] = useState(false);
   const [result, setResult] = useState<{ order_number: string; amount: number; discount_amount?: number } | null>(null);
   const [error, setError] = useState('');
 
@@ -46,7 +47,8 @@ export default function OrderPage() {
       router.push(`/buyer/login?redirect=/order/${params.productId}`);
       return;
     }
-    setBuyer(JSON.parse(session));
+    const parsedBuyer = JSON.parse(session);
+    setBuyer(parsedBuyer);
 
     async function load() {
       const { data } = await supabase.from('products').select('*').eq('id', params.productId).eq('status', 'active').single();
@@ -63,6 +65,20 @@ export default function OrderPage() {
           .maybeSingle();
         setPromo(promoData || null);
       }
+
+      // Check if buyer is a newcomer (no paid orders yet)
+      const locallyClaimed = localStorage.getItem('pastipremium_newcomer_claimed');
+      if (locallyClaimed === '1') {
+        setIsNewcomer(false);
+      } else if (parsedBuyer?.id) {
+        const { count } = await supabase
+          .from('orders')
+          .select('id', { count: 'exact', head: true })
+          .eq('buyer_id', parsedBuyer.id)
+          .eq('payment_status', 'paid');
+        setIsNewcomer(count === 0 || count === null);
+      }
+
       setLoading(false);
     }
     load();
@@ -154,7 +170,9 @@ export default function OrderPage() {
   if (loading) return <div className="public-layout"><div className="loading-page"><div className="loading-spinner" /></div></div>;
   if (!product) return <div className="public-layout"><div className="empty-state"><h3>Produk tidak ditemukan</h3><Link href="/" className="btn btn-primary">Kembali</Link></div></div>;
 
-  const displayPrice = promo ? promo.promo_price : product.price;
+  // Newcomer price takes priority if buyer is first-time and product has newcomer_price
+  const hasNewcomerPrice = isNewcomer && product.newcomer_price !== null && product.newcomer_price !== undefined;
+  const displayPrice = hasNewcomerPrice ? product.newcomer_price! : (promo ? promo.promo_price : product.price);
   const finalDisplayPrice = discountInfo ? discountInfo.final_price : displayPrice;
 
   return (
@@ -289,14 +307,25 @@ export default function OrderPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <h4 style={{ margin: 0, fontSize: '1.1rem' }}>{product.name}</h4>
-                {promo && (
+                {hasNewcomerPrice ? (
+                  <span className="badge" style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6', fontWeight: 700, animation: 'pulse 2s infinite' }}>
+                    🆕 BUYER BARU
+                  </span>
+                ) : promo ? (
                   <span className="badge badge-danger" style={{ animation: 'pulse 2s infinite' }}>
                     {promo.promo_label.toUpperCase()}
                   </span>
-                )}
+                ) : null}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                {promo ? (
+                {hasNewcomerPrice ? (
+                  <>
+                    <span className="price" style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
+                      {formatPrice(product.price)}
+                    </span>
+                    <span className="price" style={{ color: '#3b82f6' }}>{formatPrice(displayPrice)}</span>
+                  </>
+                ) : promo ? (
                   <>
                     <span className="price" style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
                       {formatPrice(promo.original_price)}
@@ -320,10 +349,6 @@ export default function OrderPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Nama</span>
                   <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{buyer?.name}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Email</span>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{buyer?.email}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>WhatsApp</span>
@@ -447,9 +472,17 @@ export default function OrderPage() {
               </div>
               <div style={{ display: 'grid', gap: '8px', fontSize: '0.9rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Harga {promo ? '(Promo)' : ''}</span>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{formatPrice(displayPrice)}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Harga {hasNewcomerPrice ? '(Buyer Baru 🆕)' : promo ? '(Promo)' : ''}</span>
+                  <span style={{ color: hasNewcomerPrice ? '#3b82f6' : 'var(--text-primary)', fontWeight: 600 }}>{formatPrice(displayPrice)}</span>
                 </div>
+                {hasNewcomerPrice && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+                      <span>🎉</span> Harga spesial pembelian pertama!
+                    </span>
+                    <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.78rem' }}>Hemat {formatPrice(product.price - displayPrice)}</span>
+                  </div>
+                )}
                 {discountInfo && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}>

@@ -57,6 +57,34 @@ export async function POST(request: NextRequest) {
       buyer = newBuyer;
     }
 
+    // ===== CHECK IF BUYER IS A NEWCOMER (first-time buyer) =====
+    let isNewcomer = false;
+    const { count: paidOrderCount } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('buyer_id', buyer.id)
+      .eq('payment_status', 'paid');
+
+    if (paidOrderCount === 0 || paidOrderCount === null) {
+      isNewcomer = true;
+    }
+
+    // ===== ANTI ABUSE: LEVEL 2 (IP ADDRESS) =====
+    const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '';
+    if (isNewcomer && clientIp) {
+      // Safely check orders by IP (ignores if column doesn't exist yet to prevent crashes)
+      const { count: ipOrderCount, error: ipError } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('client_ip', clientIp)
+        .eq('payment_status', 'paid');
+        
+      if (!ipError && ipOrderCount && ipOrderCount > 0) {
+        isNewcomer = false; // Block newcomer price! Suspected abuse.
+        console.warn(`[Anti-Abuse] Blocked newcomer promo for IP ${clientIp}`);
+      }
+    }
+
     // Anti-spam: Check if buyer already has a pending order for the same product within last 10 minutes
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { data: existingOrder } = await supabase
@@ -79,6 +107,7 @@ export async function POST(request: NextRequest) {
         order_status: existingOrder.order_status,
         amount: existingOrder.total_amount,
         reused: true,
+        is_newcomer: isNewcomer,
       });
     }
 
@@ -116,7 +145,13 @@ export async function POST(request: NextRequest) {
       .gte('end_date', now)
       .maybeSingle();
 
-    const basePrice = promo ? Number(promo.promo_price) : Number(product.price);
+    // Determine base price: newcomer_price > promo > regular price
+    let basePrice: number;
+    if (isNewcomer && product.newcomer_price !== null && product.newcomer_price !== undefined) {
+      basePrice = Number(product.newcomer_price);
+    } else {
+      basePrice = promo ? Number(promo.promo_price) : Number(product.price);
+    }
 
     // ===== DISCOUNT CODE HANDLING =====
     let discountCampaignId: string | null = null;
@@ -194,6 +229,7 @@ export async function POST(request: NextRequest) {
         reseller_id: resellerId,
         discount_campaign_id: discountCampaignId,
         discount_amount: discountAmount,
+        client_ip: clientIp, // Store IP to prevent future abuse
         created_at: now,
         updated_at: now,
       })
@@ -209,11 +245,13 @@ export async function POST(request: NextRequest) {
 
     // Send Telegram Notification
     const discountLabel = discountAmount > 0 ? `\n<b>Diskon:</b> -Rp ${discountAmount.toLocaleString('id-ID')}` : '';
+    const newcomerLabel = isNewcomer && product.newcomer_price !== null ? `\n🆕 <b>Harga Buyer Baru</b>` : '';
     sendTelegramNotification(
       `🛒 <b>PESANAN BARU! (Belum Bayar)</b>\n\n` +
       `<b>Order:</b> <code>${orderNumber}</code>\n` +
       `<b>Produk:</b> ${product.name}\n` +
       `<b>Harga:</b> Rp ${basePrice.toLocaleString('id-ID')}` +
+      newcomerLabel +
       discountLabel +
       `\n<b>Total:</b> Rp ${finalPrice.toLocaleString('id-ID')}\n\n` +
       `<b>Buyer:</b> ${buyer.name}\n` +
@@ -228,6 +266,7 @@ export async function POST(request: NextRequest) {
       order_status: order.order_status,
       amount: order.total_amount,
       discount_amount: discountAmount,
+      is_newcomer: isNewcomer,
     });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
