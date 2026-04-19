@@ -131,6 +131,84 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+// PATCH: Manual reset — randomize commissions
+export async function PATCH(request: NextRequest) {
+  const admin = getAdminFromRequest(request);
+  if (!admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    // Get min/max settings
+    const { data: settingsData } = await supabase
+      .from('site_settings')
+      .select('key, value')
+      .in('key', ['leaderboard_min_commission', 'leaderboard_max_commission']);
+
+    const settingsMap: Record<string, string> = {};
+    if (settingsData) {
+      for (const row of settingsData) {
+        settingsMap[row.key] = row.value;
+      }
+    }
+
+    const minCommission = Number(settingsMap.leaderboard_min_commission) || 50000;
+    const maxCommission = Number(settingsMap.leaderboard_max_commission) || 500000;
+
+    // Get all active entries
+    const { data: entries } = await supabase
+      .from('dummy_leaderboard')
+      .select('id')
+      .eq('is_active', true)
+      .order('id');
+
+    if (!entries || entries.length === 0) {
+      return NextResponse.json({ error: 'Tidak ada data mitra aktif' }, { status: 400 });
+    }
+
+    // Generate random commissions
+    const randomized = entries.map(e => ({
+      id: e.id,
+      commission: Math.round((Math.floor(Math.random() * (maxCommission - minCommission + 1)) + minCommission) / 1000) * 1000,
+    }));
+
+    // Sort by commission descending
+    randomized.sort((a, b) => b.commission - a.commission);
+
+    // Update each entry
+    const now = new Date().toISOString();
+    for (let i = 0; i < randomized.length; i++) {
+      await supabase
+        .from('dummy_leaderboard')
+        .update({
+          commission_today: randomized[i].commission,
+          rank_position: i + 1,
+          updated_at: now,
+        })
+        .eq('id', randomized[i].id);
+    }
+
+    // Save today as last reset date (WIB)
+    const wib = new Date(Date.now() + 7 * 60 * 60 * 1000);
+    const today = wib.toISOString().slice(0, 10);
+    await supabase
+      .from('site_settings')
+      .upsert({
+        key: 'leaderboard_last_reset',
+        value: today,
+        label: 'Tanggal Terakhir Reset Leaderboard',
+        updated_at: now,
+      }, { onConflict: 'key' });
+
+    return NextResponse.json({
+      success: true,
+      message: `Berhasil reset ${randomized.length} mitra! Range: Rp ${minCommission.toLocaleString()} - Rp ${maxCommission.toLocaleString()}`,
+    });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 // DELETE: Remove entry
 export async function DELETE(request: NextRequest) {
   const admin = getAdminFromRequest(request);

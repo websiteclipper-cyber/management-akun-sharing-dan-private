@@ -27,19 +27,37 @@ export default function SettingsPage() {
       const data = await res.json();
       
       if (data.settings && data.settings.length > 0) {
-        setSettings(data.settings);
+        // Merge with defaults to ensure all keys exist
+        const merged = ensureDefaults(data.settings);
+        setSettings(merged);
       } else {
         // Set defaults if empty
-        setSettings([
-          { key: 'support_whatsapp', value: '082244046330', label: 'Nomor WhatsApp Support' },
-        ]);
+        setSettings(getDefaults());
       }
     } catch {
-      setSettings([
-        { key: 'support_whatsapp', value: '082244046330', label: 'Nomor WhatsApp Support' },
-      ]);
+      setSettings(getDefaults());
     }
     setLoading(false);
+  }
+
+  function getDefaults(): Setting[] {
+    return [
+      { key: 'support_whatsapp', value: '082244046330', label: 'Nomor WhatsApp Support' },
+      { key: 'leaderboard_min_commission', value: '50000', label: 'Leaderboard Min Komisi (Rp)' },
+      { key: 'leaderboard_max_commission', value: '500000', label: 'Leaderboard Max Komisi (Rp)' },
+    ];
+  }
+
+  function ensureDefaults(existing: Setting[]): Setting[] {
+    const defaults = getDefaults();
+    const keys = existing.map(s => s.key);
+    const merged = [...existing];
+    for (const d of defaults) {
+      if (!keys.includes(d.key)) {
+        merged.push(d);
+      }
+    }
+    return merged;
   }
 
   function updateSetting(key: string, value: string) {
@@ -75,6 +93,8 @@ export default function SettingsPage() {
   }
 
   const waNumber = settings.find(s => s.key === 'support_whatsapp')?.value || '';
+  const minCommission = settings.find(s => s.key === 'leaderboard_min_commission')?.value || '50000';
+  const maxCommission = settings.find(s => s.key === 'leaderboard_max_commission')?.value || '500000';
 
   // Format phone for display
   function formatPhone(phone: string): string {
@@ -82,6 +102,10 @@ export default function SettingsPage() {
     if (clean.startsWith('0')) return '+62' + clean.substring(1);
     if (clean.startsWith('62')) return '+' + clean;
     return clean;
+  }
+
+  function formatPrice(n: number) {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
   }
 
   return (
@@ -161,6 +185,87 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* ── Leaderboard Auto-Reset Settings ── */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-secondary)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              marginBottom: '24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{
+                  width: '44px', height: '44px', borderRadius: '12px',
+                  background: 'rgba(251,191,36,0.15)', color: '#f59e0b',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.4rem',
+                }}>🏆</div>
+                <div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px' }}>Leaderboard Auto-Reset</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                    Leaderboard dummy akan otomatis di-reset setiap hari pukul 00:00 WIB dengan komisi acak.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="form-group">
+                  <label className="form-label">Minimal Komisi (Rp)</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={minCommission}
+                    onChange={e => updateSetting('leaderboard_min_commission', e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="50000"
+                    min={0}
+                    style={{ fontSize: '1.05rem', fontWeight: 600 }}
+                  />
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Nilai terendah komisi acak yang bisa muncul.
+                  </p>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Maksimal Komisi (Rp)</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={maxCommission}
+                    onChange={e => updateSetting('leaderboard_max_commission', e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="500000"
+                    min={0}
+                    style={{ fontSize: '1.05rem', fontWeight: 600 }}
+                  />
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Nilai tertinggi komisi acak yang bisa muncul.
+                  </p>
+                </div>
+              </div>
+
+              {/* Preview range */}
+              <div style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px',
+                marginTop: '8px',
+              }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  💡 Info Reset Otomatis
+                </div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                  <div>Setiap hari pada jam <strong>00:00 WIB</strong>, semua komisi mitra dummy akan diacak ulang.</div>
+                  <div style={{ marginTop: '6px' }}>
+                    Range komisi: <strong style={{ color: 'var(--brand-success)' }}>{formatPrice(Number(minCommission) || 0)}</strong>
+                    {' '}—{' '}
+                    <strong style={{ color: 'var(--brand-success)' }}>{formatPrice(Number(maxCommission) || 0)}</strong>
+                  </div>
+                  <div style={{ marginTop: '6px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Nilai akan dibulatkan ke kelipatan Rp 1.000 dan ranking otomatis diurutkan dari komisi tertinggi.
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Info box */}
             <div style={{
               background: 'rgba(59,130,246,0.08)',
@@ -173,9 +278,9 @@ export default function SettingsPage() {
                 ℹ️ Di mana nomor ini ditampilkan?
               </div>
               <ul style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, paddingLeft: '20px', lineHeight: 1.8 }}>
-                <li><strong>Halaman Utama (Footer)</strong> — Link "Butuh Bantuan? Chat WA Kami"</li>
-                <li><strong>Halaman Pesanan Buyer</strong> — Tombol "Chat WhatsApp Admin" untuk complaint</li>
-                <li><strong>Dashboard Mitra</strong> — Tombol "Laporkan Masalah Buyer" untuk eskalasi</li>
+                <li><strong>Halaman Utama (Footer)</strong> — Link &quot;Butuh Bantuan? Chat WA Kami&quot;</li>
+                <li><strong>Halaman Pesanan Buyer</strong> — Tombol &quot;Chat WhatsApp Admin&quot; untuk complaint</li>
+                <li><strong>Dashboard Mitra</strong> — Tombol &quot;Laporkan Masalah Buyer&quot; untuk eskalasi</li>
               </ul>
             </div>
 

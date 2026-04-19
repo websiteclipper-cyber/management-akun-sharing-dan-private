@@ -19,9 +19,13 @@ export default function LeaderboardPage() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editEntry, setEditEntry] = useState<LeaderboardEntry | null>(null);
   const [message, setMessage] = useState('');
+  const [lastReset, setLastReset] = useState('');
+  const [minCommission, setMinCommission] = useState('50000');
+  const [maxCommission, setMaxCommission] = useState('500000');
   const [form, setForm] = useState({
     mitra_name: '',
     commission_today: '',
@@ -45,7 +49,29 @@ export default function LeaderboardPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadEntries(); }, [loadEntries]);
+  const loadSettings = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('admin_token') || '';
+      const res = await fetch('/api/admin/settings', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.settings) {
+        for (const s of data.settings) {
+          if (s.key === 'leaderboard_min_commission') setMinCommission(s.value);
+          if (s.key === 'leaderboard_max_commission') setMaxCommission(s.value);
+          if (s.key === 'leaderboard_last_reset') setLastReset(s.value);
+        }
+      }
+    } catch {
+      // use defaults
+    }
+  }, []);
+
+  useEffect(() => {
+    loadEntries();
+    loadSettings();
+  }, [loadEntries, loadSettings]);
 
   function resetForm() {
     setForm({ mitra_name: '', commission_today: '', rank_position: '', avatar_emoji: '🤝', is_active: true });
@@ -142,6 +168,33 @@ export default function LeaderboardPage() {
     }
   }
 
+  async function handleManualReset() {
+    if (!confirm('Reset semua komisi mitra dengan nilai acak sekarang?')) return;
+    setResetting(true);
+    setMessage('');
+
+    try {
+      const token = localStorage.getItem('admin_token') || '';
+      const res = await fetch('/api/admin/leaderboard', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setMessage(`✅ ${data.message}`);
+        loadEntries();
+        loadSettings();
+        setTimeout(() => setMessage(''), 5000);
+      } else {
+        setMessage('❌ Error: ' + (data.error || 'Unknown'));
+      }
+    } catch {
+      setMessage('❌ Gagal melakukan reset');
+    }
+    setResetting(false);
+  }
+
   function formatPrice(n: number) {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
   }
@@ -151,6 +204,14 @@ export default function LeaderboardPage() {
       <div className="admin-topbar">
         <h2>🏆 Leaderboard Mitra (Dummy)</h2>
         <div className="admin-topbar-actions">
+          <button
+            className="btn btn-secondary"
+            onClick={handleManualReset}
+            disabled={resetting || entries.filter(e => e.is_active).length === 0}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            {resetting ? <span className="loading-spinner" /> : '🔄'} Reset Acak Sekarang
+          </button>
           <button className="btn btn-primary" onClick={openCreate}>
             + Tambah Mitra Dummy
           </button>
@@ -158,6 +219,53 @@ export default function LeaderboardPage() {
       </div>
 
       <div style={{ padding: '28px' }}>
+        {/* Auto-Reset Info Box */}
+        <div style={{
+          background: 'rgba(59,130,246,0.06)',
+          border: '1px solid rgba(59,130,246,0.15)',
+          borderRadius: 'var(--radius-md)',
+          padding: '16px 20px',
+          marginBottom: '16px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '20px',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#3b82f6', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              ⏰ Auto-Reset Harian
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+              Setiap <strong>00:00 WIB</strong>, komisi diacak dalam range{' '}
+              <strong style={{ color: 'var(--brand-success)' }}>
+                {formatPrice(Number(minCommission))}
+              </strong>
+              {' '}—{' '}
+              <strong style={{ color: 'var(--brand-success)' }}>
+                {formatPrice(Number(maxCommission))}
+              </strong>
+              {' '}dan ranking otomatis diurutkan.
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+            {lastReset && (
+              <div style={{
+                fontSize: '0.75rem', color: 'var(--text-muted)',
+                background: 'var(--bg-secondary)', padding: '4px 10px', borderRadius: '8px',
+              }}>
+                Terakhir reset: <strong>{lastReset}</strong>
+              </div>
+            )}
+            <a
+              href="/admin/settings"
+              style={{ fontSize: '0.75rem', color: '#3b82f6', textDecoration: 'none', fontWeight: 500 }}
+            >
+              Ubah range komisi →
+            </a>
+          </div>
+        </div>
+
         {/* Info Box */}
         <div style={{
           background: 'rgba(234,179,8,0.08)',
@@ -172,7 +280,7 @@ export default function LeaderboardPage() {
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
             Data di bawah ini bukan perolehan komisi riil. Ini adalah data <strong>fiktif</strong> yang
             akan ditampilkan di halaman utama website sebagai &quot;Leaderboard Komisi Hari Ini&quot;
-            untuk menarik minat calon mitra baru. Anda bisa mengatur nama, jumlah komisi, dan ranking sesuka hati.
+            untuk menarik minat calon mitra baru. Komisi akan otomatis diacak setiap hari, atau Anda juga bisa menekan tombol <strong>&quot;Reset Acak Sekarang&quot;</strong> kapan saja.
           </p>
         </div>
 
