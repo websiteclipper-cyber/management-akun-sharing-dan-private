@@ -95,7 +95,14 @@ export default function ProductsPage() {
                           onClick={async () => {
                             if (confirm(`Apakah Anda yakin ingin MENGHAPUS produk "${p.name}" permanen dari database?\n\nTindakan ini tidak dapat dibatalkan.`)) {
                               const result = await adminDelete('products', { id: p.id });
-                              if (result.error) { alert('Gagal: ' + result.error.message); return; }
+                              if (result.error) { 
+                                if (result.error.message.includes('violates foreign key constraint') || result.error.message.includes('fkey')) {
+                                  alert(`GAGAL MENGHAPUS: Produk "${p.name}" tidak dapat dihapus karena masih ada Stok Akun atau Pesanan yang terhubung ke produk ini.\n\nSolusi:\n1. Hapus Stok Akun terkait terlebih dahulu.\n2. ATAU cukup gunakan fitur "Nonaktifkan" agar produk tidak tampil di toko tanpa merusak riwayat data.`);
+                                } else {
+                                  alert('Gagal menghapus produk: ' + result.error.message); 
+                                }
+                                return; 
+                              }
                               loadProducts();
                             }
                           }}
