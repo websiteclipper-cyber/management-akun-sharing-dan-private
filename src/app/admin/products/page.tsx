@@ -12,6 +12,7 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Product | null>(null);
   const [isCopy, setIsCopy] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
 
   useEffect(() => { loadProducts(); }, []);
 
@@ -35,7 +36,34 @@ export default function ProductsPage() {
         {loading ? (
           <div className="loading-page"><div className="loading-spinner" /></div>
         ) : (
-          <div className="table-container">
+          <>
+            <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '0' }}>
+              <button 
+                onClick={() => setActiveTab('active')} 
+                style={{ 
+                  background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', 
+                  fontWeight: activeTab === 'active' ? 600 : 400, 
+                  color: activeTab === 'active' ? 'var(--brand-primary)' : 'var(--text-muted)',
+                  borderBottom: activeTab === 'active' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+                  paddingBottom: '12px', marginBottom: '-1px'
+                }}
+              >
+                Produk Aktif ({products.filter(p => p.status === 'active').length})
+              </button>
+              <button 
+                onClick={() => setActiveTab('inactive')} 
+                style={{ 
+                  background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', 
+                  fontWeight: activeTab === 'inactive' ? 600 : 400, 
+                  color: activeTab === 'inactive' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  borderBottom: activeTab === 'inactive' ? '2px solid var(--text-primary)' : '2px solid transparent',
+                  paddingBottom: '12px', marginBottom: '-1px'
+                }}
+              >
+                Diarsipkan / Nonaktif ({products.filter(p => p.status === 'inactive').length})
+              </button>
+            </div>
+            <div className="table-container">
             <table className="table">
               <thead>
                 <tr>
@@ -52,7 +80,7 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {products.map(p => (
+                {products.filter(p => p.status === activeTab).map(p => (
                   <tr key={p.id}>
                     <td style={{ fontFamily: 'monospace', color: 'var(--brand-primary-light)' }}>{p.code}</td>
                     <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{p.name}</td>
@@ -113,12 +141,13 @@ export default function ProductsPage() {
                     </td>
                   </tr>
                 ))}
-                {products.length === 0 && (
-                  <tr><td colSpan={10} className="empty-state"><div className="icon">📦</div><h3>Belum ada produk</h3></td></tr>
+                {products.filter(p => p.status === activeTab).length === 0 && (
+                  <tr><td colSpan={10} className="empty-state"><div className="icon">📦</div><h3>Belum ada produk di kategori ini</h3></td></tr>
                 )}
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
