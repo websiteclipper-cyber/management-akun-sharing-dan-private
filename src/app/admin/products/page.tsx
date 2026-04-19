@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { adminUpdate, adminInsert } from '@/lib/adminApi';
+import { adminUpdate, adminInsert, adminDelete } from '@/lib/adminApi';
 import { Product } from '@/lib/types';
 import Link from 'next/link';
 
@@ -78,9 +78,9 @@ export default function ProductsPage() {
                         <button className="btn btn-secondary btn-sm" onClick={() => { setEditItem(p); setIsCopy(false); setShowForm(true); }}>Edit</button>
                         <button className="btn btn-info btn-sm" onClick={() => { setEditItem(p); setIsCopy(true); setShowForm(true); }}>Copy</button>
                         <button 
-                          className="btn btn-danger btn-sm"
+                          className={`btn btn-sm ${p.status === 'active' ? 'btn-danger' : 'btn-success'}`}
                           onClick={async () => {
-                            if (confirm('Nonaktifkan produk ini?')) {
+                            if (confirm(p.status === 'active' ? 'Nonaktifkan produk ini?' : 'Aktifkan produk ini?')) {
                               const result = await adminUpdate('products', { status: p.status === 'active' ? 'inactive' : 'active', updated_at: new Date().toISOString() }, { id: p.id });
                               if (result.error) { alert('Gagal: ' + result.error.message); return; }
                               loadProducts();
@@ -88,6 +88,19 @@ export default function ProductsPage() {
                           }}
                         >
                           {p.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
+                        </button>
+                        <button 
+                          className="btn btn-danger btn-sm"
+                          style={{ backgroundColor: '#dc2626' }}
+                          onClick={async () => {
+                            if (confirm(`Apakah Anda yakin ingin MENGHAPUS produk "${p.name}" permanen dari database?\n\nTindakan ini tidak dapat dibatalkan.`)) {
+                              const result = await adminDelete('products', { id: p.id });
+                              if (result.error) { alert('Gagal: ' + result.error.message); return; }
+                              loadProducts();
+                            }
+                          }}
+                        >
+                          Hapus
                         </button>
                       </div>
                     </td>
