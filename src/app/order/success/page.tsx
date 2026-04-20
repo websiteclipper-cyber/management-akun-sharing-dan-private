@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 
 export default function PaymentSuccessWrapper() {
@@ -14,6 +15,7 @@ export default function PaymentSuccessWrapper() {
 }
 
 function PaymentSuccessPage() {
+  const { t, formatPrice } = useLocale();
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderNumber = searchParams.get('order') || '';
@@ -119,10 +121,6 @@ function PaymentSuccessPage() {
     };
   }, [orderNumber, status, checkOrderStatus, checkPakasirDirectly, router]);
 
-  function formatPrice(price: number) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
-  }
-
   if (!orderNumber) return null;
 
   return (
@@ -143,10 +141,10 @@ function PaymentSuccessPage() {
             }} />
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-            <h2 style={{ marginBottom: '8px', fontSize: '1.3rem' }}>Memproses Pembayaran...</h2>
+            <h2 style={{ marginBottom: '8px', fontSize: '1.3rem' }}>{t('success_processing')}</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.9rem' }}>
-              Kami sedang menunggu konfirmasi pembayaran Anda.
-              <br />Halaman ini akan otomatis berubah begitu pembayaran diterima.
+              {t('success_waiting')}
+              <br />{t('success_auto_update')}
             </p>
 
             {/* Order info */}
@@ -181,16 +179,16 @@ function PaymentSuccessPage() {
             </div>
 
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Mengecek status... ({pollCount}x)
+              {t('success_checking')} ({pollCount}x)
             </p>
 
             {showManualCheck && (
               <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 'var(--radius-md)' }}>
                 <p style={{ fontSize: '0.85rem', color: '#eab308', marginBottom: '12px' }}>
-                  ⏳ Pembayaran belum terdeteksi. Jika sudah membayar, coba cek secara manual:
+                  {t('success_payment_timeout')}
                 </p>
                 <Link href={`/buyer/lookup?order=${orderNumber}`} className="btn btn-secondary btn-sm">
-                  📋 Cek Status Manual
+                  {t('success_manual_check')}
                 </Link>
               </div>
             )}
@@ -201,13 +199,13 @@ function PaymentSuccessPage() {
           /* ===== PAID BUT ACCOUNT NOT YET ASSIGNED ===== */
           <div className="order-form-card" style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '3rem', marginBottom: '16px' }}>✅</div>
-            <h2 style={{ marginBottom: '8px', color: 'var(--brand-success)' }}>Pembayaran Berhasil!</h2>
+            <h2 style={{ marginBottom: '8px', color: 'var(--brand-success)' }}>{t('success_paid')}</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.9rem' }}>
-              Pembayaran Anda telah diterima. Akun sedang disiapkan oleh sistem, mohon tunggu sebentar...
+              {t('success_preparing')}
             </p>
             <div className="loading-spinner" style={{ margin: '0 auto 20px' }} />
             <Link href={`/buyer/lookup?order=${orderNumber}`} className="btn btn-primary">
-              📋 Lihat Detail Pesanan
+              {t('success_view_orders')}
             </Link>
           </div>
         )}
@@ -223,10 +221,10 @@ function PaymentSuccessPage() {
                 fontSize: '2rem',
               }}>🎉</div>
               <h2 style={{ marginBottom: '4px', color: 'var(--brand-success)', fontSize: '1.4rem' }}>
-                Pembayaran Berhasil!
+                {t('success_paid')}
               </h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                Berikut akun premium Anda. Simpan dengan baik!
+                {t('success_save')}
               </p>
             </div>
 
@@ -244,14 +242,14 @@ function PaymentSuccessPage() {
                   {(product?.name as string) || '-'}
                 </div>
               </div>
-              <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>✓ LUNAS</span>
+              <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>{t('success_paid_label')}</span>
             </div>
 
             {/* Account Credentials */}
             {assignments.length > 0 ? (
               <div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                  🔑 Akun Premium Anda
+                  {t('success_account_title')}
                 </div>
                 {assignments.map((a, i) => {
                   const stock = a.stock_account as Record<string, unknown>;
@@ -265,35 +263,44 @@ function PaymentSuccessPage() {
                     }}>
                       {/* Email / Username */}
                       <CredentialField
-                        label="Email / Username"
+                        label={t('cred_email')}
                         value={stock?.account_identifier as string}
+                        copyLabel={t('cred_copy')}
+                        copiedLabel={t('cred_copied')}
                       />
 
                       {/* Password */}
                       <CredentialFieldDecrypt
-                        label="Password"
+                        label={t('cred_password')}
                         encrypted={stock?.account_secret_encrypted as string}
+                        revealLabel={t('cred_reveal')}
+                        copyLabel={t('cred_copy')}
+                        copiedLabel={t('cred_copied')}
                       />
 
                       {/* Profile Info */}
                       {Boolean(stock?.profile_info) && (
                         <CredentialField
-                          label="Profil"
+                          label={t('cred_profile')}
                           value={String(stock.profile_info)}
+                          copyLabel={t('cred_copy')}
+                          copiedLabel={t('cred_copied')}
                         />
                       )}
 
                       {/* PIN */}
                       {Boolean(stock?.pin_info) && (
                         <CredentialField
-                          label="PIN"
+                          label={t('cred_pin')}
                           value={String(stock.pin_info)}
+                          copyLabel={t('cred_copy')}
+                          copiedLabel={t('cred_copied')}
                         />
                       )}
 
                       {/* Expiry */}
                       <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.15)', borderRadius: '8px', fontSize: '0.8rem', color: '#eab308' }}>
-                        ⏰ Berlaku hingga: <strong>{new Date(a.expired_at as string).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
+                        {t('success_valid_until')} <strong>{new Date(a.expired_at as string).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
                       </div>
                     </div>
                   );
@@ -301,7 +308,7 @@ function PaymentSuccessPage() {
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
-                <p>Akun sedang disiapkan oleh admin...</p>
+                <p>{t('success_admin_preparing')}</p>
                 <div className="loading-spinner" style={{ margin: '12px auto' }} />
               </div>
             )}
@@ -312,12 +319,12 @@ function PaymentSuccessPage() {
                 background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)',
                 borderRadius: 'var(--radius-md)', padding: '14px 16px', marginTop: '16px', marginBottom: '20px',
               }}>
-                <div style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600, marginBottom: '4px' }}>⚠️ Penting! (Akun Sharing)</div>
+                <div style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600, marginBottom: '4px' }}>{t('success_sharing_warning_title')}</div>
                 <ul style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, paddingLeft: '16px', lineHeight: 1.6 }}>
-                  <li><strong style={{ color: '#ef4444' }}>DILARANG</strong> mengubah password, email, atau profil akun</li>
-                  <li>Akun ini digunakan bersama — jangan ubah pengaturan apapun</li>
-                  <li>Pelanggaran akan mengakibatkan akun diblokir tanpa pengembalian dana</li>
-                  <li>Screenshot halaman ini untuk referensi</li>
+                  <li><strong style={{ color: '#ef4444' }}>{t('success_sharing_rule_1').split(' ')[0]}</strong> {t('success_sharing_rule_1').substring(t('success_sharing_rule_1').indexOf(' ') + 1)}</li>
+                  <li>{t('success_sharing_rule_2')}</li>
+                  <li>{t('success_sharing_rule_3')}</li>
+                  <li>{t('success_sharing_rule_4')}</li>
                 </ul>
               </div>
             ) : (
@@ -325,12 +332,12 @@ function PaymentSuccessPage() {
                 background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.15)',
                 borderRadius: 'var(--radius-md)', padding: '14px 16px', marginTop: '16px', marginBottom: '20px',
               }}>
-                <div style={{ fontSize: '0.8rem', color: '#eab308', fontWeight: 600, marginBottom: '4px' }}>📌 Info Penting (Akun Private)</div>
+                <div style={{ fontSize: '0.8rem', color: '#eab308', fontWeight: 600, marginBottom: '4px' }}>{t('success_private_warning_title')}</div>
                 <ul style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, paddingLeft: '16px', lineHeight: 1.6 }}>
-                  <li>Akun ini sepenuhnya milik Anda — bebas digunakan sesuka hati</li>
-                  <li>Jika Anda <strong style={{ color: '#eab308' }}>mengganti password</strong>, garansi akun otomatis <strong style={{ color: '#ef4444' }}>hangus</strong></li>
-                  <li>Kami sarankan untuk <strong>tidak mengubah sandi</strong> selama masa aktif agar garansi tetap berlaku</li>
-                  <li>Screenshot halaman ini untuk referensi</li>
+                  <li>{t('success_private_rule_1')}</li>
+                  <li>{t('success_private_rule_2')}</li>
+                  <li>{t('success_private_rule_3')}</li>
+                  <li>{t('success_private_rule_4')}</li>
                 </ul>
               </div>
             )}
@@ -338,10 +345,10 @@ function PaymentSuccessPage() {
             {/* Actions */}
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <Link href={`/buyer/lookup?order=${orderNumber}`} className="btn btn-primary">
-                📋 Lihat di Pesanan Saya
+                {t('success_view_orders')}
               </Link>
               <Link href="/" className="btn btn-secondary">
-                🏠 Kembali
+                {t('success_back_home')}
               </Link>
             </div>
           </div>
@@ -350,9 +357,9 @@ function PaymentSuccessPage() {
         {status === 'error' && (
           <div className="order-form-card" style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '3rem', marginBottom: '16px' }}>❌</div>
-            <h2>Pesanan Tidak Ditemukan</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Order "{orderNumber}" tidak ditemukan di sistem kami.</p>
-            <Link href="/" className="btn btn-primary">Kembali ke Beranda</Link>
+            <h2>{t('success_not_found')}</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>{t('success_not_found_desc', { order: orderNumber })}</p>
+            <Link href="/" className="btn btn-primary">{t('success_back')}</Link>
           </div>
         )}
       </div>
@@ -362,7 +369,7 @@ function PaymentSuccessPage() {
 
 /* ===== Credential Components ===== */
 
-function CredentialField({ label, value }: { label: string; value: string }) {
+function CredentialField({ label, value, copyLabel, copiedLabel }: { label: string; value: string; copyLabel?: string; copiedLabel?: string }) {
   const [copied, setCopied] = useState(false);
 
   function copy() {
@@ -391,13 +398,13 @@ function CredentialField({ label, value }: { label: string; value: string }) {
           fontWeight: 600, transition: 'all 0.2s', whiteSpace: 'nowrap',
         }}
       >
-        {copied ? '✅ Copied' : '📋 Copy'}
+        {copied ? (copiedLabel || '✅ Copied') : (copyLabel || '📋 Copy')}
       </button>
     </div>
   );
 }
 
-function CredentialFieldDecrypt({ label, encrypted }: { label: string; encrypted: string }) {
+function CredentialFieldDecrypt({ label, encrypted, revealLabel, copyLabel, copiedLabel }: { label: string; encrypted: string; revealLabel?: string; copyLabel?: string; copiedLabel?: string }) {
   const [revealed, setRevealed] = useState(false);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -449,7 +456,7 @@ function CredentialFieldDecrypt({ label, encrypted }: { label: string; encrypted
               cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap',
             }}
           >
-            {loading ? '...' : '👁️ Lihat'}
+            {loading ? '...' : (revealLabel || '👁️ Lihat')}
           </button>
         ) : (
           <button
@@ -462,7 +469,7 @@ function CredentialFieldDecrypt({ label, encrypted }: { label: string; encrypted
               fontWeight: 600, whiteSpace: 'nowrap',
             }}
           >
-            {copied ? '✅ Copied' : '📋 Copy'}
+            {copied ? (copiedLabel || '✅ Copied') : (copyLabel || '📋 Copy')}
           </button>
         )}
       </div>

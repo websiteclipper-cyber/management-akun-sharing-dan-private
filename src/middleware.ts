@@ -1,6 +1,41 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Country → locale + currency mapping (lightweight version for middleware/edge)
+const COUNTRY_LOCALE: Record<string, { locale: string; currency: string }> = {
+  ID: { locale: 'id', currency: 'IDR' },
+  MY: { locale: 'ms', currency: 'MYR' },
+  SG: { locale: 'en', currency: 'SGD' },
+  TH: { locale: 'th', currency: 'THB' },
+  VN: { locale: 'vi', currency: 'VND' },
+  PH: { locale: 'en', currency: 'PHP' },
+  BN: { locale: 'ms', currency: 'BND' },
+  JP: { locale: 'ja', currency: 'JPY' },
+  KR: { locale: 'ko', currency: 'KRW' },
+  CN: { locale: 'zh', currency: 'CNY' },
+  TW: { locale: 'zh', currency: 'TWD' },
+  HK: { locale: 'zh', currency: 'HKD' },
+  IN: { locale: 'en', currency: 'INR' },
+  SA: { locale: 'ar', currency: 'SAR' },
+  AE: { locale: 'ar', currency: 'AED' },
+  QA: { locale: 'ar', currency: 'QAR' },
+  KW: { locale: 'ar', currency: 'KWD' },
+  US: { locale: 'en', currency: 'USD' },
+  CA: { locale: 'en', currency: 'CAD' },
+  GB: { locale: 'en', currency: 'GBP' },
+  AU: { locale: 'en', currency: 'AUD' },
+  NZ: { locale: 'en', currency: 'NZD' },
+  DE: { locale: 'en', currency: 'EUR' },
+  FR: { locale: 'en', currency: 'EUR' },
+  NL: { locale: 'en', currency: 'EUR' },
+  IT: { locale: 'en', currency: 'EUR' },
+  ES: { locale: 'en', currency: 'EUR' },
+  BR: { locale: 'en', currency: 'BRL' },
+  MX: { locale: 'en', currency: 'MXN' },
+  RU: { locale: 'en', currency: 'RUB' },
+  TR: { locale: 'en', currency: 'TRY' },
+};
+
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host');
   
@@ -13,8 +48,36 @@ export function middleware(request: NextRequest) {
     
     return NextResponse.redirect(url, 301); // 301 Moved Permanently
   }
+
+  const response = NextResponse.next();
+
+  // ─── Auto-detect country and set locale/currency cookies ───
+  // Only set cookies if they don't already exist (user hasn't manually chosen)
+  const existingLocale = request.cookies.get('pp_locale')?.value;
   
-  return NextResponse.next();
+  if (!existingLocale) {
+    // Vercel provides this header automatically on Edge
+    const country = request.headers.get('x-vercel-ip-country') || 'ID';
+    const config = COUNTRY_LOCALE[country] || { locale: 'id', currency: 'IDR' };
+
+    response.cookies.set('pp_locale', config.locale, {
+      path: '/',
+      maxAge: 365 * 24 * 60 * 60, // 1 year
+      sameSite: 'lax',
+    });
+    response.cookies.set('pp_currency', config.currency, {
+      path: '/',
+      maxAge: 365 * 24 * 60 * 60,
+      sameSite: 'lax',
+    });
+    response.cookies.set('pp_country', country, {
+      path: '/',
+      maxAge: 365 * 24 * 60 * 60,
+      sameSite: 'lax',
+    });
+  }
+  
+  return response;
 }
 
 export const config = {

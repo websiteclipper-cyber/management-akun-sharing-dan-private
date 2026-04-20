@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useLocale } from '@/lib/locale-context';
 
 interface ActiveCampaign {
   id: string;
@@ -23,6 +24,7 @@ interface ActiveCampaign {
 }
 
 export default function PromoPopup() {
+  const { t, formatPrice } = useLocale();
   const [campaign, setCampaign] = useState<ActiveCampaign | null>(null);
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -99,18 +101,14 @@ export default function PromoPopup() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function formatPrice(n: number) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
-  }
-
   function getRemainingDays(): string {
     if (!campaign) return '';
     const end = new Date(campaign.valid_until);
     const now = new Date();
     const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff <= 0) return 'Hari terakhir!';
-    if (diff === 1) return 'Berakhir besok!';
-    return `${diff} hari lagi`;
+    if (diff <= 0) return t('promo_ends_today');
+    if (diff === 1) return t('promo_ends_tomorrow');
+    return `${diff} ${t('promo_ends')}`;
   }
 
   if (!campaign || !visible) return null;
@@ -197,7 +195,7 @@ export default function PromoPopup() {
               color: 'rgba(255,255,255,0.4)',
               marginBottom: '8px',
             }}>
-              ✦ KODE PROMO EKSKLUSIF ✦
+              {t('promo_exclusive')}
             </div>
             <div style={{
               fontSize: '2.2rem',
@@ -300,7 +298,7 @@ export default function PromoPopup() {
                   color: '#aaa',
                   marginBottom: '2px',
                   fontWeight: 600,
-                }}>Harga Normal</div>
+                }}>{t('promo_normal_price')}</div>
                 <div style={{
                   fontSize: '1.3rem',
                   fontWeight: 800,
@@ -327,7 +325,7 @@ export default function PromoPopup() {
                   color: '#111',
                   marginBottom: '2px',
                   fontWeight: 700,
-                }}>Dengan Kode</div>
+                }}>{t('promo_with_code')}</div>
                 <div style={{
                   fontSize: '1.6rem',
                   fontWeight: 900,
@@ -351,7 +349,7 @@ export default function PromoPopup() {
               fontWeight: 700,
               marginBottom: '20px',
             }}>
-              💰 HEMAT {formatPrice((campaign.original_price || 0) - (campaign.final_price || 0))}
+              {t('promo_save')} {formatPrice((campaign.original_price || 0) - (campaign.final_price || 0))}
             </div>
 
             {/* Copy Button */}
@@ -378,9 +376,9 @@ export default function PromoPopup() {
               onMouseOut={(e) => { if (!copied) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#111'; } }}
             >
               {copied ? (
-                <><span>✓</span> KODE TERCOPY!</>
+                <>{t('promo_copied')}</>
               ) : (
-                <><span>📋</span> SALIN KODE PROMO</>
+                <>{t('promo_copy')}</>
               )}
             </button>
 
@@ -390,7 +388,7 @@ export default function PromoPopup() {
               marginTop: '12px',
               marginBottom: 0,
             }}>
-              Masukkan kode saat checkout untuk mendapatkan potongan
+              {t('promo_instruction')}
             </p>
           </div>
         </div>

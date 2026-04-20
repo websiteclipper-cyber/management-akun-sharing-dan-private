@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
+import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 
 interface BuyerSession {
@@ -24,6 +25,7 @@ interface DiscountInfo {
 }
 
 export default function OrderPage() {
+  const { t, formatPrice, isIDR, currency } = useLocale();
   const params = useParams();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
@@ -102,12 +104,12 @@ export default function OrderPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setDiscountError(data.error || 'Kode diskon tidak valid');
+        setDiscountError(data.error || t('order_promo_invalid'));
       } else {
         setDiscountInfo(data);
       }
     } catch {
-      setDiscountError('Gagal memvalidasi kode diskon');
+      setDiscountError(t('order_promo_error'));
     } finally {
       setDiscountLoading(false);
     }
@@ -147,10 +149,10 @@ export default function OrderPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Gagal membuat pesanan'); setSubmitting(false); return; }
+      if (!res.ok) { setError(data.error || t('order_submit_error')); setSubmitting(false); return; }
       setResult({ order_number: data.order_number, amount: data.amount, discount_amount: data.discount_amount });
     } catch {
-      setError('Terjadi kesalahan koneksi');
+      setError(t('order_connection_error'));
       setSubmitting(false);
     }
   }
@@ -163,12 +165,12 @@ export default function OrderPage() {
     window.location.href = pakasirUrl;
   }
 
-  function formatPrice(price: number) {
+  function formatPriceIDR(price: number) {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
   }
 
   if (loading) return <div className="public-layout"><div className="loading-page"><div className="loading-spinner" /></div></div>;
-  if (!product) return <div className="public-layout"><div className="empty-state"><h3>Produk tidak ditemukan</h3><Link href="/" className="btn btn-primary">Kembali</Link></div></div>;
+  if (!product) return <div className="public-layout"><div className="empty-state"><h3>{t('order_product_notfound')}</h3><Link href="/" className="btn btn-primary">{t('order_back_home')}</Link></div></div>;
 
   // Newcomer price takes priority if buyer is first-time and product has newcomer_price
   const hasNewcomerPrice = isNewcomer && product.newcomer_price !== null && product.newcomer_price !== undefined;
@@ -193,9 +195,9 @@ export default function OrderPage() {
           <div className="order-form-card">
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>💳</div>
-              <h2 style={{ marginBottom: '8px' }}>Lanjutkan Pembayaran</h2>
+              <h2 style={{ marginBottom: '8px' }}>{t('payment_continue')}</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                Pesanan berhasil dibuat! Silakan lanjutkan pembayaran
+                {t('payment_created')}
               </p>
             </div>
 
@@ -249,12 +251,12 @@ export default function OrderPage() {
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
                   <span style={{ fontSize: '1.3rem' }}>⚡</span>
-                  <span>Bayar via QRIS / Virtual Account</span>
+                  <span>{t('payment_pay_qris')}</span>
                 </span>
               </button>
               <div style={{ textAlign: 'center', marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--brand-success)', fontWeight: 600 }}>✓ Otomatis</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>— Akun langsung dikirim setelah bayar</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--brand-success)', fontWeight: 600 }}>{t('payment_auto')}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{t('payment_auto_desc')}</span>
               </div>
             </div>
 
@@ -278,7 +280,7 @@ export default function OrderPage() {
                 href={`/buyer/lookup?order=${result.order_number}`}
                 style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textDecoration: 'underline' }}
               >
-                Bayar nanti? Cek status pesanan →
+                {t('payment_later')}
               </Link>
             </div>
           </div>
@@ -298,9 +300,9 @@ export default function OrderPage() {
             onMouseOver={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
             onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
             >
-              ← Kembali
+              {t('order_back')}
             </Link>
-            <h2>Konfirmasi Pesanan</h2>
+            <h2>{t('order_confirm')}</h2>
             <div className="order-product-summary">
               <div className="platform" style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--brand-accent)' }}>
                 {product.platform_name}
@@ -335,7 +337,7 @@ export default function OrderPage() {
                 ) : (
                   <span className="price">{formatPrice(product.price)}</span>
                 )}
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/ {product.duration_days} hari</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/ {product.duration_days} {t('days')}</span>
                 <span className={`badge ${product.account_type === 'sharing' ? 'badge-info' : 'badge-primary'}`}>{product.account_type}</span>
               </div>
             </div>
@@ -343,15 +345,15 @@ export default function OrderPage() {
             {/* Buyer Info */}
             <div style={{ background: 'rgba(108,92,231,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-primary)', padding: '16px', marginBottom: '20px' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                Data Pembeli
+                {t('order_buyer_data')}
               </div>
               <div style={{ display: 'grid', gap: '8px', fontSize: '0.9rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Nama</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{t('order_name')}</span>
                   <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{buyer?.name}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>WhatsApp</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{t('order_whatsapp')}</span>
                   <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{buyer?.phone}</span>
                 </div>
               </div>
@@ -371,7 +373,7 @@ export default function OrderPage() {
                 letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '10px',
                 display: 'flex', alignItems: 'center', gap: '6px',
               }}>
-                <span>🎟️</span> Kode Promo / Voucher
+                <span>🎟️</span> {t('order_promo_code')}
               </div>
 
               {discountInfo ? (
@@ -411,7 +413,7 @@ export default function OrderPage() {
                     onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(248,113,113,0.2)')}
                     onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(248,113,113,0.1)')}
                   >
-                    Hapus
+                    {t('order_remove')}
                   </button>
                 </div>
               ) : (
@@ -423,7 +425,7 @@ export default function OrderPage() {
                       className="form-input"
                       value={discountCode}
                       onChange={(e) => { setDiscountCode(e.target.value.toUpperCase()); setDiscountError(''); }}
-                      placeholder="Masukkan kode promo..."
+                      placeholder={t('order_enter_promo')}
                       style={{
                         flex: 1, fontWeight: 600, letterSpacing: '1px',
                         textTransform: 'uppercase', fontSize: '0.9rem',
@@ -440,7 +442,7 @@ export default function OrderPage() {
                         opacity: discountLoading || !discountCode.trim() ? 0.5 : 1,
                       }}
                     >
-                      {discountLoading ? <span className="loading-spinner" style={{ width: '16px', height: '16px' }} /> : 'Apply'}
+                      {discountLoading ? <span className="loading-spinner" style={{ width: '16px', height: '16px' }} /> : t('order_apply')}
                     </button>
                   </div>
                   {discountError && (
@@ -468,31 +470,31 @@ export default function OrderPage() {
                 fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
                 letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '10px',
               }}>
-                Ringkasan Harga
+                {t('order_price_summary')}
               </div>
               <div style={{ display: 'grid', gap: '8px', fontSize: '0.9rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Harga {hasNewcomerPrice ? '(Buyer Baru 🆕)' : promo ? '(Promo)' : ''}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{t('order_price')} {hasNewcomerPrice ? t('order_newcomer_label') : promo ? t('order_promo_label') : ''}</span>
                   <span style={{ color: hasNewcomerPrice ? '#3b82f6' : 'var(--text-primary)', fontWeight: 600 }}>{formatPrice(displayPrice)}</span>
                 </div>
                 {hasNewcomerPrice && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
-                      <span>🎉</span> Harga spesial pembelian pertama!
+                      <span>🎉</span> {t('order_first_purchase_special')}
                     </span>
-                    <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.78rem' }}>Hemat {formatPrice(product.price - displayPrice)}</span>
+                    <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.78rem' }}>{t('order_save')} {formatPrice(product.price - displayPrice)}</span>
                   </div>
                 )}
                 {discountInfo && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontSize: '0.75rem' }}>🎟️</span> Diskon [{discountInfo.code}]
+                      <span style={{ fontSize: '0.75rem' }}>🎟️</span> {t('order_discount')} [{discountInfo.code}]
                     </span>
                     <span style={{ color: '#4ade80', fontWeight: 700 }}>-{formatPrice(discountInfo.discount_amount)}</span>
                   </div>
                 )}
                 <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Total Bayar</span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{t('order_total')}</span>
                   <span style={{
                     color: discountInfo ? '#4ade80' : 'var(--brand-success)',
                     fontWeight: 800, fontSize: '1.1rem',
@@ -507,7 +509,7 @@ export default function OrderPage() {
 
             <form onSubmit={handleSubmit}>
               <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center' }} disabled={submitting}>
-                {submitting ? <span className="loading-spinner" /> : `🛒 Konfirmasi & Bayar ${formatPrice(finalDisplayPrice)}`}
+                {submitting ? <span className="loading-spinner" /> : `${t('order_confirm_pay')} ${formatPrice(finalDisplayPrice)}`}
               </button>
             </form>
 
@@ -517,7 +519,7 @@ export default function OrderPage() {
                 style={{ background: 'transparent', border: 'none', fontSize: '0.8rem', color: 'var(--text-muted)' }}
                 onClick={() => { localStorage.removeItem('buyer_session'); router.push(`/buyer/login?redirect=/order/${product.id}`); }}
               >
-                Bukan {buyer?.name}? Ganti akun
+                {t('order_not_you', { name: buyer?.name || '' })}
               </button>
             </div>
           </div>

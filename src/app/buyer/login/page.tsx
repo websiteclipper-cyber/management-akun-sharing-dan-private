@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 
 export default function BuyerLoginPageWrapper() {
@@ -13,6 +14,7 @@ export default function BuyerLoginPageWrapper() {
 }
 
 function BuyerLoginPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
@@ -34,7 +36,7 @@ function BuyerLoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Login gagal');
+        setError(data.error || t('login_error'));
         setLoading(false);
         return;
       }
@@ -48,7 +50,7 @@ function BuyerLoginPage() {
       // Redirect
       router.push(redirect);
     } catch {
-      setError('Terjadi kesalahan. Silakan coba lagi.');
+      setError(t('login_error_generic'));
       setLoading(false);
     }
   }
@@ -63,9 +65,9 @@ function BuyerLoginPage() {
         <div className="order-form-card" style={{ maxWidth: '440px', width: '100%' }}>
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
             <div style={{ fontSize: '3rem', marginBottom: '12px' }}>👤</div>
-            <h2 style={{ marginBottom: '8px' }}>Login / Daftar Buyer</h2>
+            <h2 style={{ marginBottom: '8px' }}>{t('login_title')}</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              Masukkan data diri Anda untuk melanjutkan pembelian dan melacak pesanan.
+              {t('login_subtitle')}
             </p>
           </div>
 
@@ -73,27 +75,27 @@ function BuyerLoginPage() {
 
           <form onSubmit={handleLogin}>
             <div className="form-group">
-              <label className="form-label">Nama Lengkap</label>
+              <label className="form-label">{t('login_name')}</label>
               <input
                 className="form-input"
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
-                placeholder="Contoh: John Doe"
+                placeholder={t('login_name_placeholder')}
                 required
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">No. WhatsApp</label>
+              <label className="form-label">{t('login_phone')}</label>
               <input
                 className="form-input"
                 value={form.phone}
                 onChange={e => setForm({ ...form, phone: e.target.value })}
-                placeholder="08123456789"
+                placeholder={t('login_phone_placeholder')}
                 required
               />
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                Nomor ini akan digunakan untuk mengirim detail akun Anda via WhatsApp.
+                {t('login_phone_desc')}
               </p>
             </div>
             <button
@@ -102,12 +104,12 @@ function BuyerLoginPage() {
               style={{ width: '100%', justifyContent: 'center' }}
               disabled={loading}
             >
-              {loading ? <span className="loading-spinner" /> : '🚀 Masuk & Lanjutkan'}
+              {loading ? <span className="loading-spinner" /> : t('login_submit')}
             </button>
           </form>
 
           <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Data Anda aman dan hanya digunakan untuk keperluan transaksi.
+            {t('login_safe')}
           </div>
         </div>
       </div>

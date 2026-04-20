@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 
 interface BuyerSession {
@@ -21,6 +22,7 @@ export default function BuyerLookupPageWrapper() {
 }
 
 function BuyerLookupPage() {
+  const { t, formatPrice } = useLocale();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [buyer, setBuyer] = useState<BuyerSession | null>(null);
@@ -98,16 +100,10 @@ function BuyerLookupPage() {
     if (found) {
       selectOrder(found);
     } else {
-      setError('Pesanan tidak ditemukan di akun Anda.');
+      setError(t('lookup_not_found'));
       setSelectedOrder(null);
     }
     setSearching(false);
-  }
-
-
-
-  function formatPrice(price: number) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
   }
 
   function getStatusBadge(status: string) {
@@ -122,6 +118,14 @@ function BuyerLookupPage() {
   const statusSteps = ['pending', 'paid', 'assigned', 'delivered', 'completed'];
   const currentStatusIndex = selectedOrder ? statusSteps.indexOf(selectedOrder.order_status as string) : -1;
 
+  const stepLabels: Record<string, string> = {
+    pending: t('lookup_step_pending'),
+    paid: t('lookup_step_paid'),
+    assigned: t('lookup_step_assigned'),
+    delivered: t('lookup_step_delivered'),
+    completed: t('lookup_step_completed'),
+  };
+
   return (
     <div className="public-layout">
       <header className="public-header" style={{ justifyContent: 'space-between' }}>
@@ -129,7 +133,7 @@ function BuyerLookupPage() {
         {buyer && (
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>👤 {buyer.name}</span>
-            <button className="btn btn-secondary btn-sm" onClick={() => { localStorage.removeItem('buyer_session'); router.push('/buyer/login'); }}>Logout</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => { localStorage.removeItem('buyer_session'); router.push('/buyer/login'); }}>{t('header_logout')}</button>
           </div>
         )}
       </header>
@@ -137,23 +141,23 @@ function BuyerLookupPage() {
       <div className="status-container">
         <div style={{ marginBottom: '16px' }}>
           <Link href="/" className="btn btn-secondary" style={{ display: 'inline-flex', gap: '8px', padding: '8px 16px', fontSize: '0.9rem', borderRadius: 'var(--radius-full)' }}>
-            <span>←</span> Kembali ke Beranda
+            <span>←</span> {t('lookup_back_home')}
           </Link>
         </div>
 
         {/* Search bar */}
         <div className="status-card" style={{ marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '16px' }}>Pesanan Saya</h2>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '16px' }}>{t('lookup_title')}</h2>
           <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
             <input
               className="form-input"
               value={orderNumber}
               onChange={e => setOrderNumber(e.target.value)}
-              placeholder="Cari nomor pesanan (ORD-XXXXXXXX-XXXX)"
+              placeholder={t('lookup_search_placeholder')}
               style={{ flex: 1 }}
             />
             <button type="submit" className="btn btn-primary" disabled={searching}>
-              {searching ? <span className="loading-spinner" /> : 'Cari'}
+              {searching ? <span className="loading-spinner" /> : t('lookup_search')}
             </button>
           </form>
           {error && <div className="login-error" style={{ marginTop: '8px' }}>{error}</div>}
@@ -169,7 +173,7 @@ function BuyerLookupPage() {
                   onClick={() => { setSelectedOrder(null); setAssignments([]); }}
                   style={{ marginBottom: '8px', background: 'transparent', border: 'none', padding: 0, color: 'var(--brand-primary-light)', fontSize: '0.85rem' }}
                 >
-                  ← Kembali ke Daftar
+                  {t('lookup_back_list')}
                 </button>
                 <div style={{ fontFamily: 'monospace', fontSize: '1.1rem', fontWeight: 700, color: 'var(--brand-primary-light)' }}>
                   {selectedOrder.order_number as string}
@@ -184,8 +188,8 @@ function BuyerLookupPage() {
             </div>
 
             <div style={{ display: 'grid', gap: '8px', marginBottom: '20px' }}>
-              <div><span className="form-label">Produk:</span> <span style={{ color: 'var(--text-primary)' }}>{((selectedOrder.product as Record<string, unknown>)?.name as string) || '-'}</span></div>
-              <div><span className="form-label">Total:</span> <span style={{ color: 'var(--brand-success)', fontWeight: 700 }}>{formatPrice(selectedOrder.total_amount as number)}</span></div>
+              <div><span className="form-label">{t('lookup_col_product')}:</span> <span style={{ color: 'var(--text-primary)' }}>{((selectedOrder.product as Record<string, unknown>)?.name as string) || '-'}</span></div>
+              <div><span className="form-label">{t('lookup_col_total')}:</span> <span style={{ color: 'var(--brand-success)', fontWeight: 700 }}>{formatPrice(selectedOrder.total_amount as number)}</span></div>
               <div><span className="form-label">Payment:</span> <span className={`badge ${getStatusBadge(selectedOrder.payment_status as string)}`}>{selectedOrder.payment_status as string}</span></div>
             </div>
 
@@ -193,10 +197,10 @@ function BuyerLookupPage() {
             {(selectedOrder.payment_status === 'pending_payment' || selectedOrder.payment_status === 'pending') && (
               <div style={{ background: 'linear-gradient(135deg, rgba(108,92,231,0.08), rgba(108,92,231,0.02))', border: '1px solid rgba(108,92,231,0.2)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                  ⚡ Bayar Sekarang
+                  {t('lookup_pay_now')}
                 </div>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                  Lanjutkan pembayaran untuk mendapatkan akun premium Anda secara otomatis.
+                  {t('lookup_pay_now_desc')}
                 </p>
                 <button
                   className="btn btn-primary"
@@ -205,30 +209,25 @@ function BuyerLookupPage() {
                     background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)', border: 'none',
                   }}
                   onClick={() => {
-                    const product = selectedOrder.product as Record<string, unknown>;
                     const redirectUrl = `${window.location.origin}/order/success?order=${selectedOrder.order_number}`;
                     const pakasirUrl = `https://app.pakasir.com/pay/pastipremiumid1/${selectedOrder.total_amount}?order_id=${selectedOrder.order_number}&redirect=${encodeURIComponent(redirectUrl)}`;
                     window.location.href = pakasirUrl;
                   }}
                 >
-                  💳 Bayar via QRIS / Virtual Account
+                  {t('lookup_pay_qris')}
                 </button>
               </div>
             )}
 
             {/* Status Timeline */}
             <div className="status-timeline">
-              <h4 style={{ marginBottom: '12px', fontSize: '0.9rem', fontWeight: 700 }}>Progress</h4>
+              <h4 style={{ marginBottom: '12px', fontSize: '0.9rem', fontWeight: 700 }}>{t('lookup_progress')}</h4>
               {statusSteps.map((step, i) => (
                 <div key={step} className="timeline-item">
                   <div className={`timeline-dot ${i < currentStatusIndex ? 'active' : i === currentStatusIndex ? 'current' : ''}`} />
                   <div>
                     <div style={{ fontWeight: 600, textTransform: 'capitalize', color: i <= currentStatusIndex ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                      {step === 'pending' ? 'Menunggu Pembayaran' :
-                       step === 'paid' ? 'Pembayaran Diterima' :
-                       step === 'assigned' ? 'Akun Disiapkan' :
-                       step === 'delivered' ? 'Akun Terkirim' :
-                       'Selesai'}
+                      {stepLabels[step] || step}
                     </div>
                   </div>
                 </div>
@@ -238,7 +237,7 @@ function BuyerLookupPage() {
             {/* Account Details */}
             {assignments.length > 0 && (
               <div style={{ marginTop: '24px' }}>
-                <h4 style={{ marginBottom: '12px', fontSize: '0.9rem', fontWeight: 700 }}>Detail Akun</h4>
+                <h4 style={{ marginBottom: '12px', fontSize: '0.9rem', fontWeight: 700 }}>{t('lookup_account_detail')}</h4>
                 {assignments.map((a, i) => {
                   const stock = a.stock_account as Record<string, unknown>;
                   return (
@@ -251,21 +250,21 @@ function BuyerLookupPage() {
                       </div>
                       <div className="credential-field">
                         <div>
-                          <div className="credential-label">Email / Username</div>
+                          <div className="credential-label">{t('cred_email')}</div>
                           <div className="credential-value">{stock?.account_identifier as string}</div>
                         </div>
-                        <button className="copy-btn" onClick={() => navigator.clipboard.writeText(stock?.account_identifier as string)}>Copy</button>
+                        <button className="copy-btn" onClick={() => navigator.clipboard.writeText(stock?.account_identifier as string)}>{t('cred_copy')}</button>
                       </div>
                       <div className="credential-field">
                         <div>
-                          <div className="credential-label">Password</div>
+                          <div className="credential-label">{t('cred_password')}</div>
                           <PasswordReveal encrypted={stock?.account_secret_encrypted as string} />
                         </div>
                       </div>
                       {Boolean(stock?.profile_info) && (
                         <div className="credential-field">
                           <div>
-                            <div className="credential-label">Profil</div>
+                            <div className="credential-label">{t('cred_profile')}</div>
                             <div className="credential-value">{String(stock.profile_info)}</div>
                           </div>
                         </div>
@@ -273,7 +272,7 @@ function BuyerLookupPage() {
                       {Boolean(stock?.pin_info) && (
                         <div className="credential-field">
                           <div>
-                            <div className="credential-label">PIN</div>
+                            <div className="credential-label">{t('cred_pin')}</div>
                             <div className="credential-value">{String(stock.pin_info)}</div>
                           </div>
                         </div>
@@ -303,20 +302,20 @@ function BuyerLookupPage() {
             ) : orders.length === 0 ? (
               <div className="empty-state">
                 <div className="icon">🛍️</div>
-                <h4>Belum ada pesanan</h4>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Anda belum pernah melakukan pembelian.</p>
-                <Link href="/" className="btn btn-primary" style={{ marginTop: '16px' }}>Beli Produk Sekarang</Link>
+                <h4>{t('lookup_no_orders')}</h4>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{t('lookup_no_orders_desc')}</p>
+                <Link href="/" className="btn btn-primary" style={{ marginTop: '16px' }}>{t('lookup_buy_now')}</Link>
               </div>
             ) : (
               <div className="table-container">
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Pesanan</th>
-                      <th>Produk</th>
-                      <th>Total</th>
-                      <th>Status</th>
-                      <th>Aksi</th>
+                      <th>{t('lookup_col_order')}</th>
+                      <th>{t('lookup_col_product')}</th>
+                      <th>{t('lookup_col_total')}</th>
+                      <th>{t('lookup_col_status')}</th>
+                      <th>{t('lookup_col_action')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -331,7 +330,7 @@ function BuyerLookupPage() {
                         <td><span className={`badge ${getStatusBadge(o.order_status)}`}>{o.order_status}</span></td>
                         <td>
                           <button className="btn btn-secondary btn-sm" onClick={() => selectOrder(o)}>
-                            Lihat Detail
+                            {t('lookup_view_detail')}
                           </button>
                         </td>
                       </tr>
@@ -348,6 +347,7 @@ function BuyerLookupPage() {
 }
 
 function PasswordReveal({ encrypted }: { encrypted: string }) {
+  const { t } = useLocale();
   const [revealed, setRevealed] = useState(false);
   const [password, setPassword] = useState('');
   const [loadingPw, setLoadingPw] = useState(false);
@@ -374,10 +374,10 @@ function PasswordReveal({ encrypted }: { encrypted: string }) {
       <div className="credential-value">{revealed ? password : '••••••••'}</div>
       {!revealed ? (
         <button className="copy-btn" onClick={reveal} disabled={loadingPw}>
-          {loadingPw ? '...' : 'Tampilkan'}
+          {loadingPw ? '...' : t('cred_reveal')}
         </button>
       ) : (
-        <button className="copy-btn" onClick={() => navigator.clipboard.writeText(password)}>Copy</button>
+        <button className="copy-btn" onClick={() => navigator.clipboard.writeText(password)}>{t('cred_copy')}</button>
       )}
     </div>
   );
@@ -386,6 +386,7 @@ function PasswordReveal({ encrypted }: { encrypted: string }) {
 function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName }: { 
   buyerId: number; orderId: number; orderNumber: string; productName: string; buyerName: string;
 }) {
+  const { t } = useLocale();
   const [waNumber, setWaNumber] = useState('');
   const [loadingWa, setLoadingWa] = useState(true);
   const [complaintType, setComplaintType] = useState('');
@@ -404,27 +405,27 @@ function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName 
     let phone = waNumber.replace(/[^0-9]/g, '');
     if (phone.startsWith('0')) phone = '62' + phone.substring(1);
 
-    const issueText = complaintType || 'Masalah dengan akun';
+    const issueText = complaintType || 'Issue with account';
     const text = `Halo Admin pastipremium.store,\n\nSaya ingin melaporkan masalah:\n\n📋 *Order:* ${orderNumber}\n📦 *Produk:* ${productName}\n👤 *Nama:* ${buyerName}\n⚠️ *Masalah:* ${issueText}\n\nMohon bantuannya. Terima kasih! 🙏`;
 
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
   }
 
   const complaintOptions = [
-    { value: 'Login gagal / password salah', icon: '🔑' },
-    { value: 'Akun tidak bisa diakses', icon: '🚫' },
-    { value: 'Akun expired sebelum waktunya', icon: '⏰' },
-    { value: 'Profil / PIN salah', icon: '👤' },
-    { value: 'Masalah lainnya', icon: '❓' },
+    { value: t('support_login_failed'), icon: '🔑' },
+    { value: t('support_no_access'), icon: '🚫' },
+    { value: t('support_expired_early'), icon: '⏰' },
+    { value: t('support_wrong_profile'), icon: '👤' },
+    { value: t('support_other'), icon: '❓' },
   ];
 
   return (
     <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-secondary)', paddingTop: '24px' }}>
       <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '12px' }}>
-        ⚠️ Ada Masalah dengan Akun?
+        {t('support_title')}
       </h4>
       <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
-        Pilih jenis masalah di bawah ini, lalu klik tombol untuk langsung chat WhatsApp dengan admin kami.
+        {t('support_subtitle')}
       </p>
 
       {/* Complaint type selector */}
@@ -467,13 +468,12 @@ function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName 
           cursor: complaintType ? 'pointer' : 'not-allowed',
         }}
       >
-        {loadingWa ? <span className="loading-spinner" /> : '💬 Chat WhatsApp Admin'}
+        {loadingWa ? <span className="loading-spinner" /> : t('support_chat_wa')}
       </button>
 
       <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
-        Anda akan diarahkan ke WhatsApp dengan detail pesanan otomatis terisi.
+        {t('support_wa_desc')}
       </p>
     </div>
   );
 }
-
