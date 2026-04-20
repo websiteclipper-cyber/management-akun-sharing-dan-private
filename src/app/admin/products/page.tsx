@@ -192,7 +192,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
       price: parseFloat(form.price),
       newcomer_price: form.newcomer_price ? parseFloat(form.newcomer_price) : null,
       duration_days: parseInt(form.duration_days),
-      default_max_slot: form.account_type === 'private' ? 1 : parseInt(form.default_max_slot),
+      default_max_slot: parseInt(form.default_max_slot),
       description: form.description || null,
       status: form.status,
       updated_at: new Date().toISOString(),
@@ -243,7 +243,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
             </div>
             <div className="form-group">
               <label className="form-label">Max Slot</label>
-              <input type="number" className="form-input" value={form.account_type === 'private' ? '1' : form.default_max_slot} onChange={e => setForm({...form, default_max_slot: e.target.value})} disabled={form.account_type === 'private'} required />
+              <input type="number" className="form-input" value={form.default_max_slot} onChange={e => setForm({...form, default_max_slot: e.target.value})} required />
             </div>
           </div>
           <div className="form-row">
