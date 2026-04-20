@@ -28,10 +28,6 @@ export default function PromoPopup() {
   const [copied, setCopied] = useState(false);
   const [closing, setClosing] = useState(false);
 
-  useEffect(() => {
-    loadActiveCampaign();
-  }, []);
-
   async function loadActiveCampaign() {
     const now = new Date().toISOString();
 
@@ -83,6 +79,10 @@ export default function PromoPopup() {
     // Small delay before showing for smooth entrance
     setTimeout(() => setVisible(true), 500);
   }
+
+  useEffect(() => {
+    loadActiveCampaign();
+  }, []);
 
   function handleClose() {
     setClosing(true);
