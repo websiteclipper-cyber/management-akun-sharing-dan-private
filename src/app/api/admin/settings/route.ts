@@ -16,8 +16,6 @@ async function ensureTable() {
         ('support_whatsapp', '082244046330', 'Nomor WhatsApp Support')
       ON CONFLICT (key) DO NOTHING;
     `
-  }).then(() => {}).catch(() => {
-    // rpc might not exist, try raw approach
   });
 }
 

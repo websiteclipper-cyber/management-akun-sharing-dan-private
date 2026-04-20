@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { getAdminFromRequest } from '@/lib/auth';
 import { getPakasirTransaction } from '@/lib/pakasir';
+import { sendTelegramNotification } from '@/lib/telegram';
 
 // Manual sync: check all pending orders against Pakasir and update if paid
 export async function POST(request: Request) {
@@ -157,6 +158,22 @@ export async function POST(request: Request) {
               console.error('Commission sync error:', commErr);
             }
           }
+
+          // Send Telegram notification for synced payment
+          const { data: syncProd } = await supabase
+            .from('products')
+            .select('name')
+            .eq('id', order.product_id)
+            .single();
+
+          sendTelegramNotification(
+            `💰 <b>PEMBAYARAN MASUK (SYNC)!</b>\n\n` +
+            `<b>Order:</b> <code>${order.order_number}</code>\n` +
+            `<b>Produk:</b> ${syncProd?.name || '-'}\n` +
+            `<b>Nominal:</b> Rp ${Number(order.total_amount).toLocaleString('id-ID')}\n` +
+            `<b>Metode:</b> pakasir_${paymentMethod}\n` +
+            `<b>Waktu Bayar:</b> ${completedAt}`
+          );
 
           results.push({ order_number: order.order_number, status: 'synced', synced: true });
         } else {

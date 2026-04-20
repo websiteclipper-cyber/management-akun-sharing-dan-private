@@ -11,7 +11,7 @@ import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiGooglegemini } fro
 import { BsDisplay, BsStars } from 'react-icons/bs';
 import { FiMonitor } from 'react-icons/fi';
 import { TbBrandOpenai, TbBrandDisney, TbBrandAmazon, TbRobot, TbScissors, TbPhotoVideo } from 'react-icons/tb';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 interface Promo {
   id: string;
@@ -100,7 +100,7 @@ const MEDAL_STYLES: Record<number, { bg: string; shadow: string; label: string }
 };
 
 // ── Animation variants ──
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -109,7 +109,7 @@ const containerVariants = {
   exit: { opacity: 0, transition: { duration: 0.2 } },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 24, scale: 0.96 },
   visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 24 } },
 };

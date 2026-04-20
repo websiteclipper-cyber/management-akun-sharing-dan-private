@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
+import { sendTelegramNotification } from '@/lib/telegram';
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,6 +109,127 @@ export async function POST(request: NextRequest) {
         .from('orders')
         .update({ order_status: 'delivered', delivered_at: now, updated_at: now })
         .eq('id', order.id);
+    }
+
+    // Record reseller commission (only after confirmed payment)
+    if (order.reseller_id) {
+      try {
+        const { data: reseller } = await supabase
+          .from('resellers')
+          .select('*')
+          .eq('id', order.reseller_id)
+          .single();
+
+        if (reseller) {
+          // Check for product-specific commission
+          const { data: productCommission } = await supabase
+            .from('reseller_product_commissions')
+            .select('*')
+            .eq('reseller_id', reseller.id)
+            .eq('product_id', order.product_id)
+            .maybeSingle();
+
+          const commissionType = productCommission?.commission_type || reseller.default_commission_type || 'fixed';
+          const commissionRate = productCommission?.commission_value ?? (reseller.default_commission_value || 0);
+
+          const orderAmount = Number(order.total_amount);
+          let commissionAmount = 0;
+          if (commissionType === 'percentage') {
+            commissionAmount = Math.round(orderAmount * commissionRate / 100);
+          } else {
+            commissionAmount = commissionRate;
+          }
+
+          if (commissionAmount > 0) {
+            // Check idempotency: don't record commission twice for same order
+            const { data: existingComm } = await supabase
+              .from('reseller_commissions')
+              .select('id')
+              .eq('order_id', order.id)
+              .maybeSingle();
+
+            if (!existingComm) {
+              // Get product name for the commission record
+              const { data: prod } = await supabase
+                .from('products')
+                .select('name')
+                .eq('id', order.product_id)
+                .single();
+
+              // Insert commission record
+              await supabase.from('reseller_commissions').insert({
+                reseller_id: reseller.id,
+                order_id: order.id,
+                product_id: order.product_id,
+                product_name: prod?.name || '',
+                order_amount: orderAmount,
+                commission_type: commissionType,
+                commission_rate: commissionRate,
+                commission_amount: commissionAmount,
+                status: 'unpaid',
+              });
+
+              // Update reseller stats
+              await supabase.from('resellers').update({
+                total_sales: (reseller.total_sales || 0) + 1,
+                total_commission: (reseller.total_commission || 0) + commissionAmount,
+                unpaid_commission: (reseller.unpaid_commission || 0) + commissionAmount,
+                updated_at: now,
+              }).eq('id', reseller.id);
+
+              console.log(`💰 Commission recorded via callback: ${commissionAmount} for reseller ${reseller.name}`);
+            }
+          }
+        }
+      } catch (commErr) {
+        console.error('Commission recording error in callback:', commErr);
+        // Don't fail the callback — payment is already processed
+      }
+    }
+
+    // Get product name for notification
+    const { data: product } = await supabase
+      .from('products')
+      .select('name, account_type')
+      .eq('id', order.product_id)
+      .single();
+
+    // Send Telegram Notification for payment
+    const assigned = assignResult?.success ? '✅ Akun otomatis dikirim!' : '⚠️ Perlu assign akun manual';
+    sendTelegramNotification(
+      `💰 <b>PEMBAYARAN MASUK!</b>\n\n` +
+      `<b>Order:</b> <code>${order_number}</code>\n` +
+      `<b>Produk:</b> ${product?.name || '-'}\n` +
+      `<b>Nominal:</b> Rp ${Number(amount || order.total_amount).toLocaleString('id-ID')}\n` +
+      `<b>Metode:</b> ${gateway_name}\n` +
+      `<b>Waktu:</b> ${now}\n\n` +
+      `${assigned}`
+    );
+
+    // Check remaining stock if assignment was successful
+    if (assignResult?.success) {
+      try {
+        const { count: remainingStock } = await supabase
+          .from('stock_accounts')
+          .select('*', { count: 'exact', head: true })
+          .eq('product_id', order.product_id)
+          .eq('status', 'active');
+
+        if (remainingStock !== null && remainingStock <= 1) {
+          const typeLabel = product?.account_type === 'sharing' ? 'Sharing' : 'Private';
+          const stockWarning = remainingStock === 0 ? 'HABIS! (0)' : 'tinggal 1';
+          
+          sendTelegramNotification(
+            `⚠️ <b>PERINGATAN STOK MENIPIS!</b>\n\n` +
+            `<b>Produk:</b> ${product?.name}\n` +
+            `<b>Tipe:</b> ${typeLabel}\n` +
+            `<b>Sisa Stok:</b> ${stockWarning}\n\n` +
+            `Mohon segera tambahkan stok baru untuk produk ini.`
+          );
+        }
+      } catch (stockErr) {
+        console.error('Error checking remaining stock:', stockErr);
+      }
     }
 
     return NextResponse.json({
