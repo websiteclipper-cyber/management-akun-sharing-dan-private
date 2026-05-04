@@ -249,6 +249,7 @@ export default function StockAccountsPage() {
                 <thead>
                   <tr>
                     <th>ID</th>
+                    <th>Tanggal Input</th>
                     <th>Produk</th>
                     <th>Identifier</th>
                     <th>Tipe</th>
@@ -261,6 +262,9 @@ export default function StockAccountsPage() {
                   {paginatedAccounts.map(a => (
                     <tr key={a.id}>
                       <td style={{ fontFamily: 'monospace' }}>#{a.id}</td>
+                      <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        {new Date(a.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </td>
                       <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{(a.product as unknown as Product)?.name || '-'}</td>
                       <td style={{ fontFamily: 'monospace', color: 'var(--brand-accent)' }}>{a.account_identifier}</td>
                       <td>
@@ -319,7 +323,7 @@ export default function StockAccountsPage() {
                     </tr>
                   ))}
                   {paginatedAccounts.length === 0 && (
-                    <tr><td colSpan={7} className="empty-state"><div className="icon">🔑</div><h3>{searchQuery || filterProduct !== 'all' || filterStatus !== 'all' ? 'Tidak ada hasil yang cocok' : 'Belum ada stok akun'}</h3></td></tr>
+                    <tr><td colSpan={8} className="empty-state"><div className="icon">🔑</div><h3>{searchQuery || filterProduct !== 'all' || filterStatus !== 'all' ? 'Tidak ada hasil yang cocok' : 'Belum ada stok akun'}</h3></td></tr>
                   )}
                 </tbody>
               </table>
