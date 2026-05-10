@@ -630,6 +630,22 @@ function BulkImportModal({ products, onClose, onDone }: {
 
   const selectedProduct = products.find(p => p.id.toString() === productId);
 
+  // Helper: detect if a line (after cleaning) is a URL/invite link
+  function cleanLine(raw: string): string {
+    // Strip leading numbering like "1. ", "2) ", "3- ", "1: ", etc.
+    return raw.replace(/^\s*\d+[\.\)\-\:]\s*/, '').trim();
+  }
+
+  function isUrlLine(line: string): boolean {
+    const cleaned = cleanLine(line);
+    return /^https?:\/\//i.test(cleaned);
+  }
+
+  // Count detected lines
+  const detectedLines = bulkText.trim().split('\n').filter(l => l.trim());
+  const urlLineCount = detectedLines.filter(l => isUrlLine(l)).length;
+  const pipeLineCount = detectedLines.filter(l => !isUrlLine(l) && l.trim()).length;
+
   async function handleBulkImport(e: React.FormEvent) {
     e.preventDefault();
     if (!productId || !bulkText.trim()) return;
@@ -642,16 +658,32 @@ function BulkImportModal({ products, onClose, onDone }: {
     const errors: string[] = [];
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      const parts = line.split('|').map(p => p.trim());
+      const rawLine = lines[i].trim();
 
-      if (parts.length < 2) {
-        errors.push(`Baris ${i + 1}: "${line}" — Format salah (minimal: email|password)`);
-        failed++;
-        continue;
+      let identifier = '';
+      let secret = '';
+      let profile: string | null = null;
+      let pin: string | null = null;
+
+      if (isUrlLine(rawLine)) {
+        // URL/invite link format
+        identifier = cleanLine(rawLine);
+        secret = '-'; // placeholder for invite links
+      } else {
+        // Standard pipe-delimited format: email|password|profil|pin
+        const parts = rawLine.split('|').map(p => p.trim());
+
+        if (parts.length < 2) {
+          errors.push(`Baris ${i + 1}: "${rawLine}" — Format salah (minimal: email|password atau link invite)`);
+          failed++;
+          continue;
+        }
+
+        identifier = parts[0];
+        secret = parts[1];
+        profile = parts[2] || null;
+        pin = parts[3] || null;
       }
-
-      const [identifier, secret, profile, pin] = parts;
 
       try {
         const res = await fetch('/api/admin/stock-accounts', {
@@ -661,8 +693,8 @@ function BulkImportModal({ products, onClose, onDone }: {
             product_id: parseInt(productId),
             account_identifier: identifier,
             account_secret: secret,
-            profile_info: profile || null,
-            pin_info: pin || null,
+            profile_info: profile,
+            pin_info: pin,
             account_type: selectedProduct?.account_type || 'sharing',
             max_slot: selectedProduct?.default_max_slot || 4,
             purchase_cost: purchaseCost ? parseFloat(purchaseCost) : null,
@@ -735,19 +767,43 @@ function BulkImportModal({ products, onClose, onDone }: {
             </div>
 
             <div style={{ padding: '12px 16px', background: 'rgba(59,130,246,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(59,130,246,0.15)', marginBottom: '16px' }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--accent)', margin: '0 0 8px', fontWeight: 700 }}>📌 Format per baris:</p>
-              <code style={{ fontSize: '0.78rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '6px 10px', borderRadius: '6px', display: 'block' }}>
-                email|password|profil(opsional)|pin(opsional)
-              </code>
+              <p style={{ fontSize: '0.8rem', color: 'var(--accent)', margin: '0 0 8px', fontWeight: 700 }}>📌 Format yang didukung:</p>
+              {/* Format 1: pipe-delimited */}
+              <div style={{ marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Format 1 — Email & Password:</span>
+                <code style={{ fontSize: '0.78rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '6px 10px', borderRadius: '6px', display: 'block', marginTop: '4px' }}>
+                  email|password|profil(opsional)|pin(opsional)
+                </code>
+              </div>
+              {/* Format 2: invite link */}
+              <div>
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Format 2 — Link Invite (per baris):</span>
+                <code style={{ fontSize: '0.78rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '6px 10px', borderRadius: '6px', display: 'block', marginTop: '4px' }}>
+                  https://example.com/invite?token=xxx
+                </code>
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '8px 0 0', fontStyle: 'italic' }}>
+                💡 Bisa dicampur! Nomor urut otomatis dihapus (misal: &quot;1. https://...&quot;)
+              </p>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Paste Data Akun ({bulkText.trim().split('\n').filter(l => l.trim()).length} baris terdeteksi)</label>
+              <label className="form-label">
+                Paste Data Akun ({detectedLines.length} baris terdeteksi
+                {detectedLines.length > 0 && (urlLineCount > 0 || pipeLineCount > 0) && (
+                  <span style={{ fontWeight: 400, textTransform: 'none' }}>
+                    {' '}— {urlLineCount > 0 && <span style={{ color: '#8b5cf6' }}>🔗 {urlLineCount} link</span>}
+                    {urlLineCount > 0 && pipeLineCount > 0 && ', '}
+                    {pipeLineCount > 0 && <span style={{ color: '#3b82f6' }}>📧 {pipeLineCount} akun</span>}
+                  </span>
+                )}
+                )
+              </label>
               <textarea
                 className="form-textarea"
                 style={{ minHeight: '180px', fontFamily: 'monospace', fontSize: '0.82rem' }}
                 required
-                placeholder={'email1@gmail.com|password123|Profile 1|1234\nemail2@gmail.com|password456\nemail3@gmail.com|password789|Profile 3'}
+                placeholder={'email1@gmail.com|password123|Profile 1|1234\nemail2@gmail.com|password456\nhttps://www.canva.com/brand/join?token=abc123\n1. https://www.canva.com/brand/join?token=def456\n2. https://www.canva.com/brand/join?token=ghi789'}
                 value={bulkText}
                 onChange={e => setBulkText(e.target.value)}
               />
@@ -759,7 +815,7 @@ function BulkImportModal({ products, onClose, onDone }: {
                 {importing ? (
                   <><span className="loading-spinner" /> Mengimpor...</>
                 ) : (
-                  `🚀 Import ${bulkText.trim().split('\n').filter(l => l.trim()).length} Akun`
+                  `🚀 Import ${detectedLines.length} Akun`
                 )}
               </button>
             </div>
