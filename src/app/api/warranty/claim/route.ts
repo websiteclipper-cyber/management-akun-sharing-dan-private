@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // 2. Find active assignment matching the email
     const { data: assignments, error: assignError } = await supabase
       .from('account_assignments')
-      .select('id, stock_account_id, status, expired_at, stock_accounts(id, account_identifier, account_secret_encrypted)')
+      .select('id, stock_account_id, status, expired_at, warranty_expired_at, stock_accounts(id, account_identifier, account_secret_encrypted)')
       .eq('order_id', order.id)
       .in('status', ['active', 'replaced']);
 
@@ -44,7 +44,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if warranty has expired
-    if (assignment.expired_at && new Date(assignment.expired_at) < new Date()) {
+    const warrantyExpiryDate = assignment.warranty_expired_at || assignment.expired_at;
+    if (warrantyExpiryDate && new Date(warrantyExpiryDate) < new Date()) {
       return NextResponse.json({ error: 'Masa garansi pesanan Anda sudah habis.' }, { status: 400 });
     }
 

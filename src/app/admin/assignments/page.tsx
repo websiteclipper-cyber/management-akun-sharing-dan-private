@@ -37,6 +37,30 @@ export default function AssignmentsPage() {
     loadAssignments();
   }
 
+  async function handleEditWarranty(assignmentId: number, currentWarrantyStr: string) {
+    const defaultDate = new Date(currentWarrantyStr).toISOString().split('T')[0];
+    const newDateStr = prompt('Masukkan tanggal baru garansi (YYYY-MM-DD):', defaultDate);
+    if (!newDateStr) return;
+    
+    const newDate = new Date(newDateStr);
+    if (isNaN(newDate.getTime())) {
+      alert('Format tanggal tidak valid!');
+      return;
+    }
+    
+    const { error } = await supabase
+      .from('account_assignments')
+      .update({ warranty_expired_at: newDate.toISOString() })
+      .eq('id', assignmentId);
+
+    if (error) {
+      alert('Gagal update garansi: ' + error.message);
+    } else {
+      alert('Garansi berhasil diupdate!');
+      loadAssignments();
+    }
+  }
+
   function getStatusBadge(status: string) {
     const map: Record<string, string> = {
       active: 'badge-success', expired: 'badge-neutral', replaced: 'badge-warning', cancelled: 'badge-danger',
@@ -89,6 +113,7 @@ export default function AssignmentsPage() {
                   <th>Tipe</th>
                   <th>Mulai</th>
                   <th>Expired</th>
+                  <th>Garansi</th>
                   <th>Status</th>
                   <th>Delivered</th>
                   <th>Aksi</th>
@@ -109,12 +134,23 @@ export default function AssignmentsPage() {
                     <td><span className={`badge ${(a.assignment_type as string) === 'auto' ? 'badge-info' : (a.assignment_type as string) === 'manual' ? 'badge-warning' : 'badge-primary'}`}>{a.assignment_type as string}</span></td>
                     <td style={{ fontSize: '0.8rem' }}>{new Date(a.start_at as string).toLocaleDateString('id-ID')}</td>
                     <td style={{ fontSize: '0.8rem' }}>{new Date(a.expired_at as string).toLocaleDateString('id-ID')}</td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--brand-primary-light)' }}>
+                      {(a.warranty_expired_at || a.expired_at) ? new Date((a.warranty_expired_at || a.expired_at) as string).toLocaleDateString('id-ID') : '-'}
+                    </td>
                     <td><span className={`badge ${getStatusBadge(a.status as string)}`}>{a.status as string}</span></td>
                     <td style={{ fontSize: '0.8rem' }}>{(a.delivered_at as string) ? new Date(a.delivered_at as string).toLocaleDateString('id-ID') : '—'}</td>
                     <td>
-                      {(a.status as string) === 'active' && (
-                        <button className="btn btn-danger btn-sm" onClick={() => handleReplace(a.id as number)}>Replace</button>
-                      )}
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {(a.status as string) === 'active' && (
+                          <button className="btn btn-danger btn-sm" onClick={() => handleReplace(a.id as number)}>Replace</button>
+                        )}
+                        <button 
+                          className="btn btn-secondary btn-sm" 
+                          onClick={() => handleEditWarranty(a.id as number, (a.warranty_expired_at || a.expired_at) as string)}
+                        >
+                          Edit Garansi
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

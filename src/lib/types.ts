@@ -47,6 +47,7 @@ export interface Product {
   price: number;
   newcomer_price: number | null;
   duration_days: number;
+  warranty_days?: number | null;
   default_max_slot: number;
   description: string | null;
   status: ProductStatus;
@@ -118,6 +119,7 @@ export interface AccountAssignment {
   assignment_type: AssignmentType;
   start_at: string;
   expired_at: string;
+  warranty_expired_at?: string | null;
   status: AssignmentStatus;
   delivery_channel: DeliveryChannel;
   delivered_at: string | null;

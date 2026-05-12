@@ -247,9 +247,14 @@ function BuyerLookupPage() {
                     <div key={i} className="assignment-card">
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                         <span className={`badge ${(a.status as string) === 'active' ? 'badge-success' : 'badge-neutral'}`}>{a.status as string}</span>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          Expired: {new Date(a.expired_at as string).toLocaleDateString('id-ID')}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          <span>Expired: {new Date(a.expired_at as string).toLocaleDateString('id-ID')}</span>
+                          {(a.warranty_expired_at || a.expired_at) && (
+                            <span style={{ color: 'var(--brand-primary-light)', fontWeight: 600, marginTop: '2px' }}>
+                              Garansi s/d: {new Date((a.warranty_expired_at || a.expired_at) as string).toLocaleDateString('id-ID')}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="credential-field">
                         <div>

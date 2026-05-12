@@ -73,7 +73,8 @@ export default function ProductsPage() {
                   <th>Tipe</th>
                   <th>Harga</th>
                   <th>Harga Buyer Baru</th>
-                  <th>Durasi</th>
+                  <th>Durasi Akun</th>
+                  <th>Garansi</th>
                   <th>Max Slot</th>
                   <th>Status</th>
                   <th>Aksi</th>
@@ -95,6 +96,7 @@ export default function ProductsPage() {
                       {p.newcomer_price ? formatPrice(p.newcomer_price) : '—'}
                     </td>
                     <td>{p.duration_days} hari</td>
+                    <td>{p.warranty_days || p.duration_days} hari</td>
                     <td>{p.default_max_slot}</td>
                     <td>
                       <span className={`badge ${p.status === 'active' ? 'badge-success' : 'badge-neutral'}`}>
@@ -172,6 +174,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
     price: product?.price?.toString() || '',
     newcomer_price: product?.newcomer_price?.toString() || '',
     duration_days: product?.duration_days?.toString() || '30',
+    warranty_days: product?.warranty_days?.toString() || product?.duration_days?.toString() || '30',
     default_max_slot: product?.default_max_slot?.toString() || '4',
     description: product?.description || '',
     status: product?.status || 'active',
@@ -192,6 +195,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
       price: parseFloat(form.price),
       newcomer_price: form.newcomer_price ? parseFloat(form.newcomer_price) : null,
       duration_days: parseInt(form.duration_days),
+      warranty_days: parseInt(form.warranty_days),
       default_max_slot: parseInt(form.default_max_slot),
       description: form.description || null,
       status: form.status,
@@ -259,8 +263,12 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Durasi (hari)</label>
+              <label className="form-label">Durasi Akun (hari)</label>
               <input type="number" className="form-input" value={form.duration_days} onChange={e => setForm({...form, duration_days: e.target.value})} required />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Durasi Garansi (hari)</label>
+              <input type="number" className="form-input" value={form.warranty_days} onChange={e => setForm({...form, warranty_days: e.target.value})} required />
             </div>
           </div>
           <div className="form-group">
