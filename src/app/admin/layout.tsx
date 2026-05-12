@@ -21,8 +21,9 @@ const navItems = [
   { label: 'Leaderboard Mitra', href: '/admin/leaderboard', icon: '🏆' },
   { label: 'Buyer', href: '/admin/buyers', icon: '👥' },
   { label: 'Support Tickets', href: '/admin/support', icon: '🎫' },
-  { label: 'Audit Logs', href: '/admin/audit-logs', icon: '📋' },
+  { label: 'Klaim Garansi', href: '/admin/warranty', icon: '🛡️' },
   { section: 'Sistem' },
+  { label: 'Akun Backup', href: '/admin/backup-accounts', icon: '🔄' },
   { label: 'Pengaturan Umum', href: '/admin/settings', icon: '⚙️' },
 ];
 

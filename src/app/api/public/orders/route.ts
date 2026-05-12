@@ -4,7 +4,8 @@ import { sendTelegramNotification } from '@/lib/telegram';
 
 export async function POST(request: NextRequest) {
   try {
-    const { buyer_name, buyer_email, buyer_phone, product_id, ref_code, discount_code } = await request.json();
+    const { buyer_name, buyer_email, buyer_phone, product_id, ref_code, discount_code, quantity: rawQty } = await request.json();
+    const quantity = Math.min(10, Math.max(1, Math.floor(Number(rawQty) || 1)));
 
     if (!buyer_name || !product_id) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 });
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('buyer_id', buyer.id)
       .eq('product_id', product.id)
+      .eq('quantity', quantity)
       .eq('payment_status', 'pending_payment')
       .gte('created_at', tenMinutesAgo)
       .order('created_at', { ascending: false })
@@ -214,7 +216,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const finalPrice = basePrice - discountAmount;
+    const finalPrice = (basePrice - discountAmount) * quantity;
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -222,14 +224,15 @@ export async function POST(request: NextRequest) {
         order_number: orderNumber,
         buyer_id: buyer.id,
         product_id: product.id,
+        quantity: quantity,
         unit_price: basePrice,
         total_amount: finalPrice,
         payment_status: 'pending_payment',
         order_status: 'pending',
         reseller_id: resellerId,
         discount_campaign_id: discountCampaignId,
-        discount_amount: discountAmount,
-        client_ip: clientIp, // Store IP to prevent future abuse
+        discount_amount: discountAmount * quantity,
+        client_ip: clientIp,
         created_at: now,
         updated_at: now,
       })
@@ -244,13 +247,15 @@ export async function POST(request: NextRequest) {
     // This prevents phantom commissions from unpaid/expired orders
 
     // Send Telegram Notification
-    const discountLabel = discountAmount > 0 ? `\n<b>Diskon:</b> -Rp ${discountAmount.toLocaleString('id-ID')}` : '';
+    const discountLabel = discountAmount > 0 ? `\n<b>Diskon:</b> -Rp ${(discountAmount * quantity).toLocaleString('id-ID')}` : '';
     const newcomerLabel = isNewcomer && product.newcomer_price !== null ? `\n🆕 <b>Harga Buyer Baru</b>` : '';
+    const qtyLabel = quantity > 1 ? `\n<b>Jumlah:</b> ${quantity}x` : '';
     sendTelegramNotification(
       `🛒 <b>PESANAN BARU! (Belum Bayar)</b>\n\n` +
       `<b>Order:</b> <code>${orderNumber}</code>\n` +
       `<b>Produk:</b> ${product.name}\n` +
       `<b>Harga:</b> Rp ${basePrice.toLocaleString('id-ID')}` +
+      qtyLabel +
       newcomerLabel +
       discountLabel +
       `\n<b>Total:</b> Rp ${finalPrice.toLocaleString('id-ID')}\n\n` +
@@ -265,7 +270,8 @@ export async function POST(request: NextRequest) {
       payment_status: order.payment_status,
       order_status: order.order_status,
       amount: order.total_amount,
-      discount_amount: discountAmount,
+      quantity: quantity,
+      discount_amount: discountAmount * quantity,
       is_newcomer: isNewcomer,
     });
   } catch {

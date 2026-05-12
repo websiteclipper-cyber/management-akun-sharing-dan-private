@@ -127,9 +127,10 @@ export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
 
   async function loadProducts() {
+    const now = new Date().toISOString();
     const [{ data: pData }, { data: promoData }] = await Promise.all([
       supabase.from('products').select('*').eq('status', 'active').order('platform_name', { ascending: true }),
-      supabase.from('promos').select('*').eq('is_active', true),
+      supabase.from('promos').select('*').eq('is_active', true).lte('start_date', now).gte('end_date', now),
     ]);
     setProducts(pData || []);
     setPromos(promoData || []);

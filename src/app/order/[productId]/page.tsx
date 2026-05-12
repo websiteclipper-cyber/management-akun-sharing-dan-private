@@ -34,8 +34,9 @@ export default function OrderPage() {
   const [buyer, setBuyer] = useState<BuyerSession | null>(null);
   const [promo, setPromo] = useState<any>(null);
   const [isNewcomer, setIsNewcomer] = useState(false);
-  const [result, setResult] = useState<{ order_number: string; amount: number; discount_amount?: number } | null>(null);
+  const [result, setResult] = useState<{ order_number: string; amount: number; discount_amount?: number; quantity?: number } | null>(null);
   const [error, setError] = useState('');
+  const [quantity, setQuantity] = useState(1);
 
   // Discount code states
   const [discountCode, setDiscountCode] = useState('');
@@ -146,11 +147,12 @@ export default function OrderPage() {
           product_id: product!.id,
           ref_code: refCode,
           discount_code: discountInfo ? discountInfo.code : '',
+          quantity,
         }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || t('order_submit_error')); setSubmitting(false); return; }
-      setResult({ order_number: data.order_number, amount: data.amount, discount_amount: data.discount_amount });
+      setResult({ order_number: data.order_number, amount: data.amount, discount_amount: data.discount_amount, quantity: data.quantity });
     } catch {
       setError(t('order_connection_error'));
       setSubmitting(false);
@@ -175,7 +177,8 @@ export default function OrderPage() {
   // Newcomer price takes priority if buyer is first-time and product has newcomer_price
   const hasNewcomerPrice = isNewcomer && product.newcomer_price !== null && product.newcomer_price !== undefined;
   const displayPrice = hasNewcomerPrice ? product.newcomer_price! : (promo ? promo.promo_price : product.price);
-  const finalDisplayPrice = discountInfo ? discountInfo.final_price : displayPrice;
+  const unitPriceAfterDiscount = discountInfo ? discountInfo.final_price : displayPrice;
+  const finalDisplayPrice = unitPriceAfterDiscount * quantity;
 
   return (
     <div className="public-layout">
@@ -359,6 +362,65 @@ export default function OrderPage() {
               </div>
             </div>
 
+            {/* ===== QUANTITY SELECTOR ===== */}
+            <div style={{
+              background: 'var(--bg-secondary)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-primary)',
+              padding: '16px',
+              marginBottom: '20px',
+            }}>
+              <div style={{
+                fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
+                letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '10px',
+                display: 'flex', alignItems: 'center', gap: '6px',
+              }}>
+                <span>📦</span> {t('order_quantity')}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                  disabled={quantity <= 1}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '12px',
+                    border: '1px solid var(--border-primary)',
+                    background: quantity <= 1 ? 'var(--bg-secondary)' : 'var(--bg-primary)',
+                    color: quantity <= 1 ? 'var(--text-muted)' : 'var(--text-primary)',
+                    fontSize: '1.2rem', fontWeight: 700, cursor: quantity <= 1 ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    opacity: quantity <= 1 ? 0.4 : 1,
+                  }}
+                >−</button>
+                <div style={{
+                  minWidth: '48px', textAlign: 'center',
+                  fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)',
+                  fontVariantNumeric: 'tabular-nums',
+                }}>{quantity}</div>
+                <button
+                  type="button"
+                  onClick={() => setQuantity(q => Math.min(10, q + 1))}
+                  disabled={quantity >= 10}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '12px',
+                    border: '1px solid var(--border-primary)',
+                    background: quantity >= 10 ? 'var(--bg-secondary)' : 'var(--bg-primary)',
+                    color: quantity >= 10 ? 'var(--text-muted)' : 'var(--text-primary)',
+                    fontSize: '1.2rem', fontWeight: 700, cursor: quantity >= 10 ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    opacity: quantity >= 10 ? 0.4 : 1,
+                  }}
+                >+</button>
+                {quantity > 1 && (
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                    {t('order_qty_items', { qty: String(quantity) })}
+                  </span>
+                )}
+              </div>
+            </div>
+
             {/* ===== DISCOUNT CODE SECTION ===== */}
             <div style={{
               background: 'var(--bg-secondary)',
@@ -493,8 +555,20 @@ export default function OrderPage() {
                     <span style={{ color: '#4ade80', fontWeight: 700 }}>-{formatPrice(discountInfo.discount_amount)}</span>
                   </div>
                 )}
+                {quantity > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{t('order_quantity')}</span>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>×{quantity}</span>
+                  </div>
+                )}
+                {quantity > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{t('order_unit_price')}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{formatPrice(unitPriceAfterDiscount)} / item</span>
+                  </div>
+                )}
                 <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{t('order_total')}</span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{t('order_total')}{quantity > 1 ? ` (${quantity} item)` : ''}</span>
                   <span style={{
                     color: discountInfo ? '#4ade80' : 'var(--brand-success)',
                     fontWeight: 800, fontSize: '1.1rem',
