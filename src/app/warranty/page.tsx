@@ -1,15 +1,68 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { motion } from 'framer-motion';
-import { FiAlertCircle, FiCheckCircle, FiShield, FiCopy, FiXCircle } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiAlertCircle, FiCheckCircle, FiCopy, FiArrowLeft, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 export default function WarrantyClaimPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black/95 flex items-center justify-center text-white">Loading...</div>}>
-      <WarrantyForm />
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen" style={{ background: '#000' }}>
+        <div className="loading-spinner"></div>
+      </div>
+    }>
+      <div style={{ 
+        minHeight: '100vh', 
+        background: '#000', 
+        color: '#ededed',
+        fontFamily: 'var(--font-sans), system-ui, sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Subtle top gradient line */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+        }} />
+
+        {/* Ambient background glow */}
+        <div style={{
+          position: 'absolute',
+          top: '-20%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '600px',
+          height: '400px',
+          background: 'radial-gradient(ellipse at top, rgba(59,130,246,0.15) 0%, transparent 70%)',
+          pointerEvents: 'none',
+          zIndex: 0
+        }} />
+
+        <header style={{ position: 'relative', zIndex: 10, padding: '32px 40px', display: 'flex', alignItems: 'center' }}>
+          <Link href="/" style={{ 
+            display: 'inline-flex', alignItems: 'center', gap: '8px', 
+            color: '#888', textDecoration: 'none', transition: 'color 0.2s', 
+            fontSize: '0.9rem', fontWeight: 500 
+          }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#ededed'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#888'}
+          >
+            <FiArrowLeft /> <span>Kembali</span>
+          </Link>
+        </header>
+
+        <main style={{ 
+          position: 'relative', zIndex: 10, flex: 1, display: 'flex', 
+          flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+          padding: '20px 24px 80px' 
+        }}>
+          <WarrantyForm />
+        </main>
+      </div>
     </Suspense>
   );
 }
@@ -61,212 +114,241 @@ function WarrantyForm() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleCopyAll = () => {
-    if (!result) return;
-    const text = `Email: ${result.new_email}\nPassword: ${result.new_password}`;
-    navigator.clipboard.writeText(text);
-    setCopied('all');
-    setTimeout(() => setCopied(null), 2000);
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 16px',
+    background: '#0a0a0a',
+    border: '1px solid #333',
+    borderRadius: '8px',
+    color: '#ededed',
+    fontSize: '0.95rem',
+    transition: 'all 0.2s ease',
+    outline: 'none',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+  };
+
+  const labelStyle = {
+    display: 'block', 
+    fontSize: '0.85rem', 
+    fontWeight: 500, 
+    color: '#888', 
+    marginBottom: '8px'
+  };
+
+  const focusStyle = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    e.currentTarget.style.borderColor = '#666';
+    e.currentTarget.style.background = '#111';
+  };
+
+  const blurStyle = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    e.currentTarget.style.borderColor = '#333';
+    e.currentTarget.style.background = '#0a0a0a';
   };
 
   return (
-    <div className="min-h-screen bg-black/95 text-white flex flex-col items-center py-16 px-4">
-      <div className="w-full max-w-md">
-        <Link href="/" className="inline-block mb-8 text-white/50 hover:text-white transition">
-          ← Kembali ke Beranda
-        </Link>
-        
-        <div className="bg-[#111] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-          {/* Decorative background element */}
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
-              <FiShield className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Klaim Garansi</h1>
-              <p className="text-sm text-white/50">Layanan penggantian akun otomatis</p>
-            </div>
+    <div style={{ width: '100%', maxWidth: '440px' }}>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        style={{
+          background: '#000',
+          border: '1px solid #222',
+          borderRadius: '16px',
+          padding: '40px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)'
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ 
+            width: '48px', height: '48px', margin: '0 auto 20px',
+            background: '#111', border: '1px solid #333',
+            borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <FiShield style={{ fontSize: '20px', color: '#fff' }} />
           </div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, margin: '0 0 8px', color: '#fff', letterSpacing: '-0.02em' }}>
+            Klaim Garansi
+          </h1>
+          <p style={{ fontSize: '0.9rem', color: '#888', margin: 0, lineHeight: 1.5 }}>
+            Penggantian instan otomatis. Masukkan detail pesanan untuk verifikasi.
+          </p>
+        </div>
 
+        <AnimatePresence mode="wait">
           {result ? (
             <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
+              key="result"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.3 }}
             >
               {result.status === 'auto_replaced' ? (
-                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <FiCheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-green-400 mb-1">Berhasil Diganti!</h3>
-                      <p className="text-sm text-green-400/80 mb-1">Kode Klaim: <strong>{result.claim_code}</strong></p>
-                      <p className="text-sm text-green-400/80 mb-3">{result.resolution_notes}</p>
-                      
-                      <div className="bg-black/40 rounded-lg p-4 space-y-3 text-sm border border-white/5">
-                        <div>
-                          <span className="text-white/40 text-xs uppercase tracking-wider">Email / Username Baru</span>
-                          <div className="flex justify-between items-center mt-1">
-                            <strong className="text-white select-all break-all">{result.new_email}</strong>
-                            <button 
-                              onClick={() => handleCopy(result.new_email, 'email')}
-                              className="ml-2 p-1.5 rounded-md bg-white/5 hover:bg-white/10 transition flex-shrink-0"
-                              title="Copy Email"
-                            >
-                              <FiCopy className="w-3.5 h-3.5 text-white/50" />
-                            </button>
-                          </div>
-                          {copied === 'email' && <span className="text-xs text-green-400">Tersalin!</span>}
-                        </div>
-                        <div className="border-t border-white/5 pt-3">
-                          <span className="text-white/40 text-xs uppercase tracking-wider">Password Baru</span>
-                          <div className="flex justify-between items-center mt-1">
-                            <strong className="text-white select-all break-all">{result.new_password || '(Tersedia di dashboard pesanan)'}</strong>
-                            {result.new_password && (
-                              <button 
-                                onClick={() => handleCopy(result.new_password, 'password')}
-                                className="ml-2 p-1.5 rounded-md bg-white/5 hover:bg-white/10 transition flex-shrink-0"
-                                title="Copy Password"
-                              >
-                                <FiCopy className="w-3.5 h-3.5 text-white/50" />
-                              </button>
-                            )}
-                          </div>
-                          {copied === 'password' && <span className="text-xs text-green-400">Tersalin!</span>}
-                        </div>
-                      </div>
-
-                      {result.new_password && (
-                        <button
-                          onClick={handleCopyAll}
-                          className="w-full mt-3 py-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 transition text-xs text-green-400 font-medium"
-                        >
-                          {copied === 'all' ? '✓ Tersalin!' : '📋 Salin Semua (Email + Password)'}
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #222' }}>
+                    <FiCheckCircle style={{ color: '#22c55e', fontSize: '24px' }} />
+                    <div>
+                      <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 2px' }}>Penggantian Berhasil</h3>
+                      <p style={{ fontSize: '0.85rem', color: '#888', margin: 0 }}>ID: {result.claim_code}</p>
+                    </div>
+                  </div>
+                  
+                  <div style={{ background: '#0a0a0a', border: '1px solid #222', borderRadius: '8px', padding: '16px', marginBottom: '24px' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email Baru</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                        <span style={{ color: '#fff', fontFamily: 'monospace', fontSize: '1rem' }}>{result.new_email}</span>
+                        <button onClick={() => handleCopy(result.new_email, 'email')} style={{ background: 'none', border: 'none', color: copied === 'email' ? '#22c55e' : '#666', cursor: 'pointer' }}>
+                          {copied === 'email' ? <FiCheckCircle /> : <FiCopy />}
                         </button>
-                      )}
+                      </div>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Password Baru</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                        <span style={{ color: '#fff', fontFamily: 'monospace', fontSize: '1rem' }}>{result.new_password || '---'}</span>
+                        {result.new_password && (
+                          <button onClick={() => handleCopy(result.new_password, 'password')} style={{ background: 'none', border: 'none', color: copied === 'password' ? '#22c55e' : '#666', cursor: 'pointer' }}>
+                            {copied === 'password' ? <FiCheckCircle /> : <FiCopy />}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               ) : result.status === 'no_backup' ? (
-                <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <FiAlertCircle className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h3 className="font-semibold text-orange-400 mb-1">Akun Cadangan Habis</h3>
-                      <p className="text-sm text-orange-400/80">Kode Klaim: <strong>{result.claim_code}</strong></p>
-                      <p className="text-sm text-orange-400/80 mt-2">{result.resolution_notes}</p>
-                      <p className="text-xs text-orange-400/60 mt-2">Simpan kode klaim di atas. Admin kami akan memproses penggantian akun Anda segera.</p>
-                    </div>
+                <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+                  <FiAlertCircle style={{ color: '#eab308', fontSize: '32px', margin: '0 auto 16px' }} />
+                  <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 8px' }}>Menunggu Admin</h3>
+                  <p style={{ fontSize: '0.9rem', color: '#888', margin: '0 0 16px', lineHeight: 1.5 }}>{result.resolution_notes}</p>
+                  <div style={{ background: '#0a0a0a', border: '1px solid #222', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: '#aaa' }}>
+                    ID Klaim: <strong style={{ color: '#fff' }}>{result.claim_code}</strong>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-                  <div className="flex items-start gap-3">
-                    <FiXCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h3 className="font-semibold text-red-400 mb-1">Klaim Ditolak</h3>
-                      {result.claim_code && <p className="text-sm text-red-400/80">Kode: <strong>{result.claim_code}</strong></p>}
-                      <p className="text-sm text-red-400/80 mt-2">{result.resolution_notes || 'Data yang dikirim tidak valid.'}</p>
-                    </div>
-                  </div>
+                <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+                  <FiAlertCircle style={{ color: '#ef4444', fontSize: '32px', margin: '0 auto 16px' }} />
+                  <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 8px' }}>Klaim Ditolak</h3>
+                  <p style={{ fontSize: '0.9rem', color: '#888', margin: '0', lineHeight: 1.5 }}>
+                    {result.resolution_notes || 'Data kredensial tidak cocok. Pastikan password sesuai dengan data pembelian.'}
+                  </p>
                 </div>
               )}
 
               <button 
                 onClick={() => { setResult(null); setFormData({ ...formData, reported_password: '' }); }} 
-                className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 transition text-sm font-medium"
+                style={{ 
+                  width: '100%', padding: '12px', borderRadius: '8px',
+                  background: '#111', color: '#ededed',
+                  border: '1px solid #333', fontSize: '0.95rem', fontWeight: 500,
+                  cursor: 'pointer', transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#222'}
+                onMouseLeave={(e) => e.currentTarget.style.background = '#111'}
               >
-                Ajukan Klaim Lainnya
+                Kembali
               </button>
             </motion.div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <motion.form 
+              key="form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              onSubmit={handleSubmit}
+            >
               {error && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center gap-2">
-                  <FiAlertCircle className="flex-shrink-0" />
+                <div style={{ 
+                  background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', 
+                  padding: '12px 16px', borderRadius: '8px', 
+                  color: '#ef4444', fontSize: '0.85rem', 
+                  display: 'flex', gap: '8px', marginBottom: '24px'
+                }}>
+                  <FiAlertCircle style={{ marginTop: '2px', flexShrink: 0 }} />
                   <span>{error}</span>
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-medium text-white/50 mb-1.5 uppercase tracking-wider">No. Pesanan *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="ORD-XXXXX"
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/50 transition"
-                  value={formData.order_number}
-                  onChange={e => setFormData({...formData, order_number: e.target.value})}
-                />
-              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div>
+                  <label style={labelStyle}>No. Pesanan</label>
+                  <input
+                    type="text" required placeholder="ORD-XXXXX"
+                    style={inputStyle} value={formData.order_number}
+                    onChange={e => setFormData({...formData, order_number: e.target.value})}
+                    onFocus={focusStyle} onBlur={blurStyle}
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-medium text-white/50 mb-1.5 uppercase tracking-wider">Email / Username Akun *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="email@akun.com"
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/50 transition"
-                  value={formData.reported_email}
-                  onChange={e => setFormData({...formData, reported_email: e.target.value})}
-                />
-              </div>
+                <div>
+                  <label style={labelStyle}>Email / Username Akun</label>
+                  <input
+                    type="text" required placeholder="email@akun.com"
+                    style={inputStyle} value={formData.reported_email}
+                    onChange={e => setFormData({...formData, reported_email: e.target.value})}
+                    onFocus={focusStyle} onBlur={blurStyle}
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-medium text-white/50 mb-1.5 uppercase tracking-wider">Password Akun *</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••"
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/50 transition"
-                  value={formData.reported_password}
-                  onChange={e => setFormData({...formData, reported_password: e.target.value})}
-                />
-                <p className="text-xs text-white/30 mt-1">Masukkan password yang diberikan saat pembelian untuk verifikasi</p>
-              </div>
+                <div>
+                  <label style={labelStyle}>Password Asli</label>
+                  <input
+                    type="password" required placeholder="••••••••"
+                    style={inputStyle} value={formData.reported_password}
+                    onChange={e => setFormData({...formData, reported_password: e.target.value})}
+                    onFocus={focusStyle} onBlur={blurStyle}
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-medium text-white/50 mb-1.5 uppercase tracking-wider">Jenis Masalah *</label>
-                <select
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/50 transition text-white"
-                  value={formData.issue_type}
-                  onChange={e => setFormData({...formData, issue_type: e.target.value})}
-                >
-                  <option value="password_changed">Password Salah / Diubah</option>
-                  <option value="screen_limit">Limit Screen (Terlalu Banyak Layar)</option>
-                  <option value="suspended">Akun Suspended / Hold</option>
-                  <option value="other">Lainnya</option>
-                </select>
-              </div>
+                <div>
+                  <label style={labelStyle}>Jenis Kendala</label>
+                  <select
+                    style={{ ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8.825L1.175 4 2.238 2.938 6 6.7 9.763 2.937 10.825 4z' fill='%23666'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center' }}
+                    value={formData.issue_type}
+                    onChange={e => setFormData({...formData, issue_type: e.target.value})}
+                    onFocus={focusStyle} onBlur={blurStyle}
+                  >
+                    <option value="password_changed">Password Salah / Diubah</option>
+                    <option value="screen_limit">Limit Screen (Terlalu Banyak Layar)</option>
+                    <option value="suspended">Akun Suspended / Hold</option>
+                    <option value="other">Kendala Lainnya</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-xs font-medium text-white/50 mb-1.5 uppercase tracking-wider">Keterangan Tambahan (Opsional)</label>
-                <textarea
-                  placeholder="Detail masalah..."
-                  rows={2}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-purple-500/50 transition resize-none"
-                  value={formData.issue_description}
-                  onChange={e => setFormData({...formData, issue_description: e.target.value})}
-                />
+                <div>
+                  <label style={labelStyle}>Keterangan (Opsional)</label>
+                  <textarea
+                    placeholder="Detail kendala..."
+                    style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
+                    value={formData.issue_description}
+                    onChange={e => setFormData({...formData, issue_description: e.target.value})}
+                    onFocus={focusStyle} onBlur={blurStyle}
+                  />
+                </div>
               </div>
 
               <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 mt-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-sm transition shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:shadow-[0_0_25px_rgba(147,51,234,0.5)] disabled:opacity-50 flex items-center justify-center"
+                type="submit" disabled={loading}
+                style={{ 
+                  width: '100%', padding: '12px', borderRadius: '8px', marginTop: '32px',
+                  background: loading ? '#333' : '#ededed', 
+                  color: loading ? '#888' : '#000', 
+                  border: 'none', fontSize: '0.95rem', fontWeight: 600,
+                  cursor: loading ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+                onMouseEnter={(e) => { if(!loading) e.currentTarget.style.background = '#fff'; }}
+                onMouseLeave={(e) => { if(!loading) e.currentTarget.style.background = '#ededed'; }}
               >
-                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '🛡️ Kirim Klaim Garansi'}
+                {loading ? 'Memproses...' : 'Klaim Garansi'}
               </button>
-
-              <p className="text-xs text-center text-white/30 mt-2">
-                Sistem akan otomatis memverifikasi data Anda dan mengganti akun jika tersedia cadangan.
-              </p>
-            </form>
+            </motion.form>
           )}
-        </div>
-      </div>
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }
+
