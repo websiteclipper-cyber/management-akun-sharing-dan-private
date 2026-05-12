@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase.from('warranty_claims').select(`
       *,
-      orders (order_number, total_amount),
+      orders (order_number, total_amount, buyer_email:buyers(name, email, phone)),
       products (name, code),
       backup_accounts (account_identifier)
     `).order('created_at', { ascending: false });
@@ -29,17 +29,19 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, status, resolution_notes, replacement_backup_id } = body;
+    const { id, status, admin_notes, resolution_notes, replacement_backup_id } = body;
 
-    if (!id || !status) {
-      return NextResponse.json({ error: 'ID dan status diperlukan' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 });
     }
 
     const updateData: any = {
-      status,
-      resolution_notes,
       updated_at: new Date().toISOString()
     };
+
+    if (status) updateData.status = status;
+    if (admin_notes !== undefined) updateData.admin_notes = admin_notes;
+    if (resolution_notes !== undefined) updateData.resolution_notes = resolution_notes;
 
     if (status === 'resolved' || status === 'auto_replaced' || status === 'invalid_claim') {
       updateData.resolved_at = new Date().toISOString();

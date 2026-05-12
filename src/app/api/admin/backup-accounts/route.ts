@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { encrypt } from '@/lib/crypto';
 
@@ -6,13 +6,16 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('product_id');
+    const stockAccountId = searchParams.get('stock_account_id');
     const status = searchParams.get('status');
 
     let query = supabase.from('backup_accounts').select(`
       *,
+      stock_accounts (id, account_identifier, product_id, products:product_id (name, code)),
       products (name, code)
     `).order('created_at', { ascending: false });
 
+    if (stockAccountId) query = query.eq('stock_account_id', stockAccountId);
     if (productId) query = query.eq('product_id', productId);
     if (status) query = query.eq('status', status);
 
@@ -28,19 +31,48 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { product_id, account_identifier, account_secret, profile_info, pin_info, notes } = body;
+    const { stock_account_id, product_id, account_identifier, account_secret, profile_info, pin_info, notes, sort_order } = body;
 
-    if (!product_id || !account_identifier || !account_secret) {
-      return NextResponse.json({ error: 'Data wajib tidak lengkap' }, { status: 400 });
+    if (!account_identifier || !account_secret) {
+      return NextResponse.json({ error: 'Email dan password wajib diisi' }, { status: 400 });
+    }
+
+    if (!stock_account_id && !product_id) {
+      return NextResponse.json({ error: 'Harus memilih stok akun atau produk' }, { status: 400 });
+    }
+
+    // If stock_account_id provided, auto-resolve the product_id
+    let resolvedProductId = product_id;
+    if (stock_account_id && !product_id) {
+      const { data: stockAcc } = await supabase
+        .from('stock_accounts')
+        .select('product_id')
+        .eq('id', stock_account_id)
+        .single();
+      if (stockAcc) resolvedProductId = stockAcc.product_id;
+    }
+
+    // Get the next sort_order
+    let nextSortOrder = sort_order ?? 0;
+    if (sort_order === undefined || sort_order === null) {
+      const { data: existing } = await supabase
+        .from('backup_accounts')
+        .select('sort_order')
+        .eq(stock_account_id ? 'stock_account_id' : 'product_id', stock_account_id || product_id)
+        .order('sort_order', { ascending: false })
+        .limit(1);
+      nextSortOrder = existing && existing.length > 0 ? existing[0].sort_order + 1 : 0;
     }
 
     const { data, error } = await supabase.from('backup_accounts').insert({
-      product_id,
+      stock_account_id: stock_account_id || null,
+      product_id: resolvedProductId || null,
       account_identifier,
       account_secret_encrypted: encrypt(account_secret),
-      profile_info,
-      pin_info,
-      notes,
+      profile_info: profile_info || null,
+      pin_info: pin_info || null,
+      notes: notes || null,
+      sort_order: nextSortOrder,
       status: 'available',
       is_used: false,
     }).select().single();
@@ -55,20 +87,22 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, product_id, account_identifier, account_secret, profile_info, pin_info, status, is_used, notes } = body;
+    const { id, stock_account_id, product_id, account_identifier, account_secret, profile_info, pin_info, status, is_used, notes } = body;
 
     if (!id) return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 });
 
     const updateData: any = {
-      product_id,
       account_identifier,
-      profile_info,
-      pin_info,
-      status,
-      is_used,
-      notes,
+      profile_info: profile_info || null,
+      pin_info: pin_info || null,
+      notes: notes || null,
       updated_at: new Date().toISOString()
     };
+
+    if (stock_account_id !== undefined) updateData.stock_account_id = stock_account_id;
+    if (product_id !== undefined) updateData.product_id = product_id;
+    if (status !== undefined) updateData.status = status;
+    if (is_used !== undefined) updateData.is_used = is_used;
 
     if (account_secret && account_secret.trim() !== '') {
       updateData.account_secret_encrypted = encrypt(account_secret);

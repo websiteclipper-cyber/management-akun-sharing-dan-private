@@ -16,7 +16,8 @@ export default function StockAccountsPage() {
   const [editItem, setEditItem] = useState<StockAccount | null>(null);
   const [isCopy, setIsCopy] = useState(false);
   const [showBuyers, setShowBuyers] = useState<number | null>(null);
-  const [buyers, setBuyers] = useState<Array<{ id: number; buyer_name: string; status: string; start_at: string; expired_at: string }>>([]);
+  const [buyers, setBuyers] = useState<Array<{ id: number; buyer_name: string; status: string; start_at: string; expired_at: string }>>([]); 
+  const [backupCounts, setBackupCounts] = useState<Record<number, { available: number; total: number }>>({});
 
   // Feature 4: Search & Pagination state
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,12 +30,24 @@ export default function StockAccountsPage() {
   useEffect(() => { loadData(); }, []);
 
   async function loadData() {
-    const [{ data: accs }, { data: prods }] = await Promise.all([
+    const [{ data: accs }, { data: prods }, { data: backups }] = await Promise.all([
       supabase.from('stock_accounts').select('*, product:products(*)').order('created_at', { ascending: false }),
       supabase.from('products').select('*').eq('status', 'active').order('name'),
+      supabase.from('backup_accounts').select('id, stock_account_id, is_used'),
     ]);
     setAccounts(accs || []);
     setProducts(prods || []);
+    
+    // Calculate backup counts per stock account
+    const counts: Record<number, { available: number; total: number }> = {};
+    (backups || []).forEach((b: any) => {
+      if (b.stock_account_id) {
+        if (!counts[b.stock_account_id]) counts[b.stock_account_id] = { available: 0, total: 0 };
+        counts[b.stock_account_id].total++;
+        if (!b.is_used) counts[b.stock_account_id].available++;
+      }
+    });
+    setBackupCounts(counts);
     setLoading(false);
   }
 
@@ -254,6 +267,7 @@ export default function StockAccountsPage() {
                     <th>Identifier</th>
                     <th>Tipe</th>
                     <th>Slot Usage</th>
+                    <th>Backup</th>
                     <th>Status</th>
                     <th>Aksi</th>
                   </tr>
@@ -284,6 +298,19 @@ export default function StockAccountsPage() {
                             />
                           </div>
                         </div>
+                      </td>
+                      <td>
+                        {backupCounts[a.id] ? (
+                          <span style={{
+                            padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600,
+                            background: backupCounts[a.id].available > 0 ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
+                            color: backupCounts[a.id].available > 0 ? '#22c55e' : '#ef4444',
+                          }}>
+                            {backupCounts[a.id].available}/{backupCounts[a.id].total}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>—</span>
+                        )}
                       </td>
                       <td>
                         <span className={`badge ${
@@ -323,7 +350,7 @@ export default function StockAccountsPage() {
                     </tr>
                   ))}
                   {paginatedAccounts.length === 0 && (
-                    <tr><td colSpan={8} className="empty-state"><div className="icon">🔑</div><h3>{searchQuery || filterProduct !== 'all' || filterStatus !== 'all' ? 'Tidak ada hasil yang cocok' : 'Belum ada stok akun'}</h3></td></tr>
+                    <tr><td colSpan={9} className="empty-state"><div className="icon">🔑</div><h3>{searchQuery || filterProduct !== 'all' || filterStatus !== 'all' ? 'Tidak ada hasil yang cocok' : 'Belum ada stok akun'}</h3></td></tr>
                   )}
                 </tbody>
               </table>
