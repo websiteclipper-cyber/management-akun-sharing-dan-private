@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // 2. Find active assignment matching the email
     const { data: assignments, error: assignError } = await supabase
       .from('account_assignments')
-      .select('id, stock_account_id, status, stock_accounts(id, account_identifier, account_secret_encrypted)')
+      .select('id, stock_account_id, status, expired_at, stock_accounts(id, account_identifier, account_secret_encrypted)')
       .eq('order_id', order.id)
       .in('status', ['active', 'replaced']);
 
@@ -41,6 +41,11 @@ export async function POST(request: NextRequest) {
 
     if (!assignment) {
       return NextResponse.json({ error: 'Email yang dilaporkan tidak cocok dengan akun pesanan Anda' }, { status: 400 });
+    }
+
+    // Check if warranty has expired
+    if (assignment.expired_at && new Date(assignment.expired_at) < new Date()) {
+      return NextResponse.json({ error: 'Masa garansi pesanan Anda sudah habis.' }, { status: 400 });
     }
 
     // 3. Verify password - decrypt and compare
