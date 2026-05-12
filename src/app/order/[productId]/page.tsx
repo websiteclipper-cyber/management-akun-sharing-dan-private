@@ -43,6 +43,7 @@ export default function OrderPage() {
   const [discountInfo, setDiscountInfo] = useState<DiscountInfo | null>(null);
   const [discountError, setDiscountError] = useState('');
   const [discountLoading, setDiscountLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     const session = localStorage.getItem('buyer_session');
@@ -124,7 +125,7 @@ export default function OrderPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!buyer) return;
+    if (!buyer || !agreed) return;
     setSubmitting(true);
     setError('');
 
@@ -581,8 +582,40 @@ export default function OrderPage() {
 
             {error && <div className="login-error">{error}</div>}
 
+            {/* ===== TERMS AND CONDITIONS ===== */}
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.05)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              padding: '16px',
+              marginBottom: '20px',
+              fontSize: '0.85rem',
+              lineHeight: '1.5',
+              color: 'var(--text-primary)'
+            }}>
+              <h4 style={{ color: 'var(--brand-danger)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>⚠️</span> Catatan Penting & Ketentuan Garansi untuk Pembeli Akun Premium
+              </h4>
+              <p style={{ marginBottom: '8px' }}>Halo! Terima kasih sudah memilih kami untuk mendapatkan akun premium dengan harga jauh lebih murah dibanding harga resminya. Sebelum kamu lanjut checkout, mohon baca catatan ini dengan teliti ya:</p>
+              <ul style={{ paddingLeft: '20px', marginBottom: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <li>Akun ini diperoleh melalui promo trial resmi yang sedang berjalan (event harga murah terbatas waktu). Harga super hemat yang kamu bayar ini karena memanfaatkan kesempatan trial tersebut.</li>
+                <li><strong>Garansi yang berlaku hanya 1 jenis saja:</strong> Jika masa aktif akun habis secara normal (expired sesuai masa trial), kami akan ganti dengan akun baru gratis.</li>
+                <li><strong>Tidak ada garansi jika akun terblokir / dibanned oleh pihak resmi platform.</strong> Kondisi ini tidak tercover garansi.</li>
+                <li>Setelah event/trial ini berakhir, kami tidak bisa menjamin akun tetap aktif selamanya karena sepenuhnya bergantung pada kebijakan platform.</li>
+                <li>Jika akun tidak bisa digunakan lagi (selain kasus terblokir), kami akan bantu alihkan ke aplikasi/platform alternatif sejenis dengan cara paling mudah dan cepat.</li>
+                <li><strong>Pembelian ini bersifat final.</strong></li>
+              </ul>
+              <p style={{ marginBottom: '12px' }}>Dengan membeli, kamu secara otomatis setuju dengan semua ketentuan di atas, termasuk batasan garansi yang sudah dijelaskan. Mau lanjut beli? Ketik "SETUJU" atau centang kotak di bawah ini lalu langsung checkout sekarang. Kami siap proses secepat mungkin setelah konfirmasi kamu. Salam hangat, Tim pastipremium.store.</p>
+              <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                  <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: 'var(--brand-primary)' }} />
+                  Saya Setuju dengan ketentuan di atas
+                </label>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit}>
-              <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center' }} disabled={submitting}>
+              <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: (!agreed || submitting) ? 0.5 : 1 }} disabled={submitting || !agreed}>
                 {submitting ? <span className="loading-spinner" /> : `${t('order_confirm_pay')} ${formatPrice(finalDisplayPrice)}`}
               </button>
             </form>
