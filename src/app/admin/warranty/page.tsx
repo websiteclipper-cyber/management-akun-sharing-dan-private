@@ -197,7 +197,7 @@ export default function AdminWarrantyClaims() {
               <tr>
                 <th>Waktu</th>
                 <th>Kode Klaim</th>
-                <th>Order</th>
+                <th>Order & Pembeli</th>
                 <th>Produk</th>
                 <th>Email Dilaporkan</th>
                 <th>Kendala</th>
@@ -219,8 +219,16 @@ export default function AdminWarrantyClaims() {
                     <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 600 }}>
                       {c.claim_code}
                     </td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      {c.orders?.order_number || `#${c.order_id}`}
+                    <td>
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                        {c.orders?.order_number || `#${c.order_id}`}
+                      </div>
+                      {c.orders?.buyer_email && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div>👤 {c.orders.buyer_email.name || 'Tanpa Nama'}</div>
+                          <div>📱 {c.orders.buyer_email.phone || '-'}</div>
+                        </div>
+                      )}
                     </td>
                     <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
                       {c.products?.name || '-'}
@@ -289,6 +297,19 @@ export default function AdminWarrantyClaims() {
                   <div><span style={{ color: 'var(--text-muted)' }}>Waktu:</span> {new Date(selectedClaim.created_at).toLocaleString('id-ID')}</div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Order:</span> <strong>{selectedClaim.orders?.order_number || selectedClaim.order_id}</strong></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Produk:</span> {selectedClaim.products?.name || '-'}</div>
+                  {selectedClaim.orders?.buyer_email && (
+                    <>
+                      <div><span style={{ color: 'var(--text-muted)' }}>Nama Pembeli:</span> {selectedClaim.orders.buyer_email.name || 'Tanpa Nama'}</div>
+                      <div>
+                        <span style={{ color: 'var(--text-muted)' }}>No WA:</span>{' '}
+                        {selectedClaim.orders.buyer_email.phone ? (
+                          <a href={`https://wa.me/${selectedClaim.orders.buyer_email.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#25D366', textDecoration: 'none', fontWeight: 600 }}>
+                            {selectedClaim.orders.buyer_email.phone}
+                          </a>
+                        ) : '-'}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
