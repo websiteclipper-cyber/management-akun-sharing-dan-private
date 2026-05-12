@@ -11,6 +11,12 @@ export default function AdminWarrantyClaims() {
   const [updateData, setUpdateData] = useState({
     status: '', admin_notes: '', resolution_notes: ''
   });
+  // Manual replace state
+  const [availableBackups, setAvailableBackups] = useState<any[]>([]);
+  const [selectedBackupId, setSelectedBackupId] = useState('');
+  const [replacing, setReplacing] = useState(false);
+  const [replaceResult, setReplaceResult] = useState<any>(null);
+  const [loadingBackups, setLoadingBackups] = useState(false);
 
   useEffect(() => {
     fetchClaims();
@@ -44,6 +50,43 @@ export default function AdminWarrantyClaims() {
     
     setShowModal(false);
     fetchClaims();
+  };
+
+  const fetchAvailableBackups = async (productId: string) => {
+    setLoadingBackups(true);
+    try {
+      const res = await fetch(`/api/admin/warranty/manual-replace?product_id=${productId}`);
+      const data = await res.json();
+      setAvailableBackups(Array.isArray(data) ? data : []);
+    } catch { setAvailableBackups([]); }
+    setLoadingBackups(false);
+  };
+
+  const handleManualReplace = async () => {
+    if (!selectedClaim || !selectedBackupId) return;
+    setReplacing(true);
+    setReplaceResult(null);
+    try {
+      const res = await fetch('/api/admin/warranty/manual-replace', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claim_id: selectedClaim.id,
+          backup_account_id: selectedBackupId,
+          admin_notes: updateData.admin_notes || 'Manual replace oleh admin',
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setReplaceResult({ error: data.error });
+      } else {
+        setReplaceResult(data);
+        fetchClaims();
+      }
+    } catch (err: any) {
+      setReplaceResult({ error: err.message || 'Gagal mengganti akun' });
+    }
+    setReplacing(false);
   };
 
   // Stats
@@ -211,6 +254,9 @@ export default function AdminWarrantyClaims() {
                             admin_notes: c.admin_notes || '',
                             resolution_notes: c.resolution_notes || ''
                           });
+                          setAvailableBackups([]);
+                          setSelectedBackupId('');
+                          setReplaceResult(null);
                           setShowModal(true);
                         }} 
                         className="btn btn-secondary btn-sm"
@@ -273,8 +319,67 @@ export default function AdminWarrantyClaims() {
                 </div>
               )}
 
+              {/* Manual Replace Section — for no_backup / pending claims */}
+              {(selectedClaim.status === 'no_backup' || selectedClaim.status === 'pending' || selectedClaim.status === 'manual_review') && !replaceResult?.message && (
+                <div style={{ background: 'rgba(59,130,246,0.06)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', fontWeight: 700 }}>
+                    🔧 Ganti Manual
+                  </div>
+                  {availableBackups.length === 0 && !loadingBackups ? (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => fetchAvailableBackups(selectedClaim.product_id)}
+                    >
+                      Cari Akun Backup Tersedia
+                    </button>
+                  ) : loadingBackups ? (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Memuat backup...</div>
+                  ) : availableBackups.length === 0 ? (
+                    <div style={{ fontSize: '0.85rem', color: '#f97316' }}>⚠️ Tidak ada akun backup tersedia untuk produk ini.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <select
+                        className="form-select"
+                        value={selectedBackupId}
+                        onChange={e => setSelectedBackupId(e.target.value)}
+                        style={{ fontSize: '0.85rem' }}
+                      >
+                        <option value="">-- Pilih akun backup --</option>
+                        {availableBackups.map((b: any) => (
+                          <option key={b.id} value={b.id}>{b.account_identifier} (#{b.sort_order || '-'})</option>
+                        ))}
+                      </select>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        disabled={!selectedBackupId || replacing}
+                        onClick={handleManualReplace}
+                        style={{ background: '#3b82f6' }}
+                      >
+                        {replacing ? 'Mengganti...' : '✅ Ganti Sekarang'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Replace Result */}
+              {replaceResult?.message && (
+                <div style={{ background: 'rgba(34,197,94,0.08)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: 700 }}>✅ Berhasil Diganti</div>
+                  <div style={{ fontSize: '0.85rem' }}>
+                    <div><span style={{ color: 'var(--text-muted)' }}>Email Baru:</span> <strong style={{ fontFamily: 'monospace', color: '#22c55e' }}>{replaceResult.new_email}</strong></div>
+                    <div style={{ marginTop: '4px' }}><span style={{ color: 'var(--text-muted)' }}>Password:</span> <strong style={{ fontFamily: 'monospace', color: '#22c55e' }}>{replaceResult.new_password}</strong></div>
+                  </div>
+                </div>
+              )}
+              {replaceResult?.error && (
+                <div style={{ background: 'rgba(239,68,68,0.08)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(239,68,68,0.2)', fontSize: '0.85rem', color: '#ef4444' }}>
+                  ❌ {replaceResult.error}
+                </div>
+              )}
+
               {/* Resolution notes */}
-              {selectedClaim.resolution_notes && (
+              {selectedClaim.resolution_notes && !replaceResult?.message && (
                 <div style={{ background: 'var(--bg-secondary)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-secondary)' }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', fontWeight: 700 }}>
                     Catatan Resolusi
