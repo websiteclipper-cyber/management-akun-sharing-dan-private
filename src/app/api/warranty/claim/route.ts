@@ -140,8 +140,56 @@ export async function POST(request: NextRequest) {
             updated_at: new Date().toISOString()
           }).eq('id', assignment.id);
         } else {
-          claimStatus = 'no_backup';
-          resolutionNotes = 'Tidak ada akun cadangan tersedia. Silakan hubungi admin untuk penanganan manual.';
+          // If no backup found, try to use a new stock account
+          const { data: stockAccounts } = await supabase
+            .from('stock_accounts')
+            .select('id, account_identifier, account_secret_encrypted, max_slot, current_used_slot')
+            .eq('product_id', order.product_id)
+            .eq('status', 'active');
+            
+          const availableStock = stockAccounts?.find(s => s.current_used_slot < s.max_slot);
+
+          if (availableStock) {
+            claimStatus = 'auto_replaced';
+            newEmail = availableStock.account_identifier;
+            newPasswordEnc = availableStock.account_secret_encrypted;
+
+            // Decrypt the backup password to show to buyer
+            try {
+              newPasswordDecrypted = decrypt(availableStock.account_secret_encrypted);
+            } catch {
+              newPasswordDecrypted = availableStock.account_secret_encrypted;
+            }
+
+            resolutionNotes = 'Sistem otomatis mengganti dengan akun baru dari stok utama.';
+
+            // Mark old assignment as replaced
+            await supabase.from('account_assignments').update({
+              status: 'replaced',
+              updated_at: new Date().toISOString()
+            }).eq('id', assignment.id);
+
+            // Create new assignment
+            await supabase.from('account_assignments').insert({
+              order_id: order.id,
+              stock_account_id: availableStock.id,
+              status: 'active',
+              assigned_at: new Date().toISOString(),
+              delivered_at: new Date().toISOString(),
+              expired_at: assignment.expired_at,
+              warranty_expired_at: assignment.warranty_expired_at
+            });
+
+            // Update stock account slot
+            await supabase.from('stock_accounts').update({
+              current_used_slot: availableStock.current_used_slot + 1,
+              updated_at: new Date().toISOString()
+            }).eq('id', availableStock.id);
+
+          } else {
+            claimStatus = 'no_backup';
+            resolutionNotes = 'Tidak ada akun cadangan tersedia. Silakan hubungi admin untuk penanganan manual.';
+          }
         }
       }
     }
