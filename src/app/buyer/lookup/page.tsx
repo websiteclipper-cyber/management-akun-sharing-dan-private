@@ -132,6 +132,9 @@ function BuyerLookupPage() {
         <Link href="/" className="brand">✦ pastipremium.store</Link>
         {buyer && (
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <Link href="/warranty" className="btn btn-secondary btn-sm" style={{ textDecoration: 'none', background: 'rgba(147, 51, 234, 0.1)', color: '#c084fc', border: '1px solid rgba(147, 51, 234, 0.3)' }}>
+              🛡️ Klaim Garansi
+            </Link>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>👤 {buyer.name}</span>
             <button className="btn btn-secondary btn-sm" onClick={() => { localStorage.removeItem('buyer_session'); router.push('/buyer/login'); }}>{t('header_logout')}</button>
           </div>
@@ -290,6 +293,7 @@ function BuyerLookupPage() {
               orderNumber={selectedOrder.order_number as string}
               productName={((selectedOrder.product as Record<string, unknown>)?.name as string) || '-'}
               buyerName={buyer?.name || '-'}
+              assignments={assignments}
             />
           </div>
         )}
@@ -383,10 +387,11 @@ function PasswordReveal({ encrypted }: { encrypted: string }) {
   );
 }
 
-function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName }: { 
-  buyerId: number; orderId: number; orderNumber: string; productName: string; buyerName: string;
+function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName, assignments }: { 
+  buyerId: number; orderId: number; orderNumber: string; productName: string; buyerName: string; assignments: any[];
 }) {
   const { t } = useLocale();
+  const router = useRouter();
   const [waNumber, setWaNumber] = useState('');
   const [loadingWa, setLoadingWa] = useState(true);
   const [complaintType, setComplaintType] = useState('');
@@ -453,26 +458,47 @@ function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName 
         ))}
       </div>
 
-      {/* WhatsApp button */}
-      <button
-        onClick={openWhatsApp}
-        disabled={!complaintType || loadingWa}
-        className="btn btn-lg"
-        style={{
-          width: '100%', justifyContent: 'center',
-          background: complaintType ? '#25D366' : 'var(--bg-tertiary)',
-          color: complaintType ? '#fff' : 'var(--text-muted)',
-          border: 'none', fontWeight: 700, fontSize: '0.95rem',
-          padding: '14px', transition: 'all 0.3s',
-          opacity: complaintType ? 1 : 0.6,
-          cursor: complaintType ? 'pointer' : 'not-allowed',
-        }}
-      >
-        {loadingWa ? <span className="loading-spinner" /> : t('support_chat_wa')}
-      </button>
+      {/* WhatsApp & Auto Warranty buttons */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <button
+          onClick={openWhatsApp}
+          disabled={!complaintType || loadingWa}
+          className="btn btn-lg"
+          style={{
+            width: '100%', justifyContent: 'center',
+            background: complaintType ? '#25D366' : 'var(--bg-tertiary)',
+            color: complaintType ? '#fff' : 'var(--text-muted)',
+            border: 'none', fontWeight: 700, fontSize: '0.95rem',
+            padding: '14px', transition: 'all 0.3s',
+            opacity: complaintType ? 1 : 0.6,
+            cursor: complaintType ? 'pointer' : 'not-allowed',
+          }}
+        >
+          {loadingWa ? <span className="loading-spinner" /> : t('support_chat_wa')}
+        </button>
+
+        <button
+          onClick={() => {
+            const email = assignments.length > 0 ? (assignments[0].stock_account as any)?.account_identifier || '' : '';
+            router.push(`/warranty?order=${orderNumber}&email=${encodeURIComponent(email)}`);
+          }}
+          className="btn btn-lg"
+          style={{
+            width: '100%', justifyContent: 'center',
+            background: 'linear-gradient(135deg, #9333ea, #7e22ce)',
+            color: '#fff',
+            border: 'none', fontWeight: 700, fontSize: '0.95rem',
+            padding: '14px', transition: 'all 0.3s',
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px 0 rgba(147, 51, 234, 0.39)',
+          }}
+        >
+          🛡️ Ganti Otomatis
+        </button>
+      </div>
 
       <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
-        {t('support_wa_desc')}
+        {t('support_wa_desc')} atau gunakan Ganti Otomatis untuk pergantian instan.
       </p>
     </div>
   );

@@ -1,18 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { FiAlertCircle, FiCheckCircle, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function WarrantyClaimPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black/95 flex items-center justify-center text-white">Loading...</div>}>
+      <WarrantyForm />
+    </Suspense>
+  );
+}
+
+function WarrantyForm() {
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    order_number: '',
-    reported_email: '',
+    order_number: searchParams.get('order') || searchParams.get('order_number') || '',
+    reported_email: searchParams.get('email') || '',
     reported_password: '',
     issue_type: 'password_changed',
     issue_description: ''
