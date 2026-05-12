@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { decrypt } from '@/lib/crypto';
 import crypto from 'crypto';
+import { sendTelegramNotification } from '@/lib/telegram';
 
 export async function POST(request: NextRequest) {
   try {
@@ -172,6 +173,26 @@ export async function POST(request: NextRequest) {
 
     if (claimInsertError) {
       return NextResponse.json({ error: claimInsertError.message }, { status: 400 });
+    }
+
+    // Send Telegram Notification
+    try {
+      const statusEmoji = claimStatus === 'auto_replaced' ? '✅' : '⚠️';
+      const statusText = claimStatus === 'auto_replaced' ? 'Berhasil Diganti Otomatis' : 'Butuh Penanganan Manual (Stok Kosong)';
+      
+      const message = `
+<b>${statusEmoji} Laporan Garansi Baru!</b>
+Order: <code>${order_number}</code>
+Email: <code>${reported_email}</code>
+Masalah: ${issue_type}
+
+Status: <b>${statusText}</b>
+${claimStatus !== 'auto_replaced' ? '\n<i>Silakan cek dashboard admin untuk memproses klaim ini.</i>' : ''}
+      `.trim();
+
+      await sendTelegramNotification(message);
+    } catch (e) {
+      console.error('Failed to send telegram notification', e);
     }
 
     // Return result to buyer
