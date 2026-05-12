@@ -484,8 +484,7 @@ function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName,
 
         <button
           onClick={() => {
-            const email = assignments.length > 0 ? (assignments[0].stock_account as any)?.account_identifier || '' : '';
-            router.push(`/warranty?order=${orderNumber}&email=${encodeURIComponent(email)}`);
+            router.push(`/warranty?order=${orderNumber}`);
           }}
           className="btn btn-lg"
           style={{

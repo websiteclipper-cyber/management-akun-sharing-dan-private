@@ -23,63 +23,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Pesanan tidak ditemukan. Pastikan kode pesanan benar.' }, { status: 404 });
     }
 
-    // 2. Find active assignment matching the email
-    const { data: assignments, error: assignError } = await supabase
+    // 2. Find active assignments for the order
+    const { data: assignments } = await supabase
       .from('account_assignments')
       .select('id, stock_account_id, status, expired_at, warranty_expired_at, stock_accounts(id, account_identifier, account_secret_encrypted)')
       .eq('order_id', order.id)
       .in('status', ['active', 'replaced']);
 
-    if (assignError || !assignments || assignments.length === 0) {
-      return NextResponse.json({ error: 'Tidak ada akun aktif untuk pesanan ini' }, { status: 404 });
-    }
-
-    // Find matching assignment by reported email
-    const assignment = assignments.find((a: any) =>
-      a.stock_accounts && a.stock_accounts.account_identifier?.toLowerCase() === reported_email.toLowerCase()
-    );
-
-    if (!assignment) {
-      return NextResponse.json({ error: 'Email yang dilaporkan tidak cocok dengan akun pesanan Anda' }, { status: 400 });
-    }
-
-    // Check if warranty has expired
-    const warrantyExpiryDate = assignment.warranty_expired_at || assignment.expired_at;
-    if (warrantyExpiryDate && new Date(warrantyExpiryDate) < new Date()) {
-      return NextResponse.json({ error: 'Masa garansi pesanan Anda sudah habis.' }, { status: 400 });
-    }
-
-    // 3. Verify password - decrypt and compare
-    const stockAccount = (assignment as any).stock_accounts;
+    let assignment = null;
+    let emailMatch = false;
     let passwordMatch = false;
-    try {
-      const decryptedPassword = decrypt(stockAccount.account_secret_encrypted);
-      passwordMatch = decryptedPassword === reported_password;
-    } catch {
-      // If decryption fails (e.g. plain text or broken), do direct compare
-      passwordMatch = stockAccount.account_secret_encrypted === reported_password;
-    }
 
-    if (!passwordMatch) {
-      // Generate claim code anyway for tracking invalid claims
-      const invalidClaimCode = 'WC-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+    if (assignments && assignments.length > 0) {
+      const exactAssignment = assignments.find((a: any) =>
+        a.stock_accounts && a.stock_accounts.account_identifier?.toLowerCase() === reported_email.toLowerCase()
+      );
       
-      await supabase.from('warranty_claims').insert({
-        claim_code: invalidClaimCode,
-        order_id: order.id,
-        assignment_id: assignment.id,
-        buyer_id: order.buyer_id,
-        product_id: order.product_id,
-        reported_email,
-        reported_password: '***hidden***',
-        reason: issue_type + (issue_description ? ' - ' + issue_description : ''),
-        issue_type,
-        issue_description,
-        status: 'invalid_claim',
-        resolution_notes: 'Password yang diinput tidak cocok dengan akun yang diberikan.',
-      });
-
-      return NextResponse.json({ error: 'Data akun tidak cocok. Pastikan email dan password yang Anda masukkan benar.' }, { status: 400 });
+      if (exactAssignment) {
+        assignment = exactAssignment;
+        emailMatch = true;
+        const stockAccount = (exactAssignment as any).stock_accounts;
+        try {
+          const decryptedPassword = decrypt(stockAccount.account_secret_encrypted);
+          passwordMatch = decryptedPassword === reported_password;
+        } catch {
+          passwordMatch = stockAccount.account_secret_encrypted === reported_password;
+        }
+      } else {
+        // Fallback to link the claim
+        assignment = assignments[0];
+      }
     }
 
     // Generate unique claim code
@@ -92,69 +65,85 @@ export async function POST(request: NextRequest) {
     let newPasswordDecrypted = null;
     let newPasswordEnc = null;
 
-    // 4. Try auto-replace: find backup for this specific stock account first, then by product
-    let backup = null;
-
-    // First try: backup linked to the specific stock account
-    const { data: stockBackup } = await supabase
-      .from('backup_accounts')
-      .select('id, account_identifier, account_secret_encrypted')
-      .eq('stock_account_id', stockAccount.id)
-      .eq('is_used', false)
-      .order('sort_order', { ascending: true })
-      .limit(1)
-      .single();
-
-    if (stockBackup) {
-      backup = stockBackup;
+    if (!assignments || assignments.length === 0) {
+      claimStatus = 'manual_review';
+      resolutionNotes = 'Tidak ada akun aktif untuk pesanan ini. Menunggu pengecekan manual dari admin.';
+    } else if (!emailMatch || !passwordMatch) {
+      claimStatus = 'manual_review';
+      resolutionNotes = 'Email atau password yang dilaporkan tidak cocok dengan data sistem. Menunggu pengecekan manual.';
     } else {
-      // Second try: backup linked to the same product
-      const { data: productBackup } = await supabase
-        .from('backup_accounts')
-        .select('id, account_identifier, account_secret_encrypted')
-        .eq('product_id', order.product_id)
-        .eq('is_used', false)
-        .order('sort_order', { ascending: true })
-        .limit(1)
-        .single();
+      // Check if warranty has expired
+      const warrantyExpiryDate = assignment.warranty_expired_at || assignment.expired_at;
+      if (warrantyExpiryDate && new Date(warrantyExpiryDate) < new Date()) {
+        claimStatus = 'invalid_claim';
+        resolutionNotes = 'Masa garansi pesanan Anda sudah habis.';
+      } else {
+        // 4. Try auto-replace: find backup for this specific stock account first, then by product
+        let backup = null;
+        const stockAccount = (assignment as any).stock_accounts;
 
-      if (productBackup) {
-        backup = productBackup;
+        // First try: backup linked to the specific stock account
+        const { data: stockBackup } = await supabase
+          .from('backup_accounts')
+          .select('id, account_identifier, account_secret_encrypted')
+          .eq('stock_account_id', stockAccount.id)
+          .eq('is_used', false)
+          .order('sort_order', { ascending: true })
+          .limit(1)
+          .single();
+
+        if (stockBackup) {
+          backup = stockBackup;
+        } else {
+          // Second try: backup linked to the same product
+          const { data: productBackup } = await supabase
+            .from('backup_accounts')
+            .select('id, account_identifier, account_secret_encrypted')
+            .eq('product_id', order.product_id)
+            .eq('is_used', false)
+            .order('sort_order', { ascending: true })
+            .limit(1)
+            .single();
+
+          if (productBackup) {
+            backup = productBackup;
+          }
+        }
+
+        if (backup) {
+          // Auto replace successful!
+          claimStatus = 'auto_replaced';
+          backupAccountId = backup.id;
+          newEmail = backup.account_identifier;
+          newPasswordEnc = backup.account_secret_encrypted;
+
+          // Decrypt the backup password to show to buyer
+          try {
+            newPasswordDecrypted = decrypt(backup.account_secret_encrypted);
+          } catch {
+            newPasswordDecrypted = backup.account_secret_encrypted;
+          }
+
+          resolutionNotes = 'Sistem otomatis mengganti dengan akun cadangan.';
+
+          // Mark backup as used
+          await supabase.from('backup_accounts').update({
+            is_used: true,
+            status: 'used',
+            used_for_order_id: order.id,
+            used_at: new Date().toISOString()
+          }).eq('id', backup.id);
+
+          // Mark old assignment as replaced
+          await supabase.from('account_assignments').update({
+            status: 'replaced',
+            updated_at: new Date().toISOString()
+          }).eq('id', assignment.id);
+        } else {
+          claimStatus = 'no_backup';
+          resolutionNotes = 'Tidak ada akun cadangan tersedia. Silakan hubungi admin untuk penanganan manual.';
+        }
       }
-    }
-
-    if (backup) {
-      // Auto replace successful!
-      claimStatus = 'auto_replaced';
-      backupAccountId = backup.id;
-      newEmail = backup.account_identifier;
-      newPasswordEnc = backup.account_secret_encrypted;
-
-      // Decrypt the backup password to show to buyer
-      try {
-        newPasswordDecrypted = decrypt(backup.account_secret_encrypted);
-      } catch {
-        newPasswordDecrypted = backup.account_secret_encrypted;
-      }
-
-      resolutionNotes = 'Sistem otomatis mengganti dengan akun cadangan.';
-
-      // Mark backup as used
-      await supabase.from('backup_accounts').update({
-        is_used: true,
-        status: 'used',
-        used_for_order_id: order.id,
-        used_at: new Date().toISOString()
-      }).eq('id', backup.id);
-
-      // Mark old assignment as replaced
-      await supabase.from('account_assignments').update({
-        status: 'replaced',
-        updated_at: new Date().toISOString()
-      }).eq('id', assignment.id);
-    } else {
-      claimStatus = 'no_backup';
-      resolutionNotes = 'Tidak ada akun cadangan tersedia. Silakan hubungi admin untuk penanganan manual.';
     }
 
     // 5. Insert warranty claim
@@ -163,7 +152,7 @@ export async function POST(request: NextRequest) {
       order_id: order.id,
       buyer_id: order.buyer_id,
       product_id: order.product_id,
-      assignment_id: assignment.id,
+      assignment_id: assignment?.id || null,
       reported_email,
       reported_password: '***hidden***',
       reason: issue_type + (issue_description ? ' - ' + issue_description : ''),

@@ -76,7 +76,7 @@ function WarrantyForm() {
 
   const [formData, setFormData] = useState({
     order_number: searchParams.get('order') || searchParams.get('order_number') || '',
-    reported_email: searchParams.get('email') || '',
+    reported_email: '',
     reported_password: '',
     issue_type: 'password_changed',
     issue_description: ''
