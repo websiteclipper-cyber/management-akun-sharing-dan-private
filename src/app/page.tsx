@@ -225,6 +225,13 @@ export default function HomePage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <LanguageSwitcher />
           <Link
+            href="/ketentuan"
+            style={{
+              fontSize: '0.8rem', fontWeight: 500,
+              color: C_TEXT_MUTED, textDecoration: 'none', transition: 'color 0.2s',
+            }}
+          >Ketentuan</Link>
+          <Link
             href="/reseller/login"
             style={{
               fontSize: '0.8rem', fontWeight: 500,
@@ -773,9 +780,18 @@ export default function HomePage() {
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: '6px', marginBottom: '8px',
+          gap: '6px', marginBottom: '12px',
         }}>
           <span style={{ fontWeight: 600, fontSize: '0.85rem', color: C_TEXT }}>PastiPremium</span>
+        </div>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: '20px', marginBottom: '12px', flexWrap: 'wrap',
+        }}>
+          <Link href="/ketentuan" style={{ fontSize: '0.8rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500 }}>⚠️ Ketentuan &amp; Garansi</Link>
+          <Link href="/warranty" style={{ fontSize: '0.8rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500 }}>🛡️ Klaim Garansi</Link>
+          <Link href="/buyer/lookup" style={{ fontSize: '0.8rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500 }}>📦 Cek Pesanan</Link>
+          <Link href="/reseller/login" style={{ fontSize: '0.8rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500 }}>🤝 Mitra Reseller</Link>
         </div>
         <p style={{ fontSize: '0.8rem', color: C_TEXT_MUTED, margin: 0, fontWeight: 400 }}>
           {t('footer_copyright')}
