@@ -9,7 +9,7 @@ export default function AdminWarrantyClaims() {
   const [selectedClaim, setSelectedClaim] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [updateData, setUpdateData] = useState({
-    status: '', admin_notes: '', resolution_notes: ''
+    status: '', admin_notes: '', resolution_notes: '', new_email: ''
   });
   // Manual replace state
   const [availableBackups, setAvailableBackups] = useState<any[]>([]);
@@ -45,6 +45,7 @@ export default function AdminWarrantyClaims() {
         status: updateData.status,
         admin_notes: updateData.admin_notes,
         resolution_notes: updateData.resolution_notes,
+        new_email: updateData.new_email,
       })
     });
     
@@ -260,7 +261,8 @@ export default function AdminWarrantyClaims() {
                           setUpdateData({ 
                             status: c.status, 
                             admin_notes: c.admin_notes || '',
-                            resolution_notes: c.resolution_notes || ''
+                            resolution_notes: c.resolution_notes || '',
+                            new_email: c.new_email || ''
                           });
                           setAvailableBackups([]);
                           setSelectedBackupId('');
@@ -300,12 +302,23 @@ export default function AdminWarrantyClaims() {
                   {selectedClaim.orders?.buyer_email && (
                     <>
                       <div><span style={{ color: 'var(--text-muted)' }}>Nama Pembeli:</span> {selectedClaim.orders.buyer_email.name || 'Tanpa Nama'}</div>
-                      <div>
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                         <span style={{ color: 'var(--text-muted)' }}>No WA:</span>{' '}
                         {selectedClaim.orders.buyer_email.phone ? (
-                          <a href={`https://wa.me/${selectedClaim.orders.buyer_email.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#25D366', textDecoration: 'none', fontWeight: 600 }}>
-                            {selectedClaim.orders.buyer_email.phone}
-                          </a>
+                          <>
+                            <a href={`https://wa.me/${selectedClaim.orders.buyer_email.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#25D366', textDecoration: 'none', fontWeight: 600 }}>
+                              {selectedClaim.orders.buyer_email.phone}
+                            </a>
+                            <a 
+                              href={`https://wa.me/${selectedClaim.orders.buyer_email.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Halo ${selectedClaim.orders.buyer_email.name || ''}, terkait klaim garansi Anda untuk produk ${selectedClaim.products?.name || ''} (Order ${selectedClaim.orders?.order_number || selectedClaim.order_id}). \n\n${updateData.new_email || selectedClaim.new_email ? `Berikut akun penggantinya:\n${updateData.new_email || selectedClaim.new_email}\n\n` : ''}${updateData.resolution_notes || selectedClaim.resolution_notes ? `Catatan: ${updateData.resolution_notes || selectedClaim.resolution_notes}` : ''}`)}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="btn btn-sm" 
+                              style={{ background: '#25D366', color: '#fff', border: 'none', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              💬 Chat WA
+                            </a>
+                          </>
                         ) : '-'}
                       </div>
                     </>
@@ -429,6 +442,17 @@ export default function AdminWarrantyClaims() {
                 {selectedClaim.status === 'auto_replaced' && (
                   <p style={{ fontSize: '0.75rem', color: '#eab308', marginTop: '4px' }}>Status Auto Replaced tidak bisa diubah.</p>
                 )}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Akun Pengganti / Garansian</label>
+                <input 
+                  type="text"
+                  className="form-input"
+                  value={updateData.new_email || ''} 
+                  onChange={e => setUpdateData({...updateData, new_email: e.target.value})}
+                  placeholder="Contoh: email@gmail.com:password123 (opsional)"
+                />
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Isi jika Anda mengganti akun secara manual (di luar pool backup).</p>
               </div>
               <div className="form-group">
                 <label className="form-label">Catatan Admin (Internal)</label>

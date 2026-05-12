@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, status, admin_notes, resolution_notes, replacement_backup_id } = body;
+    const { id, status, admin_notes, resolution_notes, replacement_backup_id, new_email } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 });
@@ -42,6 +42,7 @@ export async function PUT(request: NextRequest) {
     if (status) updateData.status = status;
     if (admin_notes !== undefined) updateData.admin_notes = admin_notes;
     if (resolution_notes !== undefined) updateData.resolution_notes = resolution_notes;
+    if (new_email !== undefined) updateData.new_email = new_email;
 
     if (status === 'resolved' || status === 'auto_replaced' || status === 'invalid_claim') {
       updateData.resolved_at = new Date().toISOString();
