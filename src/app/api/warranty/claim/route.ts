@@ -23,6 +23,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Pesanan tidak ditemukan. Pastikan kode pesanan benar.' }, { status: 404 });
     }
 
+    // 1.5 Prevent Duplicate/Spam Claims
+    const { data: existingClaim } = await supabase
+      .from('warranty_claims')
+      .select('id, status')
+      .eq('order_id', order.id)
+      .ilike('reported_email', reported_email)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingClaim) {
+      if (['pending', 'manual_review', 'no_backup'].includes(existingClaim.status)) {
+        return NextResponse.json({ error: 'Anda sudah mengajukan klaim untuk akun ini yang sedang diproses. Mohon tunggu.' }, { status: 400 });
+      } else {
+        return NextResponse.json({ error: 'Klaim garansi untuk akun ini sudah pernah diproses sebelumnya.' }, { status: 400 });
+      }
+    }
+
     // 2. Find active assignments for the order
     const { data: assignments } = await supabase
       .from('account_assignments')

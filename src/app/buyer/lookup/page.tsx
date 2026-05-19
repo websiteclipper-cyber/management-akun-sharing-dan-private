@@ -249,9 +249,9 @@ function BuyerLookupPage() {
                         <span className={`badge ${(a.status as string) === 'active' ? 'badge-success' : 'badge-neutral'}`}>{a.status as string}</span>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                           <span>Expired: {new Date(a.expired_at as string).toLocaleDateString('id-ID')}</span>
-                          {(a.warranty_expired_at || a.expired_at) && (
+                          {a.warranty_expired_at && (
                             <span style={{ color: 'var(--brand-primary-light)', fontWeight: 600, marginTop: '2px' }}>
-                              Garansi s/d: {new Date((a.warranty_expired_at || a.expired_at) as string).toLocaleDateString('id-ID')}
+                              Garansi s/d: {new Date(a.warranty_expired_at as string).toLocaleDateString('id-ID')}
                             </span>
                           )}
                         </div>
