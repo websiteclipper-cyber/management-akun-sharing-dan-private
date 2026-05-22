@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       .eq('order_id', order.id)
       .in('status', ['active', 'replaced']);
 
-    let assignment = null;
+    let assignment: any = null;
     let emailMatch = false;
     let passwordMatch = false;
 
