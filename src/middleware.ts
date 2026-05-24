@@ -56,8 +56,8 @@ export function middleware(request: NextRequest) {
   const existingLocale = request.cookies.get('pp_locale')?.value;
   
   if (!existingLocale) {
-    // Vercel provides this header automatically on Edge
-    const country = request.headers.get('x-vercel-ip-country') || 'ID';
+    // Detect country code (compatible with Vercel and Netlify)
+    const country = request.geo?.country || request.headers.get('x-vercel-ip-country') || 'ID';
     const config = COUNTRY_LOCALE[country] || { locale: 'id', currency: 'IDR' };
 
     response.cookies.set('pp_locale', config.locale, {
