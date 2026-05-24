@@ -1,0 +1,7 @@
+[build]
+  command = "next build --webpack"
+  publish = ".next"
+
+[build.environment]
+  NODE_OPTIONS = "--max-old-space-size=4096"
+  NODE_VERSION = "20"
