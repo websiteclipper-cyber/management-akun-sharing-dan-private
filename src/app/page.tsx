@@ -258,6 +258,7 @@ export default function HomePage() {
           <LanguageSwitcher />
           <Link
             href="/ketentuan"
+            className="hide-on-mobile"
             style={{
               fontSize: '0.85rem', fontWeight: 500,
               color: C_TEXT_MUTED, textDecoration: 'none', transition: 'color 0.2s',
@@ -267,6 +268,7 @@ export default function HomePage() {
           >Ketentuan</Link>
           <Link
             href="/reseller/login"
+            className="hide-on-mobile"
             style={{
               fontSize: '0.85rem', fontWeight: 500,
               color: C_TEXT_MUTED, textDecoration: 'none', transition: 'color 0.2s',
