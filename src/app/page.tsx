@@ -278,7 +278,7 @@ export default function HomePage() {
           >{t('header_mitra')}</Link>
 
           {buyer ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="hide-on-mobile" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Link
                 href="/buyer/lookup"
                 style={{
@@ -314,6 +314,7 @@ export default function HomePage() {
           ) : (
             <Link
               href="/buyer/login"
+              className="hide-on-mobile"
               style={{
                 background: C_BLUE, color: '#fff',
                 padding: '8px 18px', borderRadius: '20px',
@@ -331,8 +332,66 @@ export default function HomePage() {
               }}
             >{t('header_login')}</Link>
           )}
+
+          {/* Mobile Menu Toggle */}
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => setMenuOpen(!menuOpen)}
+            style={{ marginLeft: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px' }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {menuOpen ? (
+                <>
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </>
+              ) : (
+                <>
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </>
+              )}
+            </svg>
+          </button>
         </div>
       </header>
+
+      {/* ── MOBILE MENU OVERLAY ── */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: 'fixed', top: '64px', left: 0, right: 0,
+              background: 'rgba(9, 9, 11, 0.98)',
+              backdropFilter: 'blur(20px)',
+              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              padding: '20px 24px',
+              zIndex: 99,
+              display: 'flex', flexDirection: 'column', gap: '20px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+            }}
+          >
+            <Link href="/ketentuan" onClick={() => setMenuOpen(false)} style={{ color: '#fff', textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>Ketentuan</Link>
+            <Link href="/reseller/login" onClick={() => setMenuOpen(false)} style={{ color: '#fff', textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>{t('header_mitra')}</Link>
+            
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+            
+            {buyer ? (
+              <>
+                <Link href="/buyer/lookup" onClick={() => setMenuOpen(false)} style={{ color: '#fff', textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>{t('header_my_orders')}</Link>
+                <button onClick={handleLogout} style={{ color: '#ef4444', textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600, background: 'transparent', border: 'none', textAlign: 'left', padding: 0, cursor: 'pointer' }}>{t('header_logout')}</button>
+              </>
+            ) : (
+              <Link href="/buyer/login" onClick={() => setMenuOpen(false)} style={{ color: '#3b82f6', textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>{t('header_login')}</Link>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── HERO with Mesh Gradient ── */}
       <section
