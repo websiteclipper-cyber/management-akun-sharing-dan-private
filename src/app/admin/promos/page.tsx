@@ -30,6 +30,7 @@ export default function AdminPromosPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'inactive'>('active');
 
   const [form, setForm] = useState({
     product_id: 0,
@@ -315,6 +316,60 @@ export default function AdminPromosPage() {
         </div>
       )}
 
+      {/* Tabs */}
+      {!loading && promos.length > 0 && (
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--border-secondary)', paddingBottom: '12px', overflowX: 'auto' }}>
+          <button
+            onClick={() => setActiveTab('active')}
+            style={{
+              background: activeTab === 'active' ? 'var(--bg-card)' : 'transparent',
+              border: activeTab === 'active' ? '1px solid var(--border-secondary)' : '1px solid transparent',
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              color: activeTab === 'active' ? '#4ade80' : 'var(--text-muted)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            🔥 Promo Aktif ({promos.filter(p => p.is_active).length})
+          </button>
+          <button
+            onClick={() => setActiveTab('inactive')}
+            style={{
+              background: activeTab === 'inactive' ? 'var(--bg-card)' : 'transparent',
+              border: activeTab === 'inactive' ? '1px solid var(--border-secondary)' : '1px solid transparent',
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              color: activeTab === 'inactive' ? '#f87171' : 'var(--text-muted)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ⏸️ Promo Nonaktif ({promos.filter(p => !p.is_active).length})
+          </button>
+          <button
+            onClick={() => setActiveTab('all')}
+            style={{
+              background: activeTab === 'all' ? 'var(--bg-card)' : 'transparent',
+              border: activeTab === 'all' ? '1px solid var(--border-secondary)' : '1px solid transparent',
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-md)',
+              color: activeTab === 'all' ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            📋 Semua ({promos.length})
+          </button>
+        </div>
+      )}
+
       {/* Promo List */}
       {loading ? (
         <div className="loading-page"><div className="loading-spinner" /></div>
@@ -326,7 +381,20 @@ export default function AdminPromosPage() {
         </div>
       ) : (
         <div style={{ display: 'grid', gap: '16px' }}>
-          {promos.map(promo => {
+          {promos.filter(p => {
+            if (activeTab === 'active') return p.is_active;
+            if (activeTab === 'inactive') return !p.is_active;
+            return true;
+          }).length === 0 ? (
+            <div className="empty-state" style={{ padding: '40px 0' }}>
+              <div className="icon">📭</div>
+              <h3>Tidak ada promo di kategori ini</h3>
+            </div>
+          ) : promos.filter(p => {
+            if (activeTab === 'active') return p.is_active;
+            if (activeTab === 'inactive') return !p.is_active;
+            return true;
+          }).map(promo => {
             const status = getPromoStatus(promo);
             const discount = getDiscount(promo.original_price, promo.promo_price);
 
