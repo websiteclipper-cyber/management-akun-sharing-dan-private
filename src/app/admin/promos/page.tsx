@@ -169,8 +169,11 @@ export default function AdminPromosPage() {
     return Math.round(((original - promo) / original) * 100);
   }
 
+  const now = new Date();
+  const liveOrScheduledPromos = promos.filter(p => p.is_active && new Date(p.end_date) >= now);
+  const inactiveOrExpiredPromos = promos.filter(p => !p.is_active || new Date(p.end_date) < now);
+
   const activePromos = promos.filter(p => {
-    const now = new Date();
     return p.is_active && new Date(p.start_date) <= now && new Date(p.end_date) >= now;
   });
 
@@ -333,7 +336,7 @@ export default function AdminPromosPage() {
               whiteSpace: 'nowrap',
             }}
           >
-            🔥 Promo Aktif ({promos.filter(p => p.is_active).length})
+            🔥 Promo Aktif ({liveOrScheduledPromos.length})
           </button>
           <button
             onClick={() => setActiveTab('inactive')}
@@ -349,7 +352,7 @@ export default function AdminPromosPage() {
               whiteSpace: 'nowrap',
             }}
           >
-            ⏸️ Promo Nonaktif ({promos.filter(p => !p.is_active).length})
+            ⏸️ Promo Nonaktif ({inactiveOrExpiredPromos.length})
           </button>
           <button
             onClick={() => setActiveTab('all')}
@@ -382,8 +385,8 @@ export default function AdminPromosPage() {
       ) : (
         <div style={{ display: 'grid', gap: '16px' }}>
           {promos.filter(p => {
-            if (activeTab === 'active') return p.is_active;
-            if (activeTab === 'inactive') return !p.is_active;
+            if (activeTab === 'active') return p.is_active && new Date(p.end_date) >= now;
+            if (activeTab === 'inactive') return !p.is_active || new Date(p.end_date) < now;
             return true;
           }).length === 0 ? (
             <div className="empty-state" style={{ padding: '40px 0' }}>
@@ -391,8 +394,8 @@ export default function AdminPromosPage() {
               <h3>Tidak ada promo di kategori ini</h3>
             </div>
           ) : promos.filter(p => {
-            if (activeTab === 'active') return p.is_active;
-            if (activeTab === 'inactive') return !p.is_active;
+            if (activeTab === 'active') return p.is_active && new Date(p.end_date) >= now;
+            if (activeTab === 'inactive') return !p.is_active || new Date(p.end_date) < now;
             return true;
           }).map(promo => {
             const status = getPromoStatus(promo);
