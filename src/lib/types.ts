@@ -50,6 +50,7 @@ export interface Product {
   warranty_days?: number | null;
   default_max_slot: number;
   description: string | null;
+  terms?: string | null;
   status: ProductStatus;
   created_at: string;
   updated_at: string;

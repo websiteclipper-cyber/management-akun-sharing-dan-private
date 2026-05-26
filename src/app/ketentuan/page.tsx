@@ -1,8 +1,38 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import { Product } from '@/lib/types';
 
 export default function KetentuanPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const { data } = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active')
+          .not('terms', 'is', null)
+          .order('platform_name', { ascending: true });
+        
+        const filtered = (data || []).filter(p => p.terms && p.terms.trim() !== '');
+        setProducts(filtered);
+        if (filtered.length > 0) {
+          setSelectedProduct(filtered[0]);
+        }
+      } catch (err) {
+        console.error('Error loading products terms:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProducts();
+  }, []);
   return (
     <div style={{
       minHeight: '100vh',
@@ -216,6 +246,111 @@ export default function KetentuanPage() {
             </p>
           </div>
         </section>
+
+        {/* Section 5 - Product-specific Terms (Interactive) */}
+        {!loading && products.length > 0 && (
+          <section style={{ marginBottom: '28px' }}>
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid rgba(0,0,0,0.06)',
+              borderRadius: '20px',
+              padding: '28px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <div style={{
+                  width: '40px', height: '40px', borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.2rem', flexShrink: 0,
+                  boxShadow: '0 4px 12px rgba(108,92,231,0.3)',
+                }}>📋</div>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: '#1d1d1f' }}>
+                  Ketentuan Khusus Berdasarkan Produk
+                </h2>
+              </div>
+              <p style={{ fontSize: '0.88rem', color: '#86868b', lineHeight: 1.5, marginBottom: '20px' }}>
+                Aturan, kebijakan, dan panduan pemakaian khusus untuk masing-masing akun premium yang wajib kamu ikuti demi kelancaran garansi.
+              </p>
+
+              {/* Horizontal Tabs */}
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                overflowX: 'auto',
+                paddingBottom: '12px',
+                marginBottom: '20px',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch',
+              }}>
+                {products.map(p => {
+                  const isSelected = selectedProduct?.id === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setSelectedProduct(p)}
+                      style={{
+                        background: isSelected ? 'rgba(108,92,231,0.08)' : '#f5f5f7',
+                        border: isSelected ? '1.5px solid #6c5ce7' : '1.5px solid transparent',
+                        borderRadius: '12px',
+                        padding: '10px 16px',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: isSelected ? '#6c5ce7' : '#1d1d1f',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span>✨</span> {p.name}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Display terms detail of selected product */}
+              {selectedProduct && (
+                <div style={{
+                  background: 'rgba(108, 92, 231, 0.03)',
+                  border: '1px dashed rgba(108, 92, 231, 0.25)',
+                  borderRadius: '14px',
+                  padding: '20px',
+                  animation: 'fadeIn 0.3s ease',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1d1d1f' }}>
+                      📋 Aturan Penggunaan {selectedProduct.name}
+                    </span>
+                    <span style={{
+                      background: selectedProduct.account_type === 'sharing' ? 'rgba(59,130,246,0.1)' : 'rgba(108,92,231,0.1)',
+                      color: selectedProduct.account_type === 'sharing' ? '#3b82f6' : '#6c5ce7',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      textTransform: 'uppercase',
+                    }}>
+                      Tipe: {selectedProduct.account_type}
+                    </span>
+                  </div>
+                  <div style={{
+                    fontSize: '0.88rem',
+                    color: '#3d3d3d',
+                    lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap',
+                    margin: 0,
+                  }}>
+                    {selectedProduct.terms}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Summary Box */}
         <div style={{

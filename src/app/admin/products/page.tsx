@@ -177,6 +177,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
     warranty_days: product?.warranty_days?.toString() || product?.duration_days?.toString() || '30',
     default_max_slot: product?.default_max_slot?.toString() || '4',
     description: product?.description || '',
+    terms: product?.terms || '',
     status: product?.status || 'active',
   });
   const [saving, setSaving] = useState(false);
@@ -198,6 +199,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
       warranty_days: parseInt(form.warranty_days),
       default_max_slot: parseInt(form.default_max_slot),
       description: form.description || null,
+      terms: form.terms || null,
       status: form.status,
       updated_at: new Date().toISOString(),
     };
@@ -274,6 +276,11 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
           <div className="form-group">
             <label className="form-label">Deskripsi</label>
             <textarea className="form-textarea" value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Deskripsi produk..." />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Ketentuan Khusus Produk</label>
+            <textarea className="form-textarea" value={form.terms} onChange={e => setForm({...form, terms: e.target.value})} placeholder="Misal: Dilarang ganti password, dilarang edit profil orang lain, dll..." style={{ minHeight: '100px' }} />
+            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Catatan khusus ini akan ditampilkan di halaman pembelian (checkout) dan halaman ketentuan.</small>
           </div>
           <div className="form-group">
             <label className="form-label">Status</label>
