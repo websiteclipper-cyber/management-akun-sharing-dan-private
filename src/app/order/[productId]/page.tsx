@@ -582,6 +582,28 @@ export default function OrderPage() {
 
             {error && <div className="login-error">{error}</div>}
 
+            {/* ===== CUSTOM PRODUCT TERMS ===== */}
+            {product.terms && (
+              <div style={{
+                background: 'rgba(59, 130, 246, 0.05)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+                padding: '16px',
+                marginBottom: '20px',
+                fontSize: '0.85rem',
+                lineHeight: '1.5',
+                color: 'var(--text-primary)',
+                animation: 'fadeIn 0.3s ease'
+              }}>
+                <h4 style={{ color: 'var(--accent)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                  <span>📋</span> Ketentuan & Catatan Khusus {product.name}
+                </h4>
+                <div style={{ whiteSpace: 'pre-wrap', margin: 0, color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                  {product.terms}
+                </div>
+              </div>
+            )}
+
             {/* ===== TERMS AND CONDITIONS ===== */}
             <div style={{
               background: 'rgba(239, 68, 68, 0.05)',

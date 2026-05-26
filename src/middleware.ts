@@ -57,7 +57,7 @@ export function middleware(request: NextRequest) {
   
   if (!existingLocale) {
     // Detect country code (compatible with Vercel and Netlify)
-    const country = request.geo?.country || request.headers.get('x-vercel-ip-country') || 'ID';
+    const country = (request as any).geo?.country || request.headers.get('x-vercel-ip-country') || 'ID';
     const config = COUNTRY_LOCALE[country] || { locale: 'id', currency: 'IDR' };
 
     response.cookies.set('pp_locale', config.locale, {
