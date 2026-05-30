@@ -12,6 +12,27 @@ export default function AdminLoginPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Handle #access_token fragment from Google OAuth redirect (Netlify/non-Vercel hosting)
+    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+
+      if (accessToken && refreshToken) {
+        // Remove the hash from the URL to clean it up
+        window.history.replaceState(null, '', window.location.pathname);
+
+        // Set the session manually using the tokens from the hash
+        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          .then(({ data: { session }, error }) => {
+            if (!error && session?.user?.email) {
+              checkAdminGoogleAuth(session.user.email);
+            }
+          });
+        return;
+      }
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email) checkAdminGoogleAuth(session.user.email);
     });
