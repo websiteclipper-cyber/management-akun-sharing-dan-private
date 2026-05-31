@@ -202,7 +202,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
-          <h1>✦ pastipremium.store</h1>
+          <h1>✦ pastipremium.my.id</h1>
           <p>Admin Dashboard</p>
         </div>
         <nav className="sidebar-nav">
@@ -257,7 +257,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className="admin-main">
         <div className="mobile-only-topbar">
           <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)}>☰</button>
-          <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>✦ pastipremium.store</span>
+          <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>✦ pastipremium.my.id</span>
           {/* Notification bell (mobile) */}
           <button
             onClick={() => setShowNotifications(!showNotifications)}

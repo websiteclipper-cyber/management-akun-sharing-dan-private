@@ -240,7 +240,7 @@ export default function AdminDashboardPage() {
       <div className="admin-topbar">
         <div>
           <h2>Dashboard</h2>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Monitoring Penjualan — pastipremium.store</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Monitoring Penjualan — pastipremium.my.id</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button className="btn btn-secondary btn-sm" onClick={() => { setLoading(true); loadDashboard(); }}>

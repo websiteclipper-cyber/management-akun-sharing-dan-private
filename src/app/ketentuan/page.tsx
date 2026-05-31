@@ -87,7 +87,7 @@ export default function KetentuanPage() {
             Ketentuan & Garansi
           </h1>
           <p style={{ fontSize: '1rem', color: '#86868b', fontWeight: 400 }}>
-            Catatan penting yang wajib kamu baca sebelum membeli akun premium di pastipremium.store
+            Catatan penting yang wajib kamu baca sebelum membeli akun premium di pastipremium.my.id
           </p>
         </div>
 
@@ -412,7 +412,7 @@ export default function KetentuanPage() {
           textAlign: 'center',
         }}>
           <p style={{ fontSize: '0.8rem', color: '#86868b', margin: 0 }}>
-            Salam hangat, <strong>Tim pastipremium.store</strong> ✨
+            Salam hangat, <strong>Tim pastipremium.my.id</strong> ✨
           </p>
           <p style={{ fontSize: '0.75rem', color: '#aeaeb2', marginTop: '6px' }}>
             Halaman ini terakhir diperbarui: Mei 2025

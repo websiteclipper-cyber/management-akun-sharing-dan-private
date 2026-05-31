@@ -161,7 +161,7 @@ export default function ResellerDashboardPage() {
     <div className="public-layout">
       {/* Header */}
       <header className="public-header" style={{ justifyContent: 'space-between' }}>
-        <Link href="/" className="brand">✦ pastipremium.store</Link>
+        <Link href="/" className="brand">✦ pastipremium.my.id</Link>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>🤝 {session.name}</div>
@@ -428,7 +428,7 @@ export default function ResellerDashboardPage() {
                   onClick={() => {
                     let phone = supportWa.replace(/[^0-9]/g, '');
                     if (phone.startsWith('0')) phone = '62' + phone.substring(1);
-                    const text = `Halo Admin pastipremium.store,\n\nSaya mitra *${session?.name || ''}* (${session?.ref_code || ''}).\n\nSaya ingin melaporkan masalah dari buyer saya:\n\n👤 *Nama Buyer:* \n📋 *Nomor Order:* \n⚠️ *Masalah:* \n\nMohon bantuannya. Terima kasih! 🙏`;
+                    const text = `Halo Admin pastipremium.my.id,\n\nSaya mitra *${session?.name || ''}* (${session?.ref_code || ''}).\n\nSaya ingin melaporkan masalah dari buyer saya:\n\n👤 *Nama Buyer:* \n📋 *Nomor Order:* \n⚠️ *Masalah:* \n\nMohon bantuannya. Terima kasih! 🙏`;
                     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
                   }}
                   style={{

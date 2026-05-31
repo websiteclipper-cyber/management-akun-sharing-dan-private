@@ -129,7 +129,7 @@ function BuyerLookupPage() {
   return (
     <div className="public-layout">
       <header className="public-header" style={{ justifyContent: 'space-between' }}>
-        <Link href="/" className="brand">✦ pastipremium.store</Link>
+        <Link href="/" className="brand">✦ pastipremium.my.id</Link>
         {buyer && (
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <Link href="/warranty" className="btn btn-secondary btn-sm" style={{ textDecoration: 'none', background: 'rgba(147, 51, 234, 0.1)', color: '#c084fc', border: '1px solid rgba(147, 51, 234, 0.3)' }}>
@@ -416,7 +416,7 @@ function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName,
     if (phone.startsWith('0')) phone = '62' + phone.substring(1);
 
     const issueText = complaintType || 'Issue with account';
-    const text = `Halo Admin pastipremium.store,\n\nSaya ingin melaporkan masalah:\n\n📋 *Order:* ${orderNumber}\n📦 *Produk:* ${productName}\n👤 *Nama:* ${buyerName}\n⚠️ *Masalah:* ${issueText}\n\nMohon bantuannya. Terima kasih! 🙏`;
+    const text = `Halo Admin pastipremium.my.id,\n\nSaya ingin melaporkan masalah:\n\n📋 *Order:* ${orderNumber}\n📦 *Produk:* ${productName}\n👤 *Nama:* ${buyerName}\n⚠️ *Masalah:* ${issueText}\n\nMohon bantuannya. Terima kasih! 🙏`;
 
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
   }

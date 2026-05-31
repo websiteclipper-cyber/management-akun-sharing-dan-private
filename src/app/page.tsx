@@ -178,7 +178,7 @@ export default function HomePage() {
 
   const categories = Array.from(new Set(products.map(p => p.platform_name.toUpperCase())));
   const waUrl = supportWa
-    ? `https://wa.me/${supportWa.startsWith('0') ? '62' + supportWa.substring(1) : supportWa}?text=${encodeURIComponent('Hi admin pastipremium.store, I need help.')}`
+    ? `https://wa.me/${supportWa.startsWith('0') ? '62' + supportWa.substring(1) : supportWa}?text=${encodeURIComponent('Hi admin pastipremium.my.id, I need help.')}`
     : null;
 
   // Premium Dark Mode Color System

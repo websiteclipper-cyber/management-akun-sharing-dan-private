@@ -184,7 +184,7 @@ export default function OrderPage() {
   return (
     <div className="public-layout">
       <header className="public-header" style={{ justifyContent: 'space-between' }}>
-        <Link href="/" className="brand">✦ pastipremium.store</Link>
+        <Link href="/" className="brand">✦ pastipremium.my.id</Link>
         {buyer && (
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>👤 {buyer.name}</span>
@@ -627,7 +627,7 @@ export default function OrderPage() {
                 <li>Jika akun tidak bisa digunakan lagi (selain kasus terblokir), kami akan bantu alihkan ke aplikasi/platform alternatif sejenis dengan cara paling mudah dan cepat.</li>
                 <li><strong>Pembelian ini bersifat final.</strong></li>
               </ul>
-              <p style={{ marginBottom: '12px' }}>Dengan membeli, kamu secara otomatis setuju dengan semua ketentuan di atas, termasuk batasan garansi yang sudah dijelaskan. Mau lanjut beli? Ketik "SETUJU" atau centang kotak di bawah ini lalu langsung checkout sekarang. Kami siap proses secepat mungkin setelah konfirmasi kamu. Salam hangat, Tim pastipremium.store.</p>
+              <p style={{ marginBottom: '12px' }}>Dengan membeli, kamu secara otomatis setuju dengan semua ketentuan di atas, termasuk batasan garansi yang sudah dijelaskan. Mau lanjut beli? Ketik "SETUJU" atau centang kotak di bawah ini lalu langsung checkout sekarang. Kami siap proses secepat mungkin setelah konfirmasi kamu. Salam hangat, Tim pastipremium.my.id.</p>
               <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
                   <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: 'var(--brand-primary)' }} />
