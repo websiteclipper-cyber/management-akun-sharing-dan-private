@@ -17,7 +17,10 @@ export default function ProductsPage() {
   useEffect(() => { loadProducts(); }, []);
 
   async function loadProducts() {
-    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('products')
+      .select('*')
+      .order('platform_name', { ascending: true })
+      .order('name', { ascending: true });
     setProducts(data || []);
     setLoading(false);
   }
