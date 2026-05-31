@@ -648,63 +648,101 @@ export default function HomePage() {
                   <p style={{ fontSize: '1.05rem', color: C_TEXT_MUTED }}>{t('categories_available', { count: categories.length })}</p>
                 </div>
                 
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                  gap: '24px',
-                }}>
-                  {categories.map(category => {
-                    const count = products.filter(p => p.platform_name.toUpperCase() === category).length;
-                    const icon = getPlatformIcon(category);
-                    const gradient = getPlatformGradient(category);
-                    const glowColor = getPlatformGlow(category);
-                    
-                    return (
-                      <motion.div
-                        key={category}
-                        variants={itemVariants}
-                        onClick={() => setSelectedCategory(category)}
-                        whileHover={{ 
-                          y: -8, 
-                          borderColor: glowColor.replace('0.15', '0.4').replace('0.12', '0.35').replace('0.08', '0.2').replace('0.1', '0.3'),
-                          boxShadow: `0 12px 40px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.03)`
-                        }}
-                        whileTap={{ scale: 0.97 }}
-                        style={{
-                          background: C_CARD,
-                          borderRadius: '24px',
-                          padding: '36px 28px',
-                          cursor: 'pointer',
-                          boxShadow: C_SHADOW,
-                          transition: 'border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease',
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-                          border: '1px solid rgba(255, 255, 255, 0.05)'
-                        }}
-                      >
-                        {/* Squircle icon with brand gradient */}
-                        <div style={{
-                          width: '68px', height: '68px',
-                          borderRadius: '20px',
-                          background: gradient,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '2.1rem', marginBottom: '20px',
-                          boxShadow: `0 8px 24px ${glowColor.replace('0.15', '0.35').replace('0.12', '0.3').replace('0.08', '0.15').replace('0.1', '0.2')}`,
-                          transition: 'transform 0.3s ease',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.08) rotate(4deg)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1) rotate(0deg)'}
-                        >{icon}</div>
+                {(() => {
+                  const GROUPS = [
+                    { id: 'ai', title: '🤖 AI & Produktivitas', items: ['CHATGPT', 'CLAUDE', 'GEMINI', 'GROK', 'LEONARDO'] },
+                    { id: 'editing', title: '🎨 Editing & Desain', items: ['CANVA', 'CAPCUT', 'WINK'] },
+                    { id: 'music', title: '🎵 Musik & Audio', items: ['SPOTIFY', 'APPLE'] },
+                    { id: 'streaming', title: '🍿 Streaming & Hiburan', items: ['NETFLIX', 'YOUTUBE', 'DISNEY', 'VIDIO', 'VIU', 'PRIME'] }
+                  ];
 
-                        <h3 style={{ fontWeight: 700, fontSize: '1.25rem', color: '#fff', marginBottom: '6px' }}>
-                          {category}
-                        </h3>
-                        <p style={{ fontSize: '0.9rem', color: C_TEXT_MUTED, fontWeight: 500 }}>
-                          {t('variants_available', { count })}
-                        </p>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+                  const groupedCategories: { title: string, platforms: string[] }[] = [];
+                  const unassigned = [...categories];
+
+                  GROUPS.forEach(g => {
+                    const matched = unassigned.filter(c => g.items.some(item => c.includes(item)));
+                    if (matched.length > 0) {
+                      groupedCategories.push({ title: g.title, platforms: matched });
+                      matched.forEach(m => {
+                        const idx = unassigned.indexOf(m);
+                        if (idx > -1) unassigned.splice(idx, 1);
+                      });
+                    }
+                  });
+
+                  if (unassigned.length > 0) {
+                    groupedCategories.push({ title: '📦 Kategori Lainnya', platforms: unassigned });
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
+                      {groupedCategories.map(group => (
+                        <div key={group.title}>
+                          <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '24px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '12px' }}>
+                            {group.title}
+                          </h3>
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                            gap: '24px',
+                          }}>
+                            {group.platforms.map(category => {
+                              const count = products.filter(p => p.platform_name.toUpperCase() === category).length;
+                              const icon = getPlatformIcon(category);
+                              const gradient = getPlatformGradient(category);
+                              const glowColor = getPlatformGlow(category);
+                              
+                              return (
+                                <motion.div
+                                  key={category}
+                                  variants={itemVariants}
+                                  onClick={() => setSelectedCategory(category)}
+                                  whileHover={{ 
+                                    y: -8, 
+                                    borderColor: glowColor.replace('0.15', '0.4').replace('0.12', '0.35').replace('0.08', '0.2').replace('0.1', '0.3'),
+                                    boxShadow: `0 12px 40px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.03)`
+                                  }}
+                                  whileTap={{ scale: 0.97 }}
+                                  style={{
+                                    background: C_CARD,
+                                    borderRadius: '24px',
+                                    padding: '36px 28px',
+                                    cursor: 'pointer',
+                                    boxShadow: C_SHADOW,
+                                    transition: 'border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+                                    border: '1px solid rgba(255, 255, 255, 0.05)'
+                                  }}
+                                >
+                                  {/* Squircle icon with brand gradient */}
+                                  <div style={{
+                                    width: '68px', height: '68px',
+                                    borderRadius: '20px',
+                                    background: gradient,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '2.1rem', marginBottom: '20px',
+                                    boxShadow: `0 8px 24px ${glowColor.replace('0.15', '0.35').replace('0.12', '0.3').replace('0.08', '0.15').replace('0.1', '0.2')}`,
+                                    transition: 'transform 0.3s ease',
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.08) rotate(4deg)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1) rotate(0deg)'}
+                                  >{icon}</div>
+
+                                  <h3 style={{ fontWeight: 700, fontSize: '1.25rem', color: '#fff', marginBottom: '6px' }}>
+                                    {category}
+                                  </h3>
+                                  <p style={{ fontSize: '0.9rem', color: C_TEXT_MUTED, fontWeight: 500 }}>
+                                    {t('variants_available', { count })}
+                                  </p>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </motion.div>
             ) : (
               <motion.div
