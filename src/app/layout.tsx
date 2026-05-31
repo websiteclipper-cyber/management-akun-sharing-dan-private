@@ -10,8 +10,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "pastipremium.store - Premium Account Platform",
-  description: "Premium account inventory and auto delivery platform by pastipremium.store",
+  title: "pastipremium.my.id - Premium Account Platform",
+  description: "Premium account inventory and auto delivery platform by pastipremium.my.id",
 };
 
 export default async function RootLayout({

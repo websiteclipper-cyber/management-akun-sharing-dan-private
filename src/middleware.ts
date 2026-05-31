@@ -42,7 +42,7 @@ export function middleware(request: NextRequest) {
   // Jika diakses menggunakan domain Vercel bawaan, arahkan ke custom domain
   if (host === 'pastipremiumid1.vercel.app') {
     const url = request.nextUrl.clone();
-    url.host = 'pastipremium.store';
+    url.host = 'pastipremium.my.id';
     url.port = ''; // Pastikan tidak ada port
     url.protocol = 'https:'; // Pastikan menggunakan HTTPS
     
