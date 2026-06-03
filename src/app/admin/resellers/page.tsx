@@ -135,9 +135,21 @@ export default function AdminResellersPage() {
         status: form.status,
         updated_at: new Date().toISOString(),
       };
-      if (form.pin) updatePayload.pin = form.pin.trim();
-
+      
       result = await adminUpdate('resellers', updatePayload, { id: editingId });
+      
+      // If PIN is provided during edit, call the dedicated PIN reset API
+      if (form.pin && !result.error) {
+        const pinRes = await fetch('/api/admin/reseller-pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reseller_id: editingId, new_pin: form.pin.trim() })
+        });
+        if (!pinRes.ok) {
+           const pinData = await pinRes.json();
+           alert('Update profil berhasil, tapi gagal reset PIN: ' + (pinData.error || 'Unknown error'));
+        }
+      }
     } else {
       result = await adminInsert('resellers', {
         name: form.name,
@@ -167,7 +179,7 @@ export default function AdminResellersPage() {
       name: r.name,
       phone: r.phone || '',
       ref_code: r.ref_code,
-      pin: r.pin || '',
+      pin: '', // Never show hashed PIN in the form
       default_commission_type: r.default_commission_type || 'fixed',
       default_commission_value: r.default_commission_value || 0,
       status: r.status,
@@ -358,7 +370,7 @@ export default function AdminResellersPage() {
                   <div>
                     <input
                       className="form-input"
-                      placeholder="PIN (Default: 123456)"
+                      placeholder={editingId ? "Kosongkan jika tidak ubah PIN" : "PIN (Default: 123456)"}
                       value={form.pin}
                       onChange={e => setForm({ ...form, pin: e.target.value })}
                       style={{ width: '100%' }}
@@ -366,7 +378,7 @@ export default function AdminResellersPage() {
                   </div>
                 </div>
                 {!editingId && <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Huruf besar & angka saja. Ini akan jadi link unik reseller.</p>}
-                {editingId && <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Anda dapat melihat atau mengubah PIN reseller ini.</p>}
+                {editingId && <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Isi hanya jika ingin <strong>mereset</strong> PIN reseller ini. Minimal 4 karakter.</p>}
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div className="form-group" style={{ flex: 1 }}>
