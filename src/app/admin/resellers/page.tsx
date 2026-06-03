@@ -135,7 +135,7 @@ export default function AdminResellersPage() {
         status: form.status,
         updated_at: new Date().toISOString(),
       };
-      if (form.pin) updatePayload.pin = form.pin;
+      if (form.pin) updatePayload.pin = form.pin.trim();
 
       result = await adminUpdate('resellers', updatePayload, { id: editingId });
     } else {
@@ -143,7 +143,7 @@ export default function AdminResellersPage() {
         name: form.name,
         phone: form.phone,
         ref_code: form.ref_code.toUpperCase().replace(/[^A-Z0-9]/g, ''),
-        pin: form.pin || '123456',
+        pin: form.pin ? form.pin.trim() : '123456',
         default_commission_type: form.default_commission_type,
         default_commission_value: form.default_commission_value,
         status: form.status,
