@@ -22,7 +22,8 @@ export async function POST(request: Request) {
     }
 
     // Verify PIN matches
-    if (!reseller.pin || pin.trim() !== reseller.pin) {
+    const dbPin = String(reseller.pin || '').trim();
+    if (pin.trim() !== dbPin) {
       return NextResponse.json({ error: 'PIN tidak valid' }, { status: 401 });
     }
 
