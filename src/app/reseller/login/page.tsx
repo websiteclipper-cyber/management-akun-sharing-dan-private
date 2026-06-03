@@ -97,6 +97,9 @@ export default function ResellerLoginPage() {
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <Link href="/reseller/forgot-pin" style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+            Lupa PIN? Reset di sini
+          </Link>
           <Link href="/reseller/register" style={{ fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 600 }}>
             Belum punya akun? Daftar sekarang →
           </Link>

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
@@ -74,6 +75,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Hash the PIN before saving
+    const hashedPin = await bcrypt.hash(cleanPin, 10);
+
     // Find an existing active reseller to copy the commission template from
     const { data: templateReseller } = await supabase
       .from('resellers')
@@ -93,7 +97,7 @@ export async function POST(request: Request) {
         name: name.trim(),
         phone: cleanPhone,
         ref_code: cleanRefCode,
-        pin: cleanPin,
+        pin: hashedPin,
         default_commission_type: defCommType,
         default_commission_value: defCommValue,
         status: 'active',
