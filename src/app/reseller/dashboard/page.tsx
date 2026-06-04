@@ -31,12 +31,19 @@ interface Commission {
   order?: { order_number: string; total_amount: number; buyer: { name: string } };
 }
 
+interface Promo {
+  product_id: number;
+  original_price: number;
+  promo_price: number;
+  promo_label: string;
+}
+
 interface ProductCommission {
   id: string;
   product_id: number;
   commission_type: string;
   commission_value: number;
-  product?: { name: string; price: number; status?: string };
+  product?: { name: string; price: number; newcomer_price?: number; status?: string };
 }
 
 interface DashboardData {
@@ -54,6 +61,7 @@ interface DashboardData {
   commissions: Commission[];
   monthly: { sales: number; earnings: number };
   productCommissions: ProductCommission[];
+  promos: Promo[];
 }
 
 export default function ResellerDashboardPage() {
@@ -598,14 +606,37 @@ export default function ResellerDashboardPage() {
                       </thead>
                       <tbody>
                         {data.productCommissions.filter(pc => pc.product?.status !== 'inactive').map(pc => {
-                          const price = pc.product?.price || 0;
+                          const promo = data.promos?.find(pr => pr.product_id === pc.product_id);
+                          const basePrice = pc.product?.price || 0;
+                          const activePrice = promo ? promo.promo_price : basePrice;
+                          
                           const potential = pc.commission_type === 'percentage'
-                            ? Math.round(price * pc.commission_value / 100)
+                            ? Math.round(activePrice * pc.commission_value / 100)
                             : pc.commission_value;
                           return (
                             <tr key={pc.id}>
-                              <td style={{ fontWeight: 600 }}>{pc.product?.name || '-'}</td>
-                              <td>{formatPrice(price)}</td>
+                              <td style={{ fontWeight: 600 }}>
+                                {pc.product?.name || '-'}
+                                {promo && (
+                                  <span style={{ marginLeft: '8px', fontSize: '0.65rem', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.4)', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 700 }}>
+                                    {promo.promo_label}
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                {promo ? (
+                                  <div>
+                                    <div style={{ fontSize: '0.75rem', textDecoration: 'line-through', color: 'var(--text-muted)' }}>
+                                      {formatPrice(promo.original_price)}
+                                    </div>
+                                    <div style={{ fontWeight: 700, color: '#ef4444' }}>
+                                      {formatPrice(activePrice)}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div>{formatPrice(activePrice)}</div>
+                                )}
+                              </td>
                               <td>
                                 <span className="badge badge-info">
                                   {pc.commission_type === 'percentage' ? 'Persentase' : 'Fixed'}
@@ -647,14 +678,37 @@ export default function ResellerDashboardPage() {
                       </thead>
                       <tbody>
                         {data.productCommissions.filter(pc => pc.product?.status === 'inactive').map(pc => {
-                          const price = pc.product?.price || 0;
+                          const promo = data.promos?.find(pr => pr.product_id === pc.product_id);
+                          const basePrice = pc.product?.price || 0;
+                          const activePrice = promo ? promo.promo_price : basePrice;
+
                           const potential = pc.commission_type === 'percentage'
-                            ? Math.round(price * pc.commission_value / 100)
+                            ? Math.round(activePrice * pc.commission_value / 100)
                             : pc.commission_value;
                           return (
                             <tr key={pc.id}>
-                              <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{pc.product?.name || '-'}</td>
-                              <td style={{ color: 'var(--text-muted)' }}>{formatPrice(price)}</td>
+                              <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>
+                                {pc.product?.name || '-'}
+                                {promo && (
+                                  <span style={{ marginLeft: '8px', fontSize: '0.65rem', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-muted)', border: '1px solid rgba(255, 255, 255, 0.2)', padding: '2px 6px', borderRadius: '4px', textTransform: 'uppercase', fontWeight: 700 }}>
+                                    {promo.promo_label}
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ color: 'var(--text-muted)' }}>
+                                {promo ? (
+                                  <div>
+                                    <div style={{ fontSize: '0.75rem', textDecoration: 'line-through', opacity: 0.7 }}>
+                                      {formatPrice(promo.original_price)}
+                                    </div>
+                                    <div style={{ fontWeight: 700 }}>
+                                      {formatPrice(activePrice)}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div>{formatPrice(activePrice)}</div>
+                                )}
+                              </td>
                               <td>
                                 <span className="badge" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
                                   {pc.commission_type === 'percentage' ? 'Persentase' : 'Fixed'}
