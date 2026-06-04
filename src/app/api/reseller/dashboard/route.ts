@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     // Get product-specific commissions for this reseller
     const { data: productCommissions } = await supabase
       .from('reseller_product_commissions')
-      .select('*, product:products(name, price)')
+      .select('*, product:products(name, price, is_active)')
       .eq('reseller_id', reseller.id);
 
     return NextResponse.json({

@@ -36,7 +36,7 @@ interface ProductCommission {
   product_id: number;
   commission_type: string;
   commission_value: number;
-  product?: { name: string; price: number };
+  product?: { name: string; price: number; is_active?: boolean };
 }
 
 interface DashboardData {
@@ -575,48 +575,105 @@ export default function ResellerDashboardPage() {
             </div>
 
             {data.productCommissions.length > 0 && (
-              <div className="table-container">
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-secondary)' }}>
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Rate Komisi per Produk</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Beberapa produk memiliki rate komisi khusus untuk Anda.</p>
-                </div>
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Produk</th>
-                      <th>Harga Produk</th>
-                      <th>Tipe Komisi</th>
-                      <th>Rate</th>
-                      <th>Potensi Komisi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.productCommissions.map(pc => {
-                      const price = pc.product?.price || 0;
-                      const potential = pc.commission_type === 'percentage'
-                        ? Math.round(price * pc.commission_value / 100)
-                        : pc.commission_value;
-                      return (
-                        <tr key={pc.id}>
-                          <td style={{ fontWeight: 600 }}>{pc.product?.name || '-'}</td>
-                          <td>{formatPrice(price)}</td>
-                          <td>
-                            <span className="badge badge-info">
-                              {pc.commission_type === 'percentage' ? 'Persentase' : 'Fixed'}
-                            </span>
-                          </td>
-                          <td style={{ fontWeight: 700, color: 'var(--accent)' }}>
-                            {formatCommission(pc.commission_type, pc.commission_value)}
-                          </td>
-                          <td style={{ fontWeight: 700, color: 'var(--brand-success)' }}>
-                            {formatPrice(potential)}
-                          </td>
+              <>
+                {/* Active Products */}
+                {data.productCommissions.filter(pc => pc.product?.is_active !== false).length > 0 && (
+                  <div className="table-container" style={{ marginBottom: '24px' }}>
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '1.2rem' }}>✅</span>
+                      <div>
+                        <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Produk Sedang Dijual</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Produk aktif yang bisa Anda jual saat ini.</p>
+                      </div>
+                    </div>
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Produk</th>
+                          <th>Harga Produk</th>
+                          <th>Tipe Komisi</th>
+                          <th>Rate</th>
+                          <th>Potensi Komisi</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody>
+                        {data.productCommissions.filter(pc => pc.product?.is_active !== false).map(pc => {
+                          const price = pc.product?.price || 0;
+                          const potential = pc.commission_type === 'percentage'
+                            ? Math.round(price * pc.commission_value / 100)
+                            : pc.commission_value;
+                          return (
+                            <tr key={pc.id}>
+                              <td style={{ fontWeight: 600 }}>{pc.product?.name || '-'}</td>
+                              <td>{formatPrice(price)}</td>
+                              <td>
+                                <span className="badge badge-info">
+                                  {pc.commission_type === 'percentage' ? 'Persentase' : 'Fixed'}
+                                </span>
+                              </td>
+                              <td style={{ fontWeight: 700, color: 'var(--accent)' }}>
+                                {formatCommission(pc.commission_type, pc.commission_value)}
+                              </td>
+                              <td style={{ fontWeight: 700, color: 'var(--brand-success)' }}>
+                                {formatPrice(potential)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Inactive Products */}
+                {data.productCommissions.filter(pc => pc.product?.is_active === false).length > 0 && (
+                  <div className="table-container" style={{ opacity: 0.8 }}>
+                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '1.2rem', filter: 'grayscale(1)' }}>❌</span>
+                      <div>
+                        <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Produk Nonaktif</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Produk ini sedang tidak dijual / stok habis.</p>
+                      </div>
+                    </div>
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Produk</th>
+                          <th>Harga Produk</th>
+                          <th>Tipe Komisi</th>
+                          <th>Rate</th>
+                          <th>Potensi Komisi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.productCommissions.filter(pc => pc.product?.is_active === false).map(pc => {
+                          const price = pc.product?.price || 0;
+                          const potential = pc.commission_type === 'percentage'
+                            ? Math.round(price * pc.commission_value / 100)
+                            : pc.commission_value;
+                          return (
+                            <tr key={pc.id}>
+                              <td style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{pc.product?.name || '-'}</td>
+                              <td style={{ color: 'var(--text-muted)' }}>{formatPrice(price)}</td>
+                              <td>
+                                <span className="badge" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
+                                  {pc.commission_type === 'percentage' ? 'Persentase' : 'Fixed'}
+                                </span>
+                              </td>
+                              <td style={{ fontWeight: 700, color: 'var(--text-muted)' }}>
+                                {formatCommission(pc.commission_type, pc.commission_value)}
+                              </td>
+                              <td style={{ fontWeight: 700, color: 'var(--text-muted)' }}>
+                                {formatPrice(potential)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
 
             {data.productCommissions.length === 0 && (
