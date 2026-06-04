@@ -36,7 +36,7 @@ interface ProductCommission {
   product_id: number;
   commission_type: string;
   commission_value: number;
-  product?: { name: string; price: number; is_active?: boolean };
+  product?: { name: string; price: number; status?: string };
 }
 
 interface DashboardData {
@@ -577,7 +577,7 @@ export default function ResellerDashboardPage() {
             {data.productCommissions.length > 0 && (
               <>
                 {/* Active Products */}
-                {data.productCommissions.filter(pc => pc.product?.is_active !== false).length > 0 && (
+                {data.productCommissions.filter(pc => pc.product?.status !== 'inactive').length > 0 && (
                   <div className="table-container" style={{ marginBottom: '24px' }}>
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '1.2rem' }}>✅</span>
@@ -597,7 +597,7 @@ export default function ResellerDashboardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {data.productCommissions.filter(pc => pc.product?.is_active !== false).map(pc => {
+                        {data.productCommissions.filter(pc => pc.product?.status !== 'inactive').map(pc => {
                           const price = pc.product?.price || 0;
                           const potential = pc.commission_type === 'percentage'
                             ? Math.round(price * pc.commission_value / 100)
@@ -626,7 +626,7 @@ export default function ResellerDashboardPage() {
                 )}
 
                 {/* Inactive Products */}
-                {data.productCommissions.filter(pc => pc.product?.is_active === false).length > 0 && (
+                {data.productCommissions.filter(pc => pc.product?.status === 'inactive').length > 0 && (
                   <div className="table-container" style={{ opacity: 0.8 }}>
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '1.2rem', filter: 'grayscale(1)' }}>❌</span>
@@ -646,7 +646,7 @@ export default function ResellerDashboardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {data.productCommissions.filter(pc => pc.product?.is_active === false).map(pc => {
+                        {data.productCommissions.filter(pc => pc.product?.status === 'inactive').map(pc => {
                           const price = pc.product?.price || 0;
                           const potential = pc.commission_type === 'percentage'
                             ? Math.round(price * pc.commission_value / 100)
