@@ -560,27 +560,7 @@ export default function ResellerDashboardPage() {
         {/* RATES TAB */}
         {tab === 'rates' && (
           <div>
-            <div style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-secondary)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '20px 24px',
-              marginBottom: '16px',
-            }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '4px' }}>Komisi Default Anda</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '12px' }}>
-                Rate ini berlaku untuk semua produk yang belum memiliki rate khusus.
-              </p>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                background: 'var(--accent-soft)', padding: '10px 20px',
-                borderRadius: 'var(--radius-full)', fontWeight: 700,
-                color: 'var(--accent)', fontSize: '1.1rem',
-              }}>
-                {formatCommission(r.default_commission_type, r.default_commission_value)}
-                <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)' }}>per transaksi</span>
-              </div>
-            </div>
+
 
             {data.productCommissions.length > 0 && (
               <>
