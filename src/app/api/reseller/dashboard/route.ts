@@ -43,8 +43,16 @@ export async function GET(request: Request) {
     // Get product-specific commissions for this reseller
     const { data: productCommissions } = await supabase
       .from('reseller_product_commissions')
-      .select('*, product:products(name, price, status)')
+      .select('*, product:products(name, price, newcomer_price, status)')
       .eq('reseller_id', reseller.id);
+
+    // Get active promos
+    const { data: promos } = await supabase
+      .from('promos')
+      .select('product_id, original_price, promo_price, promo_label')
+      .eq('is_active', true)
+      .lte('start_date', now)
+      .gte('end_date', now);
 
     return NextResponse.json({
       success: true,
@@ -66,6 +74,7 @@ export async function GET(request: Request) {
         earnings: monthlyEarnings,
       },
       productCommissions: productCommissions || [],
+      promos: promos || [],
     });
   } catch (err) {
     return NextResponse.json({ error: 'Server error: ' + (err as Error).message }, { status: 500 });
