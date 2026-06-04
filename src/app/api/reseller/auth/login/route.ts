@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 // Helper to calculate rate limit
 async function checkRateLimit(supabase: any, ref_code: string, ip: string) {
   // Try to create the table if it doesn't exist
-  await supabase.rpc('create_login_attempts_table_if_not_exists').catch(() => {});
+  await supabase.rpc('create_login_attempts_table_if_not_exists');
   
   // Clean up old attempts (> 15 mins)
   const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
