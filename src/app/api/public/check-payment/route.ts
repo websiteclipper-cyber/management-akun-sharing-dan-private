@@ -72,21 +72,30 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', order.id);
 
-        // Auto-assign account
+        // Auto-assign account(s)
         try {
-          const { data: assignResult } = await supabase.rpc('assign_account_for_order', {
-            p_order_id: order.id,
-          });
+          const orderQuantity = order.quantity || 1;
+          let assignSuccessCount = 0;
 
-          if (assignResult?.success && assignResult?.assignment_id) {
-            await supabase
-              .from('account_assignments')
-              .update({ delivered_at: now, updated_at: now })
-              .eq('id', assignResult.assignment_id);
+          for (let i = 0; i < orderQuantity; i++) {
+            const { data: assignResult } = await supabase.rpc('assign_account_for_order', {
+              p_order_id: order.id,
+            });
 
+            if (assignResult?.success && assignResult?.assignment_id) {
+              assignSuccessCount++;
+              await supabase
+                .from('account_assignments')
+                .update({ delivered_at: now, updated_at: now })
+                .eq('id', assignResult.assignment_id);
+            }
+          }
+
+          if (assignSuccessCount > 0) {
+            const allAssigned = assignSuccessCount >= orderQuantity;
             await supabase
               .from('orders')
-              .update({ order_status: 'delivered', delivered_at: now, updated_at: now })
+              .update({ order_status: allAssigned ? 'delivered' : 'assigned', delivered_at: allAssigned ? now : null, updated_at: now })
               .eq('id', order.id);
           }
         } catch (assignErr) {

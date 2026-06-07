@@ -147,12 +147,14 @@ export async function POST(request: NextRequest) {
       .gte('end_date', now)
       .maybeSingle();
 
-    // Determine base price: newcomer_price > promo > regular price
-    let basePrice: number;
+    // Determine base prices
+    const normalPrice = promo ? Number(promo.promo_price) : Number(product.price);
+    let totalBasePrice = normalPrice * quantity;
+    let usedNewcomerPrice = false;
+
     if (isNewcomer && product.newcomer_price !== null && product.newcomer_price !== undefined) {
-      basePrice = Number(product.newcomer_price);
-    } else {
-      basePrice = promo ? Number(promo.promo_price) : Number(product.price);
+      totalBasePrice = Number(product.newcomer_price) + (normalPrice * (quantity - 1));
+      usedNewcomerPrice = true;
     }
 
     // ===== DISCOUNT CODE HANDLING =====
@@ -192,14 +194,14 @@ export async function POST(request: NextRequest) {
         if (prevOrder) buyerUsedBefore = true;
 
         if (productMatch && quotaOk && !buyerUsedBefore) {
-          // Calculate discount
+          // Calculate discount on total base price
           if (campaign.discount_type === 'percentage') {
-            discountAmount = Math.round(basePrice * Number(campaign.discount_value) / 100);
+            discountAmount = Math.round(totalBasePrice * Number(campaign.discount_value) / 100);
           } else {
-            discountAmount = Number(campaign.discount_value);
+            discountAmount = Number(campaign.discount_value) * quantity;
           }
-          // Cap discount at base price
-          discountAmount = Math.min(discountAmount, basePrice);
+          // Cap discount at total base price
+          discountAmount = Math.min(discountAmount, totalBasePrice);
           discountCampaignId = campaign.id;
 
           // Increment campaign usage atomically
@@ -216,7 +218,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const finalPrice = (basePrice - discountAmount) * quantity;
+    const finalPrice = totalBasePrice - discountAmount;
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -225,13 +227,13 @@ export async function POST(request: NextRequest) {
         buyer_id: buyer.id,
         product_id: product.id,
         quantity: quantity,
-        unit_price: basePrice,
+        unit_price: usedNewcomerPrice && quantity === 1 ? Number(product.newcomer_price) : normalPrice,
         total_amount: finalPrice,
         payment_status: 'pending_payment',
         order_status: 'pending',
         reseller_id: resellerId,
         discount_campaign_id: discountCampaignId,
-        discount_amount: discountAmount * quantity,
+        discount_amount: discountAmount,
         client_ip: clientIp,
         created_at: now,
         updated_at: now,
@@ -247,14 +249,14 @@ export async function POST(request: NextRequest) {
     // This prevents phantom commissions from unpaid/expired orders
 
     // Send Telegram Notification
-    const discountLabel = discountAmount > 0 ? `\n<b>Diskon:</b> -Rp ${(discountAmount * quantity).toLocaleString('id-ID')}` : '';
-    const newcomerLabel = isNewcomer && product.newcomer_price !== null ? `\n🆕 <b>Harga Buyer Baru</b>` : '';
+    const discountLabel = discountAmount > 0 ? `\n<b>Diskon:</b> -Rp ${discountAmount.toLocaleString('id-ID')}` : '';
+    const newcomerLabel = usedNewcomerPrice ? `\n🆕 <b>Harga Buyer Baru</b> (1x)` : '';
     const qtyLabel = quantity > 1 ? `\n<b>Jumlah:</b> ${quantity}x` : '';
     sendTelegramNotification(
       `🛒 <b>PESANAN BARU! (Belum Bayar)</b>\n\n` +
       `<b>Order:</b> <code>${orderNumber}</code>\n` +
       `<b>Produk:</b> ${product.name}\n` +
-      `<b>Harga:</b> Rp ${basePrice.toLocaleString('id-ID')}` +
+      `<b>Harga:</b> Rp ${totalBasePrice.toLocaleString('id-ID')}` +
       qtyLabel +
       newcomerLabel +
       discountLabel +
@@ -271,7 +273,7 @@ export async function POST(request: NextRequest) {
       order_status: order.order_status,
       amount: order.total_amount,
       quantity: quantity,
-      discount_amount: discountAmount * quantity,
+      discount_amount: discountAmount,
       is_newcomer: isNewcomer,
     });
   } catch {

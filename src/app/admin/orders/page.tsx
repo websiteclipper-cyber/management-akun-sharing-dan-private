@@ -55,16 +55,27 @@ export default function OrdersPage() {
 
   async function handleManualAssign(order: Order) {
     setAssigningOrderId(order.id);
-    const result = await adminRpc('assign_account_for_order', { p_order_id: order.id });
+    const orderQuantity = order.quantity || 1;
+    let anySuccess = false;
+    let anyError = null;
     
-    if (result.error) {
-      alert('Error: ' + result.error.message);
-      setAssigningOrderId(null);
-      return;
+    for (let i = 0; i < orderQuantity; i++) {
+      const result = await adminRpc('assign_account_for_order', { p_order_id: order.id });
+      if (result.error) {
+        anyError = result.error.message;
+        break;
+      }
+      if (result.data && !result.data.success && !result.data.already_assigned) {
+        anyError = result.data.error || 'Tidak ada stok tersedia';
+        break;
+      }
+      if (result.data?.success) {
+        anySuccess = true;
+      }
     }
-    const data = result.data;
-    if (data && !data.success) {
-      alert('Gagal: ' + (data.error || 'Tidak ada stok tersedia'));
+    
+    if (anyError && !anySuccess) {
+      alert('Gagal: ' + anyError);
       setAssigningOrderId(null);
       return;
     }
@@ -87,26 +98,36 @@ export default function OrdersPage() {
     const product = order.product as unknown as { name: string; duration_days: number; account_type: string };
 
     try {
-      const { data: assignment, error: assignErr } = await supabase
+      const { data: assignments, error: assignErr } = await supabase
         .from('account_assignments')
         .select('*, stock_account:stock_accounts(*)')
         .eq('order_id', order.id)
         .eq('status', 'active')
-        .single();
+        .order('id', { ascending: true });
 
-      if (assignErr || !assignment) {
+      if (assignErr || !assignments || assignments.length === 0) {
         alert('Berhasil di-assign, namun gagal membuka WhatsApp. Gunakan tombol "Kirim WA" secara manual.');
         return;
       }
 
-      const res = await fetch('/api/buyer/decrypt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ encrypted: assignment.stock_account.account_secret_encrypted }),
-      });
-      const decData = await res.json();
-      const password = decData.decrypted || 'Gagal-Dekripsi';
-      const sa = assignment.stock_account;
+      let accountsText = '';
+      for (let i = 0; i < assignments.length; i++) {
+        const assignment = assignments[i];
+        const res = await fetch('/api/buyer/decrypt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ encrypted: assignment.stock_account.account_secret_encrypted }),
+        });
+        const decData = await res.json();
+        const password = decData.decrypted || 'Gagal-Dekripsi';
+        const sa = assignment.stock_account;
+        
+        accountsText += `👤 *Email/User:* ${sa.account_identifier}\n` +
+          `🔑 *Password:* ${password}\n` +
+          (sa.profile_info ? `👤 *Profil:* ${sa.profile_info}\n` : '') +
+          (sa.pin_info ? `🔐 *PIN:* ${sa.pin_info}\n` : '') +
+          (assignments.length > 1 && i < assignments.length - 1 ? '\n---\n\n' : '');
+      }
 
       const isSharing = product.account_type === 'sharing';
       const catatan = isSharing
@@ -114,10 +135,7 @@ export default function OrdersPage() {
         : `\n_📌 Info (Akun Private):_\nAkun ini sepenuhnya milik Anda. Namun jika Anda *mengganti password*, garansi akun otomatis *hangus*. Kami sarankan untuk tidak mengubah sandi selama masa aktif.`;
 
       const text = `Halo *${buyer.name}*,\nPesanan Anda telah dikonfirmasi! ✅\n\nBerikut detail akun untuk produk *${product.name}*:\n\n` +
-        `👤 *Email/User:* ${sa.account_identifier}\n` +
-        `🔑 *Password:* ${password}\n` +
-        (sa.profile_info ? `👤 *Profil:* ${sa.profile_info}\n` : '') +
-        (sa.pin_info ? `🔐 *PIN:* ${sa.pin_info}\n` : '') +
+        accountsText +
         `\n⏳ *Masa Aktif:* ${product.duration_days} hari\n` +
         `${catatan}\n\nTerima kasih telah berbelanja di *pastipremium.my.id*! 🙏`;
 
