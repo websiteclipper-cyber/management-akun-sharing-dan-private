@@ -12,24 +12,16 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function run() {
-  const { data: firstPending } = await supabase.from('resellers').select('*').eq('status', 'active').limit(1).single();
-  if (!firstPending) return;
-  console.log("Found:", firstPending.id);
+  const { data: order } = await supabase.from('orders').select('*').eq('id', 1361).single();
+  console.log("Calling RPC for order 1361... (expecting failure because quantity is 2 and we already have 2)");
   
-  const payload = {
-    table: 'resellers',
-    operation: 'update',
-    data: { status: 'active', updated_at: new Date().toISOString() },
-    match: { id: firstPending.id }
-  };
+  // increase quantity temporarily
+  await supabase.from('orders').update({ quantity: 3 }).eq('id', 1361);
   
-  // Emulate the API
-  let updateQuery = supabase.from(payload.table).update(payload.data);
-  for (const [key, value] of Object.entries(payload.match)) {
-    updateQuery = updateQuery.eq(key, value);
-  }
-  const { data, error } = await updateQuery.select();
-  console.log("Result:", data, error);
+  const { data: res1, error } = await supabase.rpc('assign_account_for_order', { p_order_id: 1361 });
+  console.log("Result 3:", res1, "Error:", error);
+  
+  await supabase.from('orders').update({ quantity: 2 }).eq('id', 1361);
 }
 
 run();

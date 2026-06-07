@@ -177,9 +177,24 @@ export default function OrderPage() {
 
   // Newcomer price takes priority if buyer is first-time and product has newcomer_price
   const hasNewcomerPrice = isNewcomer && product.newcomer_price !== null && product.newcomer_price !== undefined;
-  const displayPrice = hasNewcomerPrice ? product.newcomer_price! : (promo ? promo.promo_price : product.price);
-  const unitPriceAfterDiscount = discountInfo ? discountInfo.final_price : displayPrice;
-  const finalDisplayPrice = unitPriceAfterDiscount * quantity;
+  const normalPrice = promo ? promo.promo_price : product.price;
+  
+  let totalBasePrice = normalPrice * quantity;
+  if (hasNewcomerPrice) {
+    totalBasePrice = product.newcomer_price! + (normalPrice * (quantity - 1));
+  }
+
+  let totalDiscountAmount = 0;
+  if (discountInfo) {
+    if (discountInfo.discount_type === 'percentage') {
+      totalDiscountAmount = Math.round(totalBasePrice * discountInfo.discount_value / 100);
+    } else {
+      totalDiscountAmount = discountInfo.discount_value * quantity;
+    }
+    totalDiscountAmount = Math.min(totalDiscountAmount, totalBasePrice);
+  }
+
+  const finalDisplayPrice = totalBasePrice - totalDiscountAmount;
 
   return (
     <div className="public-layout">
@@ -325,18 +340,25 @@ export default function OrderPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                 {hasNewcomerPrice ? (
-                  <>
-                    <span className="price" style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
-                      {formatPrice(product.price)}
-                    </span>
-                    <span className="price" style={{ color: '#3b82f6' }}>{formatPrice(displayPrice)}</span>
-                  </>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="price" style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
+                        {formatPrice(product.price)}
+                      </span>
+                      <span className="price" style={{ color: '#3b82f6' }}>{formatPrice(product.newcomer_price!)}</span>
+                    </div>
+                    {quantity > 1 && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        +( {quantity - 1}x {formatPrice(normalPrice)} )
+                      </div>
+                    )}
+                  </div>
                 ) : promo ? (
                   <>
                     <span className="price" style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
                       {formatPrice(promo.original_price)}
                     </span>
-                    <span className="price" style={{ color: 'var(--brand-danger)' }}>{formatPrice(displayPrice)}</span>
+                    <span className="price" style={{ color: 'var(--brand-danger)' }}>{formatPrice(normalPrice)}</span>
                   </>
                 ) : (
                   <span className="price">{formatPrice(product.price)}</span>
@@ -538,14 +560,14 @@ export default function OrderPage() {
               <div style={{ display: 'grid', gap: '8px', fontSize: '0.9rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>{t('order_price')} {hasNewcomerPrice ? t('order_newcomer_label') : promo ? t('order_promo_label') : ''}</span>
-                  <span style={{ color: hasNewcomerPrice ? '#3b82f6' : 'var(--text-primary)', fontWeight: 600 }}>{formatPrice(displayPrice)}</span>
+                  <span style={{ color: hasNewcomerPrice ? '#3b82f6' : 'var(--text-primary)', fontWeight: 600 }}>{formatPrice(totalBasePrice)}</span>
                 </div>
                 {hasNewcomerPrice && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
                       <span>🎉</span> {t('order_first_purchase_special')}
                     </span>
-                    <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.78rem' }}>{t('order_save')} {formatPrice(product.price - displayPrice)}</span>
+                    <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.78rem' }}>{t('order_save')} {formatPrice(product.price - product.newcomer_price!)}</span>
                   </div>
                 )}
                 {discountInfo && (
@@ -553,7 +575,7 @@ export default function OrderPage() {
                     <span style={{ color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <span style={{ fontSize: '0.75rem' }}>🎟️</span> {t('order_discount')} [{discountInfo.code}]
                     </span>
-                    <span style={{ color: '#4ade80', fontWeight: 700 }}>-{formatPrice(discountInfo.discount_amount)}</span>
+                    <span style={{ color: '#4ade80', fontWeight: 700 }}>-{formatPrice(totalDiscountAmount)}</span>
                   </div>
                 )}
                 {quantity > 1 && (
@@ -562,10 +584,9 @@ export default function OrderPage() {
                     <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>×{quantity}</span>
                   </div>
                 )}
-                {quantity > 1 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{t('order_unit_price')}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{formatPrice(unitPriceAfterDiscount)} / item</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Rata-rata per item</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{formatPrice(finalDisplayPrice / quantity)} / item</span>
                   </div>
                 )}
                 <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>

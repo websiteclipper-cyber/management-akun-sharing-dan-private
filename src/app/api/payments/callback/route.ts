@@ -94,20 +94,29 @@ export async function POST(request: NextRequest) {
       .eq('id', order.id);
 
     // Trigger auto assignment
-    const { data: assignResult } = await supabase.rpc('assign_account_for_order', {
-      p_order_id: order.id,
-    });
+    const orderQuantity = order.quantity || 1;
+    let assignSuccessCount = 0;
+    
+    for (let i = 0; i < orderQuantity; i++) {
+      const { data: assignResult } = await supabase.rpc('assign_account_for_order', {
+        p_order_id: order.id,
+      });
 
-    // If assignment succeeded, mark as delivered via web
-    if (assignResult?.success && assignResult?.assignment_id) {
-      await supabase
-        .from('account_assignments')
-        .update({ delivered_at: now, updated_at: now })
-        .eq('id', assignResult.assignment_id);
+      // If assignment succeeded, mark as delivered via web
+      if (assignResult?.success && assignResult?.assignment_id) {
+        assignSuccessCount++;
+        await supabase
+          .from('account_assignments')
+          .update({ delivered_at: now, updated_at: now })
+          .eq('id', assignResult.assignment_id);
+      }
+    }
 
+    if (assignSuccessCount > 0) {
+      const allAssigned = assignSuccessCount >= orderQuantity;
       await supabase
         .from('orders')
-        .update({ order_status: 'delivered', delivered_at: now, updated_at: now })
+        .update({ order_status: allAssigned ? 'delivered' : 'assigned', delivered_at: allAssigned ? now : null, updated_at: now })
         .eq('id', order.id);
     }
 
@@ -195,19 +204,25 @@ export async function POST(request: NextRequest) {
       .single();
 
     // Send Telegram Notification for payment
-    const assigned = assignResult?.success ? '✅ Akun otomatis dikirim!' : '⚠️ Perlu assign akun manual';
+    const qtyLabel = orderQuantity > 1 ? `\n<b>Jumlah:</b> ${orderQuantity}x` : '';
+    const assigned = assignSuccessCount >= orderQuantity
+      ? '✅ Akun otomatis dikirim!'
+      : assignSuccessCount > 0
+        ? `⚠️ Sebagian terkirim (${assignSuccessCount}/${orderQuantity}), perlu assign manual sisanya`
+        : '⚠️ Perlu assign akun manual';
     sendTelegramNotification(
       `💰 <b>PEMBAYARAN MASUK!</b>\n\n` +
       `<b>Order:</b> <code>${order_number}</code>\n` +
-      `<b>Produk:</b> ${product?.name || '-'}\n` +
-      `<b>Nominal:</b> Rp ${Number(amount || order.total_amount).toLocaleString('id-ID')}\n` +
+      `<b>Produk:</b> ${product?.name || '-'}` +
+      qtyLabel +
+      `\n<b>Nominal:</b> Rp ${Number(amount || order.total_amount).toLocaleString('id-ID')}\n` +
       `<b>Metode:</b> ${gateway_name}\n` +
       `<b>Waktu:</b> ${now}\n\n` +
       `${assigned}`
     );
 
     // Check remaining stock if assignment was successful
-    if (assignResult?.success) {
+    if (assignSuccessCount > 0) {
       try {
         const { count: remainingStock } = await supabase
           .from('stock_accounts')
@@ -235,9 +250,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Payment processed',
-      assigned: assignResult?.success || false,
-      assignment_id: assignResult?.assignment_id || null,
-      needs_manual: assignResult?.needs_manual || false,
+      assigned: assignSuccessCount > 0,
+      assignment_count: assignSuccessCount,
+      needs_manual: assignSuccessCount < orderQuantity,
     });
   } catch (err) {
     console.error('Payment callback error:', err);
