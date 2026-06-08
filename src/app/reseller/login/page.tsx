@@ -10,8 +10,8 @@ export default function ResellerLoginPage() {
   const [form, setForm] = useState({ ref_code: '', pin: '' });
   const [error, setError] = useState('');
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleLogin(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     setLoading(true);
     setError('');
 
@@ -58,7 +58,7 @@ export default function ResellerLoginPage() {
 
         {error && <div className="login-error">{error}</div>}
 
-        <form onSubmit={handleLogin}>
+        <form onSubmit={(e) => { e.preventDefault(); handleLogin(e); }}>
           <div className="form-group">
             <label className="form-label">Kode Referral</label>
             <input
@@ -87,7 +87,8 @@ export default function ResellerLoginPage() {
           </div>
 
           <button
-            type="submit"
+            type="button"
+            onClick={(e) => handleLogin(e as any)}
             className="btn btn-primary btn-lg"
             style={{ width: '100%', justifyContent: 'center', background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', border: 'none' }}
             disabled={loading}
