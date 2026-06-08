@@ -8,20 +8,16 @@ export default function ChatGPTBanner() {
   const [closing, setClosing] = useState(false);
 
   useEffect(() => {
-    // Check if user already closed it in this session (optional, but good UX)
-    const hasSeen = sessionStorage.getItem('seen_chatgpt_promo');
-    if (!hasSeen) {
-      // Small delay for smooth entrance
-      const timer = setTimeout(() => setVisible(true), 800);
-      return () => clearTimeout(timer);
-    }
+    // Small delay for smooth entrance
+    const timer = setTimeout(() => setVisible(true), 800);
+    return () => clearTimeout(timer);
   }, []);
 
   function handleClose() {
     setClosing(true);
-    sessionStorage.setItem('seen_chatgpt_promo', 'true');
     setTimeout(() => {
       setVisible(false);
+      setClosing(false);
     }, 400);
   }
 
