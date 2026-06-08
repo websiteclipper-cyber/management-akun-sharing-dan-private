@@ -43,8 +43,8 @@ export default function ResellerRegisterPage() {
     }
   }
 
-  async function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleRegister(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     setError('');
 
     // Client-side validations
@@ -333,7 +333,7 @@ export default function ResellerRegisterPage() {
 
         {error && <div className="login-error">{error}</div>}
 
-        <form onSubmit={handleRegister}>
+        <form onSubmit={(e) => { e.preventDefault(); handleRegister(e); }}>
           {/* Name */}
           <div className="form-group">
             <label className="form-label">Nama Lengkap</label>
@@ -428,7 +428,8 @@ export default function ResellerRegisterPage() {
           </div>
 
           <button
-            type="submit"
+            type="button"
+            onClick={(e) => handleRegister(e as any)}
             className="btn btn-primary btn-lg"
             style={{
               width: '100%', justifyContent: 'center',
