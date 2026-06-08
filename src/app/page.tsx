@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
 import Link from 'next/link';
 import PromoPopup from '@/components/PromoPopup';
+import ChatGPTBanner from '@/components/ChatGPTBanner';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLocale } from '@/lib/locale-context';
 import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiGooglegemini } from 'react-icons/si';
@@ -228,6 +229,7 @@ export default function HomePage() {
       overflowX: 'hidden',
     }}>
       <PromoPopup />
+      <ChatGPTBanner />
 
       {/* ── HEADER (Sleek Glassmorphism Dark) ── */}
       <header style={{
