@@ -16,7 +16,6 @@ export default function KetentuanPage() {
         const { data } = await supabase
           .from('products')
           .select('*')
-          .eq('status', 'active')
           .not('terms', 'is', null)
           .order('platform_name', { ascending: true });
         
