@@ -4,11 +4,16 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
+import { FiAlertCircle, FiShield, FiFileText, FiInfo, FiCheckCircle, FiXCircle, FiRefreshCw, FiArrowRight, FiChevronDown, FiStar } from 'react-icons/fi';
 
 export default function KetentuanPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Warranty Checker States
+  const [checkerPlatform, setCheckerPlatform] = useState('');
+  const [checkerIssue, setCheckerIssue] = useState('');
 
   useEffect(() => {
     async function loadProducts() {
@@ -32,6 +37,7 @@ export default function KetentuanPage() {
     }
     loadProducts();
   }, []);
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -73,11 +79,13 @@ export default function KetentuanPage() {
         <div style={{ marginBottom: '40px', textAlign: 'center' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: '72px', height: '72px', borderRadius: '22px',
+            width: '64px', height: '64px', borderRadius: '20px',
             background: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
-            fontSize: '2rem', marginBottom: '20px',
+            color: 'white', fontSize: '2rem', marginBottom: '20px',
             boxShadow: '0 8px 24px rgba(238,90,36,0.3)',
-          }}>⚠️</div>
+          }}>
+            <FiAlertCircle size={32} />
+          </div>
           <h1 style={{
             fontSize: '2.2rem', fontWeight: 700,
             letterSpacing: '-0.03em', marginBottom: '12px',
@@ -85,261 +93,324 @@ export default function KetentuanPage() {
           }}>
             Ketentuan & Garansi
           </h1>
-          <p style={{ fontSize: '1rem', color: '#86868b', fontWeight: 400 }}>
-            Catatan penting yang wajib kamu baca sebelum membeli akun premium di pastipremium.my.id
+          <p style={{ fontSize: '1rem', color: '#86868b', fontWeight: 400, maxWidth: '500px', margin: '0 auto' }}>
+            Kebijakan penting yang perlu Anda ketahui sebelum menggunakan layanan premium kami.
           </p>
         </div>
 
         {/* Greeting Card */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(0,113,227,0.06), rgba(139,92,246,0.06))',
-          border: '1px solid rgba(0,113,227,0.15)',
-          borderRadius: '20px', padding: '24px', marginBottom: '28px',
+          background: 'rgba(255, 255, 255, 0.6)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(0,0,0,0.05)',
+          borderRadius: '20px', padding: '24px', marginBottom: '32px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.02)'
         }}>
-          <p style={{ fontSize: '0.95rem', lineHeight: 1.7, margin: 0, color: '#1d1d1f' }}>
-            Halo! 👋 Terima kasih sudah memilih kami untuk mendapatkan akun premium dengan harga jauh lebih murah dibanding harga resminya.
-            Sebelum kamu melakukan pembelian, mohon baca halaman ini dengan teliti ya — ini demi kebaikan kita bersama.
-          </p>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+            <div style={{ color: '#0071e3', marginTop: '2px' }}><FiInfo size={24} /></div>
+            <p style={{ fontSize: '0.95rem', lineHeight: 1.6, margin: 0, color: '#1d1d1f' }}>
+              Terima kasih telah memilih kami! Harga super hemat yang Anda dapatkan adalah hasil dari pemanfaatan promo trial resmi secara legal. Mohon baca dengan teliti kebijakan garansi di bawah demi kenyamanan bersama.
+            </p>
+          </div>
         </div>
 
-        {/* Section 1 - Asal Akun */}
-        <section style={{ marginBottom: '28px' }}>
+        {/* Section - Garansi */}
+        <section style={{ marginBottom: '32px' }}>
           <div style={{
             background: '#ffffff',
             border: '1px solid rgba(0,0,0,0.06)',
-            borderRadius: '20px',
-            padding: '28px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+            borderRadius: '24px',
+            padding: '32px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
               <div style={{
                 width: '40px', height: '40px', borderRadius: '12px',
-                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: 'white',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.2rem', flexShrink: 0,
-                boxShadow: '0 4px 12px rgba(217,119,6,0.3)',
-              }}>🎟️</div>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: '#1d1d1f' }}>
-                Asal-usul Akun Premium
+                flexShrink: 0, boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
+              }}>
+                <FiShield size={20} />
+              </div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: '#1d1d1f', letterSpacing: '-0.02em' }}>
+                Cakupan Garansi
               </h2>
             </div>
-            <p style={{ fontSize: '0.9rem', color: '#3d3d3d', lineHeight: 1.7, margin: 0 }}>
-              Akun yang kamu beli ini <strong>diperoleh melalui promo trial resmi</strong> yang sedang berjalan — yaitu event harga murah terbatas waktu yang digelar oleh platform terkait.
-              Harga super hemat yang kamu bayar adalah hasil dari pemanfaatan kesempatan promosi trial tersebut secara legal.
-            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              {/* Guaranteed */}
+              <div style={{
+                background: 'rgba(16,185,129,0.04)',
+                border: '1px solid rgba(16,185,129,0.15)',
+                borderRadius: '16px', padding: '20px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <FiCheckCircle size={18} color="#10b981" />
+                  <span style={{
+                    color: '#059669', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase'
+                  }}>Tercover</span>
+                </div>
+                <p style={{ fontSize: '0.9rem', color: '#1d1d1f', lineHeight: 1.6, margin: 0 }}>
+                  <strong>Akun expired normal</strong> (habis masa trial) sebelum waktunya. Kami akan mengganti dengan akun baru secara gratis.
+                </p>
+              </div>
+
+              {/* NOT Guaranteed */}
+              <div style={{
+                background: 'rgba(239,68,68,0.04)',
+                border: '1px solid rgba(239,68,68,0.15)',
+                borderRadius: '16px', padding: '20px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <FiXCircle size={18} color="#ef4444" />
+                  <span style={{
+                    color: '#dc2626', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase'
+                  }}>Tidak Tercover</span>
+                </div>
+                <p style={{ fontSize: '0.9rem', color: '#1d1d1f', lineHeight: 1.6, margin: 0 }}>
+                  <strong>Akun dibanned / terblokir</strong> oleh sistem deteksi platform resmi. Ini merupakan kebijakan sepihak platform di luar kendali kami.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Section 2 - Garansi */}
-        <section style={{ marginBottom: '28px' }}>
+        {/* Interactive Warranty Checker */}
+        <section style={{ marginBottom: '32px' }}>
           <div style={{
-            background: '#ffffff',
+            background: 'linear-gradient(145deg, #ffffff, #fcfcfd)',
             border: '1px solid rgba(0,0,0,0.06)',
-            borderRadius: '20px',
-            padding: '28px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+            borderRadius: '24px',
+            padding: '32px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
               <div style={{
                 width: '40px', height: '40px', borderRadius: '12px',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
+                background: 'linear-gradient(135deg, #0071e3, #0056b3)',
+                color: 'white',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.2rem', flexShrink: 0,
-                boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
-              }}>🛡️</div>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: '#1d1d1f' }}>
-                Garansi yang Berlaku
+                flexShrink: 0, boxShadow: '0 4px 12px rgba(0,113,227,0.3)',
+              }}>
+                <FiRefreshCw size={20} />
+              </div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: '#1d1d1f', letterSpacing: '-0.02em' }}>
+                Cek Status Garansi Instan
               </h2>
             </div>
+            
+            <p style={{ fontSize: '0.9rem', color: '#86868b', marginBottom: '20px' }}>
+              Pilih masalah yang Anda alami untuk mengetahui apakah Anda berhak mengklaim garansi penggantian akun.
+            </p>
 
-            {/* Guaranteed */}
-            <div style={{
-              background: 'rgba(16,185,129,0.06)',
-              border: '1px solid rgba(16,185,129,0.2)',
-              borderRadius: '14px', padding: '20px', marginBottom: '16px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <span style={{
-                  background: '#10b981', color: '#fff',
-                  fontSize: '0.7rem', fontWeight: 700,
-                  padding: '3px 10px', borderRadius: '20px', letterSpacing: '0.5px',
-                }}>✓ TERCOVER</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ position: 'relative' }}>
+                <select 
+                  value={checkerPlatform} 
+                  onChange={(e) => setCheckerPlatform(e.target.value)}
+                  style={{
+                    width: '100%', padding: '14px 16px', borderRadius: '12px',
+                    border: '1px solid rgba(0,0,0,0.1)', background: '#fff',
+                    fontSize: '0.95rem', color: '#1d1d1f', appearance: 'none',
+                    outline: 'none', cursor: 'pointer', fontFamily: 'inherit'
+                  }}
+                >
+                  <option value="">Pilih Platform / Aplikasi...</option>
+                  <option value="streaming">Netflix / Spotify / YouTube / Prime</option>
+                  <option value="design">Canva / Figma / Adobe</option>
+                  <option value="productivity">ChatGPT / Claude / Zoom / Grammarly</option>
+                  <option value="other">Aplikasi Lainnya</option>
+                </select>
+                <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#86868b' }}>
+                  <FiChevronDown />
+                </div>
               </div>
-              <p style={{ fontSize: '0.9rem', color: '#1d1d1f', lineHeight: 1.7, margin: 0 }}>
-                <strong>Akun expired secara normal</strong> (habis sesuai masa trial) → Kami akan mengganti dengan akun baru <strong>secara gratis</strong> tanpa syarat tambahan.
-              </p>
+
+              {checkerPlatform && (
+                <div style={{ position: 'relative', animation: 'fadeIn 0.3s ease' }}>
+                  <select 
+                    value={checkerIssue} 
+                    onChange={(e) => setCheckerIssue(e.target.value)}
+                    style={{
+                      width: '100%', padding: '14px 16px', borderRadius: '12px',
+                      border: '1px solid rgba(0,0,0,0.1)', background: '#fff',
+                      fontSize: '0.95rem', color: '#1d1d1f', appearance: 'none',
+                      outline: 'none', cursor: 'pointer', fontFamily: 'inherit'
+                    }}
+                  >
+                    <option value="">Apa kendala yang Anda alami?</option>
+                    <option value="expired">Tiba-tiba kembali ke versi Gratis / Expired sebelum waktunya</option>
+                    <option value="banned">Akun terblokir / Tidak bisa login (Banned / Incorrect Password)</option>
+                    <option value="screen">Screen limit / Terlalu banyak device (Khusus Akun Sharing)</option>
+                  </select>
+                  <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#86868b' }}>
+                    <FiChevronDown />
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* NOT Guaranteed */}
-            <div style={{
-              background: 'rgba(239,68,68,0.05)',
-              border: '1px solid rgba(239,68,68,0.2)',
-              borderRadius: '14px', padding: '20px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <span style={{
-                  background: '#ef4444', color: '#fff',
-                  fontSize: '0.7rem', fontWeight: 700,
-                  padding: '3px 10px', borderRadius: '20px', letterSpacing: '0.5px',
-                }}>✕ TIDAK TERCOVER</span>
+            {/* Checker Result */}
+            {checkerPlatform && checkerIssue && (
+              <div style={{
+                background: checkerIssue === 'expired' ? 'rgba(16,185,129,0.08)' : (checkerIssue === 'screen' ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)'),
+                border: checkerIssue === 'expired' ? '1px solid rgba(16,185,129,0.2)' : (checkerIssue === 'screen' ? '1px solid rgba(245,158,11,0.2)' : '1px solid rgba(239,68,68,0.2)'),
+                borderRadius: '16px', padding: '20px', animation: 'fadeIn 0.4s ease'
+              }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <div style={{ marginTop: '2px' }}>
+                    {checkerIssue === 'expired' ? <FiCheckCircle color="#10b981" size={20} /> : (checkerIssue === 'screen' ? <FiAlertCircle color="#f59e0b" size={20} /> : <FiXCircle color="#ef4444" size={20} />)}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: '0 0 6px 0', fontSize: '1rem', fontWeight: 600, color: checkerIssue === 'expired' ? '#059669' : (checkerIssue === 'screen' ? '#b45309' : '#dc2626') }}>
+                      {checkerIssue === 'expired' ? 'Garansi Tersedia!' : (checkerIssue === 'screen' ? 'Solusi Mandiri' : 'Tidak Tercover Garansi')}
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#3d3d3d', lineHeight: 1.5 }}>
+                      {checkerIssue === 'expired' ? 'Kendala ini 100% tercover garansi kami. Silakan klik tombol "Klaim Garansi" di bagian bawah halaman ini untuk mendapatkan akun pengganti.' : 
+                       (checkerIssue === 'screen' ? 'Untuk akun sharing, wajar jika terjadi screen limit. Silakan tunggu beberapa saat atau coba lagi nanti. Tidak perlu ganti akun.' : 
+                       'Maaf, kebijakan platform yang memblokir akun berada di luar kendali kami. Kendala ini tidak termasuk dalam cakupan garansi.')}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p style={{ fontSize: '0.9rem', color: '#1d1d1f', lineHeight: 1.7, margin: 0 }}>
-                <strong>Akun terblokir / dibanned oleh pihak resmi platform</strong> → Kondisi ini <strong>tidak termasuk dalam garansi</strong> kami, karena merupakan kebijakan sepihak dari platform terkait yang sepenuhnya di luar kendali kami.
-              </p>
-            </div>
+            )}
           </div>
         </section>
 
-        {/* Section 3 - Kebijakan Platform */}
-        <section style={{ marginBottom: '28px' }}>
+        {/* Section - Kebijakan Kelangsungan Layanan */}
+        <section style={{ marginBottom: '32px' }}>
           <div style={{
             background: '#ffffff',
             border: '1px solid rgba(0,0,0,0.06)',
-            borderRadius: '20px',
-            padding: '28px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+            borderRadius: '24px',
+            padding: '32px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <div style={{
                 width: '40px', height: '40px', borderRadius: '12px',
                 background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.2rem', flexShrink: 0,
-                boxShadow: '0 4px 12px rgba(139,92,246,0.3)',
-              }}>📋</div>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: '#1d1d1f' }}>
-                Kebijakan Kelangsungan Layanan
+                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, boxShadow: '0 4px 12px rgba(139,92,246,0.3)',
+              }}>
+                <FiFileText size={20} />
+              </div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: '#1d1d1f', letterSpacing: '-0.02em' }}>
+                Kelangsungan Layanan
               </h2>
             </div>
-            <p style={{ fontSize: '0.9rem', color: '#3d3d3d', lineHeight: 1.7, margin: 0 }}>
-              Setelah event / masa trial berakhir, kami <strong>tidak bisa menjamin akun tetap aktif selamanya</strong> karena hal ini sepenuhnya bergantung pada kebijakan masing-masing platform.
-              <br /><br />
-              Namun, jika akun tidak bisa digunakan lagi (di luar kasus terblokir), kami akan membantu kamu <strong>beralih ke aplikasi atau platform alternatif sejenis</strong> dengan cara yang paling mudah dan cepat.
+            <p style={{ fontSize: '0.95rem', color: '#3d3d3d', lineHeight: 1.7, margin: 0 }}>
+              Setelah event promo resmi berakhir, kami tidak menjamin akun akan aktif selamanya karena aturan keamanan platform yang terus diperbarui. Namun, jika aplikasi tidak bisa digunakan (di luar banned/blokir), kami selalu siap membantu Anda <strong>beralih ke platform alternatif sejenis</strong> yang lebih stabil dengan mudah dan cepat. Pembelian ini bersifat final dan Anda menyetujui seluruh ketentuan ini saat melakukan pembayaran.
             </p>
           </div>
         </section>
 
-        {/* Section 4 - Final Sale */}
-        <section style={{ marginBottom: '28px' }}>
-          <div style={{
-            background: '#ffffff',
-            border: '1px solid rgba(0,0,0,0.06)',
-            borderRadius: '20px',
-            padding: '28px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div style={{
-                width: '40px', height: '40px', borderRadius: '12px',
-                background: 'linear-gradient(135deg, #0071e3, #0056b3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.2rem', flexShrink: 0,
-                boxShadow: '0 4px 12px rgba(0,113,227,0.3)',
-              }}>📌</div>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: '#1d1d1f' }}>
-                Ketentuan Pembelian
-              </h2>
-            </div>
-            <p style={{ fontSize: '0.9rem', color: '#3d3d3d', lineHeight: 1.7, margin: 0 }}>
-              <strong>Pembelian ini bersifat final.</strong> Dengan melakukan checkout dan membayar, kamu secara otomatis menyatakan bahwa kamu telah membaca, memahami, dan <strong>menyetujui seluruh ketentuan</strong> yang tercantum di halaman ini — termasuk batasan garansi yang sudah dijelaskan di atas.
-            </p>
-          </div>
-        </section>
-
-        {/* Section 5 - Product-specific Terms (Interactive) */}
+        {/* Section - Product-specific Terms (Interactive) */}
         {!loading && products.length > 0 && (
-          <section style={{ marginBottom: '28px' }}>
+          <section style={{ marginBottom: '40px' }}>
             <div style={{
               background: '#ffffff',
               border: '1px solid rgba(0,0,0,0.06)',
-              borderRadius: '20px',
-              padding: '28px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+              borderRadius: '24px',
+              padding: '32px',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                 <div style={{
                   width: '40px', height: '40px', borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.2rem', flexShrink: 0,
-                  boxShadow: '0 4px 12px rgba(108,92,231,0.3)',
-                }}>📋</div>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, color: '#1d1d1f' }}>
-                  Ketentuan Khusus Berdasarkan Produk
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, boxShadow: '0 4px 12px rgba(217,119,6,0.3)',
+                }}>
+                  <FiStar size={20} />
+                </div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: '#1d1d1f', letterSpacing: '-0.02em' }}>
+                  Ketentuan Khusus Produk
                 </h2>
               </div>
-              <p style={{ fontSize: '0.88rem', color: '#86868b', lineHeight: 1.5, marginBottom: '20px' }}>
-                Aturan, kebijakan, dan panduan pemakaian khusus untuk masing-masing akun premium yang wajib kamu ikuti demi kelancaran garansi.
+              <p style={{ fontSize: '0.9rem', color: '#86868b', lineHeight: 1.5, marginBottom: '24px' }}>
+                Setiap aplikasi memiliki aturan penggunaan yang berbeda (khususnya akun sharing). Ikuti panduan berikut agar garansi Anda tetap valid.
               </p>
 
               {/* Horizontal Tabs */}
-              <div style={{
-                display: 'flex',
-                gap: '8px',
-                overflowX: 'auto',
-                paddingBottom: '12px',
-                marginBottom: '20px',
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                WebkitOverflowScrolling: 'touch',
-              }}>
-                {products.map(p => {
-                  const isSelected = selectedProduct?.id === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => setSelectedProduct(p)}
-                      style={{
-                        background: isSelected ? 'rgba(108,92,231,0.08)' : '#f5f5f7',
-                        border: isSelected ? '1.5px solid #6c5ce7' : '1.5px solid transparent',
-                        borderRadius: '12px',
-                        padding: '10px 16px',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        color: isSelected ? '#6c5ce7' : '#1d1d1f',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        transition: 'all 0.2s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <span>✨</span> {p.name}
-                    </button>
-                  );
-                })}
+              <div style={{ position: 'relative' }}>
+                <div style={{
+                  display: 'flex',
+                  gap: '10px',
+                  overflowX: 'auto',
+                  paddingBottom: '16px',
+                  marginBottom: '20px',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch',
+                }}>
+                  {products.map(p => {
+                    const isSelected = selectedProduct?.id === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedProduct(p)}
+                        style={{
+                          background: isSelected ? 'linear-gradient(135deg, #6c5ce7, #5b43d6)' : '#ffffff',
+                          border: isSelected ? '1px solid transparent' : '1px solid rgba(0,0,0,0.08)',
+                          boxShadow: isSelected ? '0 4px 12px rgba(108,92,231,0.25)' : '0 2px 4px rgba(0,0,0,0.02)',
+                          borderRadius: '12px',
+                          padding: '12px 20px',
+                          fontSize: '0.9rem',
+                          fontWeight: 600,
+                          color: isSelected ? '#ffffff' : '#3d3d3d',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                        }}
+                      >
+                        {p.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Fade out edge for scroll indication */}
+                <div style={{
+                  position: 'absolute', right: 0, top: 0, bottom: '16px', width: '40px',
+                  background: 'linear-gradient(to right, transparent, #ffffff)', pointerEvents: 'none'
+                }} />
               </div>
 
               {/* Display terms detail of selected product */}
               {selectedProduct && (
                 <div style={{
                   background: 'rgba(108, 92, 231, 0.03)',
-                  border: '1px dashed rgba(108, 92, 231, 0.25)',
-                  borderRadius: '14px',
-                  padding: '20px',
+                  border: '1px solid rgba(108, 92, 231, 0.15)',
+                  borderRadius: '16px',
+                  padding: '24px',
                   animation: 'fadeIn 0.3s ease',
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#1d1d1f' }}>
-                      📋 Aturan Penggunaan {selectedProduct.name}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 600, color: '#1d1d1f', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FiFileText color="#6c5ce7" /> Aturan Pemakaian {selectedProduct.name}
                     </span>
                     <span style={{
                       background: selectedProduct.account_type === 'sharing' ? 'rgba(59,130,246,0.1)' : 'rgba(108,92,231,0.1)',
                       color: selectedProduct.account_type === 'sharing' ? '#3b82f6' : '#6c5ce7',
-                      fontSize: '0.7rem',
+                      fontSize: '0.75rem',
                       fontWeight: 700,
-                      padding: '3px 8px',
-                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
                       textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
                     }}>
                       Tipe: {selectedProduct.account_type}
                     </span>
                   </div>
                   <div style={{
-                    fontSize: '0.88rem',
+                    fontSize: '0.9rem',
                     color: '#3d3d3d',
-                    lineHeight: 1.6,
+                    lineHeight: 1.7,
                     whiteSpace: 'pre-wrap',
                     margin: 0,
                   }}>
@@ -354,24 +425,24 @@ export default function KetentuanPage() {
         {/* Summary Box */}
         <div style={{
           background: 'linear-gradient(135deg, #1d1d1f, #2d2d2f)',
-          borderRadius: '20px', padding: '32px',
+          borderRadius: '24px', padding: '36px',
           marginBottom: '40px', color: '#fff',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
         }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '20px', color: '#f5f5f7' }}>
-            📝 Ringkasan Ketentuan
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '24px', color: '#f5f5f7', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FiCheckCircle /> Ringkasan Ketentuan
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {[
-              { icon: '✅', text: 'Garansi ganti akun baru jika expired normal (trial habis)' },
-              { icon: '❌', text: 'Tidak ada garansi jika akun di-ban/blokir oleh platform' },
-              { icon: '⚡', text: 'Harga murah karena memanfaatkan promo trial resmi platform' },
-              { icon: '🔄', text: 'Siap alihkan ke platform alternatif jika layanan tidak bisa digunakan (non-ban)' },
-              { icon: '📌', text: 'Pembelian bersifat final — tidak ada refund di luar ketentuan garansi' },
+              { icon: <FiCheckCircle color="#10b981" />, text: 'Garansi ganti akun baru jika expired normal (trial habis)' },
+              { icon: <FiXCircle color="#ef4444" />, text: 'Tidak ada garansi jika akun di-ban/blokir oleh platform' },
+              { icon: <FiInfo color="#3b82f6" />, text: 'Harga murah karena memanfaatkan promo trial resmi platform' },
+              { icon: <FiRefreshCw color="#a855f7" />, text: 'Siap alihkan ke platform alternatif jika layanan tidak bisa digunakan (non-ban)' },
+              { icon: <FiAlertCircle color="#f59e0b" />, text: 'Pembelian bersifat final — tidak ada refund di luar ketentuan garansi' },
             ].map(({ icon, text }, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                <span style={{ fontSize: '1rem', flexShrink: 0, marginTop: '1px' }}>{icon}</span>
-                <span style={{ fontSize: '0.88rem', lineHeight: 1.6, color: '#d1d1d6' }}>{text}</span>
+                <span style={{ fontSize: '1.1rem', flexShrink: 0, marginTop: '2px' }}>{icon}</span>
+                <span style={{ fontSize: '0.9rem', lineHeight: 1.6, color: '#d1d1d6' }}>{text}</span>
               </div>
             ))}
           </div>
@@ -379,42 +450,47 @@ export default function KetentuanPage() {
 
         {/* CTA */}
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '0.9rem', color: '#86868b', marginBottom: '20px' }}>
-            Masih punya pertanyaan? Tim kami siap membantu kamu.
+          <p style={{ fontSize: '0.95rem', color: '#86868b', marginBottom: '24px' }}>
+            Punya pertanyaan lain? Tim CS kami siap membantu Anda.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/" style={{
-              display: 'inline-block',
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
               background: '#0071e3', color: '#fff',
-              padding: '14px 28px', borderRadius: '30px',
-              fontSize: '0.9rem', fontWeight: 500,
+              padding: '16px 32px', borderRadius: '30px',
+              fontSize: '0.95rem', fontWeight: 600,
               textDecoration: 'none',
+              boxShadow: '0 4px 12px rgba(0,113,227,0.3)',
+              transition: 'transform 0.2s',
             }}>
               Lihat Katalog Produk
             </Link>
             <Link href="/warranty" style={{
-              display: 'inline-block',
-              background: '#f2f2f2', color: '#1d1d1f',
-              padding: '14px 28px', borderRadius: '30px',
-              fontSize: '0.9rem', fontWeight: 500,
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              background: '#ffffff', color: '#1d1d1f',
+              border: '1px solid rgba(0,0,0,0.1)',
+              padding: '16px 32px', borderRadius: '30px',
+              fontSize: '0.95rem', fontWeight: 600,
               textDecoration: 'none',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              transition: 'transform 0.2s',
             }}>
-              Klaim Garansi
+              Klaim Garansi <FiArrowRight />
             </Link>
           </div>
         </div>
 
         {/* Footer note */}
         <div style={{
-          marginTop: '48px', paddingTop: '24px',
+          marginTop: '64px', paddingTop: '32px',
           borderTop: '1px solid rgba(0,0,0,0.06)',
           textAlign: 'center',
         }}>
-          <p style={{ fontSize: '0.8rem', color: '#86868b', margin: 0 }}>
+          <p style={{ fontSize: '0.85rem', color: '#86868b', margin: 0 }}>
             Salam hangat, <strong>Tim pastipremium.my.id</strong> ✨
           </p>
-          <p style={{ fontSize: '0.75rem', color: '#aeaeb2', marginTop: '6px' }}>
-            Halaman ini terakhir diperbarui: Mei 2025
+          <p style={{ fontSize: '0.75rem', color: '#aeaeb2', marginTop: '8px' }}>
+            Halaman ini terakhir diperbarui: {new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
           </p>
         </div>
       </main>
