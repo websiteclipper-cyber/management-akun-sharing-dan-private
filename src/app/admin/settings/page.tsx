@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 interface Setting {
   key: string;
@@ -14,8 +15,20 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [promos, setPromos] = useState<any[]>([]);
 
-  useEffect(() => { loadSettings(); }, []);
+  useEffect(() => { 
+    loadSettings(); 
+    loadPromos();
+  }, []);
+
+  async function loadPromos() {
+    const { data } = await supabase
+      .from('promos')
+      .select('*, product:products(name, platform_name)')
+      .eq('is_active', true);
+    if (data) setPromos(data);
+  }
 
   async function loadSettings() {
     setLoading(true);
@@ -318,6 +331,46 @@ export default function SettingsPage() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', opacity: promoActive ? 1 : 0.6, pointerEvents: promoActive ? 'auto' : 'none', transition: 'all 0.2s' }}>
+                <div className="form-group" style={{ gridColumn: '1 / -1', background: 'rgba(74,222,128,0.05)', padding: '16px', borderRadius: '12px', border: '1px dashed rgba(74,222,128,0.3)' }}>
+                  <label className="form-label" style={{ color: '#4ade80', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    ⚡ Isi Otomatis dari Promo & Diskon
+                  </label>
+                  <select
+                    className="form-input"
+                    onChange={(e) => {
+                      const promo = promos.find(p => p.id === e.target.value);
+                      if (promo) {
+                        // Check if platform icon is available in dropdown, else DEFAULT
+                        const validPlatforms = ['CHATGPT', 'NETFLIX', 'SPOTIFY', 'CANVA', 'YOUTUBE', 'DISNEY', 'APPLE', 'DEFAULT'];
+                        const pName = (promo.product?.platform_name || '').toUpperCase();
+                        const finalPlatform = validPlatforms.includes(pName) ? pName : 'DEFAULT';
+                        
+                        setSettings(prev => {
+                          const updated = [...prev];
+                          const setVal = (k: string, v: string) => {
+                            const idx = updated.findIndex(s => s.key === k);
+                            if (idx >= 0) updated[idx].value = v;
+                          };
+                          setVal('global_promo_platform', finalPlatform);
+                          setVal('global_promo_subtitle', promo.product?.name || '');
+                          setVal('global_promo_badge', promo.promo_label || 'PROMO');
+                          setVal('global_promo_normal_price', promo.original_price.toString());
+                          setVal('global_promo_price', promo.promo_price.toString());
+                          return updated;
+                        });
+                      }
+                    }}
+                    style={{ background: 'var(--bg-secondary)', borderColor: 'rgba(74,222,128,0.2)' }}
+                  >
+                    <option value="">— Pilih Promo Aktif (Akan otomatis mengisi form di bawah) —</option>
+                    {promos.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.product?.platform_name} - {p.product?.name} (Diskon {formatPrice(p.promo_price)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Ikon Platform</label>
                   <select
