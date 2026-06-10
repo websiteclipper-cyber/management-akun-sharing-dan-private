@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 // GET: Public endpoint to fetch public-facing settings (no auth required)
 export async function GET() {
   try {
