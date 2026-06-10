@@ -6,7 +6,6 @@ import { Product } from '@/lib/types';
 import Link from 'next/link';
 import PromoPopup from '@/components/PromoPopup';
 import GlobalPromoPopup from '@/components/GlobalPromoPopup';
-import ChatGPTBanner from '@/components/ChatGPTBanner';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLocale } from '@/lib/locale-context';
 import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiGooglegemini } from 'react-icons/si';
@@ -231,7 +230,6 @@ export default function HomePage() {
     }}>
       <PromoPopup />
       <GlobalPromoPopup />
-      <ChatGPTBanner />
 
       {/* ── HEADER (Sleek Glassmorphism Dark) ── */}
       <header style={{
