@@ -584,6 +584,7 @@ export default function OrderPage() {
                     <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>×{quantity}</span>
                   </div>
                 )}
+                {quantity > 1 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Rata-rata per item</span>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{formatPrice(finalDisplayPrice / quantity)} / item</span>
