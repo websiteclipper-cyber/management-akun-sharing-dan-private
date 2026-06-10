@@ -45,6 +45,15 @@ export default function SettingsPage() {
       { key: 'support_whatsapp', value: '082244046330', label: 'Nomor WhatsApp Support' },
       { key: 'leaderboard_min_commission', value: '50000', label: 'Leaderboard Min Komisi (Rp)' },
       { key: 'leaderboard_max_commission', value: '500000', label: 'Leaderboard Max Komisi (Rp)' },
+      { key: 'global_promo_active', value: 'false', label: 'Aktifkan Global Promo Popup' },
+      { key: 'global_promo_platform', value: 'CHATGPT', label: 'Platform Icon Global Promo' },
+      { key: 'global_promo_title', value: 'Promo Spesial', label: 'Judul Global Promo' },
+      { key: 'global_promo_subtitle', value: 'ChatGPT Pro', label: 'Sub-judul Global Promo' },
+      { key: 'global_promo_badge', value: 'FULL GARANSI', label: 'Badge Global Promo' },
+      { key: 'global_promo_normal_price', value: '5000000', label: 'Harga Normal Global Promo' },
+      { key: 'global_promo_price', value: '100000', label: 'Harga Diskon Global Promo' },
+      { key: 'global_promo_btn_text', value: 'AMBIL PROMO SEKARANG', label: 'Teks Tombol Global Promo' },
+      { key: 'global_promo_btn_link', value: '#katalog', label: 'Link Tombol Global Promo' },
     ];
   }
 
@@ -95,6 +104,16 @@ export default function SettingsPage() {
   const waNumber = settings.find(s => s.key === 'support_whatsapp')?.value || '';
   const minCommission = settings.find(s => s.key === 'leaderboard_min_commission')?.value || '50000';
   const maxCommission = settings.find(s => s.key === 'leaderboard_max_commission')?.value || '500000';
+
+  const promoActive = settings.find(s => s.key === 'global_promo_active')?.value === 'true';
+  const promoPlatform = settings.find(s => s.key === 'global_promo_platform')?.value || 'CHATGPT';
+  const promoTitle = settings.find(s => s.key === 'global_promo_title')?.value || 'Promo Spesial';
+  const promoSubtitle = settings.find(s => s.key === 'global_promo_subtitle')?.value || 'ChatGPT Pro';
+  const promoBadge = settings.find(s => s.key === 'global_promo_badge')?.value || 'FULL GARANSI';
+  const promoNormalPrice = settings.find(s => s.key === 'global_promo_normal_price')?.value || '5000000';
+  const promoPrice = settings.find(s => s.key === 'global_promo_price')?.value || '100000';
+  const promoBtnText = settings.find(s => s.key === 'global_promo_btn_text')?.value || 'AMBIL PROMO SEKARANG';
+  const promoBtnLink = settings.find(s => s.key === 'global_promo_btn_link')?.value || '#katalog';
 
   // Format phone for display
   function formatPhone(phone: string): string {
@@ -262,6 +281,87 @@ export default function SettingsPage() {
                   <div style={{ marginTop: '6px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     Nilai akan dibulatkan ke kelipatan Rp 1.000 dan ranking otomatis diurutkan dari komisi tertinggi.
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Global Promo Popup Settings ── */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-secondary)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              marginBottom: '24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{
+                  width: '44px', height: '44px', borderRadius: '12px',
+                  background: 'rgba(236,72,153,0.15)', color: '#ec4899',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.4rem',
+                }}>✨</div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px' }}>Global Promo Popup</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                    Popup promo khusus yang muncul saat user pertama kali membuka web.
+                  </p>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={promoActive}
+                    onChange={e => updateSetting('global_promo_active', e.target.checked ? 'true' : 'false')}
+                    style={{ width: '20px', height: '20px', accentColor: 'var(--brand-success)' }}
+                  />
+                  Aktifkan Popup
+                </label>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', opacity: promoActive ? 1 : 0.6, pointerEvents: promoActive ? 'auto' : 'none', transition: 'all 0.2s' }}>
+                <div className="form-group">
+                  <label className="form-label">Ikon Platform</label>
+                  <select
+                    className="form-input"
+                    value={promoPlatform}
+                    onChange={e => updateSetting('global_promo_platform', e.target.value)}
+                  >
+                    <option value="CHATGPT">ChatGPT</option>
+                    <option value="NETFLIX">Netflix</option>
+                    <option value="SPOTIFY">Spotify</option>
+                    <option value="CANVA">Canva</option>
+                    <option value="YOUTUBE">YouTube</option>
+                    <option value="DISNEY">Disney</option>
+                    <option value="APPLE">Apple</option>
+                    <option value="DEFAULT">Lainnya (Bintang)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Judul Popup</label>
+                  <input className="form-input" value={promoTitle} onChange={e => updateSetting('global_promo_title', e.target.value)} placeholder="Promo Spesial" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Sub-judul (Nama Produk)</label>
+                  <input className="form-input" value={promoSubtitle} onChange={e => updateSetting('global_promo_subtitle', e.target.value)} placeholder="ChatGPT Pro" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Teks Badge / Garansi</label>
+                  <input className="form-input" value={promoBadge} onChange={e => updateSetting('global_promo_badge', e.target.value)} placeholder="FULL GARANSI" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Harga Normal (Dicoret)</label>
+                  <input className="form-input" type="number" value={promoNormalPrice} onChange={e => updateSetting('global_promo_normal_price', e.target.value)} placeholder="5000000" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Harga Diskon (Aktif)</label>
+                  <input className="form-input" type="number" value={promoPrice} onChange={e => updateSetting('global_promo_price', e.target.value)} placeholder="100000" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Teks Tombol CTA</label>
+                  <input className="form-input" value={promoBtnText} onChange={e => updateSetting('global_promo_btn_text', e.target.value)} placeholder="AMBIL PROMO SEKARANG" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Link Tombol CTA</label>
+                  <input className="form-input" value={promoBtnLink} onChange={e => updateSetting('global_promo_btn_link', e.target.value)} placeholder="#katalog atau /buyer/login" />
                 </div>
               </div>
             </div>

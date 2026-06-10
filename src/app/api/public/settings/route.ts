@@ -7,7 +7,18 @@ export async function GET() {
     const { data, error } = await supabase
       .from('site_settings')
       .select('key, value')
-      .in('key', ['support_whatsapp']);
+      .in('key', [
+        'support_whatsapp',
+        'global_promo_active',
+        'global_promo_platform',
+        'global_promo_title',
+        'global_promo_subtitle',
+        'global_promo_badge',
+        'global_promo_normal_price',
+        'global_promo_price',
+        'global_promo_btn_text',
+        'global_promo_btn_link'
+      ]);
 
     if (error) {
       // Fallback defaults if table doesn't exist

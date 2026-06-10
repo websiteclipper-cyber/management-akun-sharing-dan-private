@@ -8,6 +8,7 @@ import { FiAlertCircle, FiShield, FiFileText, FiInfo, FiCheckCircle, FiXCircle, 
 
 export default function KetentuanPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +28,8 @@ export default function KetentuanPage() {
         const filtered = (data || []).filter(p => p.terms && p.terms.trim() !== '');
         setProducts(filtered);
         if (filtered.length > 0) {
+          const firstCat = filtered[0].platform_name || 'Lainnya';
+          setSelectedCategory(firstCat);
           setSelectedProduct(filtered[0]);
         }
       } catch (err) {
@@ -37,6 +40,9 @@ export default function KetentuanPage() {
     }
     loadProducts();
   }, []);
+
+  const categories = Array.from(new Set(products.map(p => p.platform_name || 'Lainnya'))).sort();
+  const productsInCategory = products.filter(p => (p.platform_name || 'Lainnya') === selectedCategory);
 
   return (
     <div style={{
@@ -333,28 +339,32 @@ export default function KetentuanPage() {
                 Setiap aplikasi memiliki aturan penggunaan yang berbeda (khususnya akun sharing). Ikuti panduan berikut agar garansi Anda tetap valid.
               </p>
 
-              {/* Horizontal Tabs */}
+              {/* Category Tabs */}
               <div style={{ position: 'relative' }}>
                 <div style={{
                   display: 'flex',
                   gap: '10px',
                   overflowX: 'auto',
                   paddingBottom: '16px',
-                  marginBottom: '20px',
+                  marginBottom: '16px',
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none',
                   WebkitOverflowScrolling: 'touch',
                 }}>
-                  {products.map(p => {
-                    const isSelected = selectedProduct?.id === p.id;
+                  {categories.map(cat => {
+                    const isSelected = selectedCategory === cat;
                     return (
                       <button
-                        key={p.id}
-                        onClick={() => setSelectedProduct(p)}
+                        key={cat}
+                        onClick={() => {
+                          setSelectedCategory(cat);
+                          const firstInCat = products.find(p => (p.platform_name || 'Lainnya') === cat);
+                          setSelectedProduct(firstInCat || null);
+                        }}
                         style={{
-                          background: isSelected ? 'linear-gradient(135deg, #6c5ce7, #5b43d6)' : '#ffffff',
+                          background: isSelected ? 'linear-gradient(135deg, #f59e0b, #d97706)' : '#ffffff',
                           border: isSelected ? '1px solid transparent' : '1px solid rgba(0,0,0,0.08)',
-                          boxShadow: isSelected ? '0 4px 12px rgba(108,92,231,0.25)' : '0 2px 4px rgba(0,0,0,0.02)',
+                          boxShadow: isSelected ? '0 4px 12px rgba(217,119,6,0.25)' : '0 2px 4px rgba(0,0,0,0.02)',
                           borderRadius: '12px',
                           padding: '12px 20px',
                           fontSize: '0.9rem',
@@ -369,7 +379,7 @@ export default function KetentuanPage() {
                           transform: isSelected ? 'scale(1.02)' : 'scale(1)',
                         }}
                       >
-                        {p.name}
+                        {cat}
                       </button>
                     );
                   })}
@@ -380,6 +390,43 @@ export default function KetentuanPage() {
                   background: 'linear-gradient(to right, transparent, #ffffff)', pointerEvents: 'none'
                 }} />
               </div>
+
+              {/* Product Sub-options */}
+              {productsInCategory.length > 1 && (
+                <div style={{
+                  display: 'flex',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  marginBottom: '20px',
+                  padding: '12px',
+                  background: 'rgba(0,0,0,0.02)',
+                  borderRadius: '16px',
+                }}>
+                  {productsInCategory.map(p => {
+                    const isSelected = selectedProduct?.id === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedProduct(p)}
+                        style={{
+                          background: isSelected ? 'linear-gradient(135deg, #6c5ce7, #5b43d6)' : '#ffffff',
+                          border: isSelected ? '1px solid transparent' : '1px solid rgba(0,0,0,0.08)',
+                          boxShadow: isSelected ? '0 2px 8px rgba(108,92,231,0.2)' : 'none',
+                          borderRadius: '8px',
+                          padding: '8px 16px',
+                          fontSize: '0.85rem',
+                          fontWeight: 500,
+                          color: isSelected ? '#ffffff' : '#3d3d3d',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        {p.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Display terms detail of selected product */}
               {selectedProduct && (
