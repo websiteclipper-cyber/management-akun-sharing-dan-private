@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
 import Link from 'next/link';
 import PromoPopup from '@/components/PromoPopup';
+import GlobalPromoPopup from '@/components/GlobalPromoPopup';
 import ChatGPTBanner from '@/components/ChatGPTBanner';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLocale } from '@/lib/locale-context';
@@ -229,6 +230,7 @@ export default function HomePage() {
       overflowX: 'hidden',
     }}>
       <PromoPopup />
+      <GlobalPromoPopup />
       <ChatGPTBanner />
 
       {/* ── HEADER (Sleek Glassmorphism Dark) ── */}
