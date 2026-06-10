@@ -229,7 +229,14 @@ export default function HomePage() {
       overflowX: 'hidden',
     }}>
       <PromoPopup />
-      <GlobalPromoPopup />
+      <GlobalPromoPopup onSelectPlatform={(platform) => {
+        setSelectedCategory(platform.toUpperCase());
+        const el = document.getElementById('katalog');
+        if (el) {
+          const y = el.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      }} />
 
       {/* ── HEADER (Sleek Glassmorphism Dark) ── */}
       <header style={{
