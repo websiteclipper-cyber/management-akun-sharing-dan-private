@@ -81,6 +81,7 @@ export interface Order {
   order_number: string;
   buyer_id: number;
   product_id: number;
+  quantity?: number;
   unit_price: number;
   total_amount: number;
   payment_method: string | null;
@@ -91,6 +92,7 @@ export interface Order {
   delivered_at: string | null;
   discount_campaign_id: string | null;
   discount_amount: number;
+  client_ip?: string | null;
   created_at: string;
   updated_at: string;
   // Joined
