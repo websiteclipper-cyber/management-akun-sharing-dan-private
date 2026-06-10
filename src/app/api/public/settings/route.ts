@@ -26,6 +26,8 @@ export async function GET() {
       // Fallback defaults if table doesn't exist
       return NextResponse.json({
         support_whatsapp: '082244046330',
+        error: error.message,
+        details: error.details,
       });
     }
 
