@@ -23,7 +23,11 @@ function getPlatformIcon(name: string) {
   return <BsStars />;
 }
 
-export default function GlobalPromoPopup() {
+interface GlobalPromoPopupProps {
+  onSelectPlatform?: (platform: string) => void;
+}
+
+export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupProps) {
   const { formatPrice } = useLocale();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [visible, setVisible] = useState(false);
@@ -57,7 +61,9 @@ export default function GlobalPromoPopup() {
 
   function handleAction() {
     handleClose();
-    if (settings.global_promo_btn_link) {
+    if (onSelectPlatform && settings.global_promo_platform) {
+      onSelectPlatform(settings.global_promo_platform);
+    } else if (settings.global_promo_btn_link) {
       if (settings.global_promo_btn_link.startsWith('#')) {
         const el = document.querySelector(settings.global_promo_btn_link);
         if (el) {
