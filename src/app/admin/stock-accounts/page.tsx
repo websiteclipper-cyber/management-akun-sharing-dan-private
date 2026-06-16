@@ -322,15 +322,12 @@ export default function StockAccountsPage() {
                           {a.status}
                         </span>
                       </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                          <button className="btn btn-secondary btn-sm" onClick={() => { setEditItem(a); setIsCopy(false); setShowForm(true); }}>Edit</button>
-                          <button className="btn btn-info btn-sm" onClick={() => { setEditItem(a); setIsCopy(true); setShowForm(true); }}>📋 Duplikat</button>
-                          <button className="btn btn-secondary btn-sm" onClick={() => loadBuyers(a.id)}>Buyers</button>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <select
                             className="form-select"
                             value={a.status}
-                            style={{ padding: '4px 8px', fontSize: '0.75rem', width: 'auto' }}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', width: 'auto', minWidth: '90px' }}
                             onChange={async (e) => {
                               const result = await adminUpdate('stock_accounts', { status: e.target.value, updated_at: new Date().toISOString() }, { id: a.id });
                               if (result.error) { alert('Gagal mengubah status: ' + result.error.message); return; }
@@ -344,6 +341,9 @@ export default function StockAccountsPage() {
                             <option value="broken">Broken</option>
                             <option value="expired">Expired</option>
                           </select>
+                          <button className="btn btn-secondary btn-sm" onClick={() => { setEditItem(a); setIsCopy(false); setShowForm(true); }}>Edit</button>
+                          <button className="btn btn-info btn-sm" onClick={() => { setEditItem(a); setIsCopy(true); setShowForm(true); }}>Duplikat</button>
+                          <button className="btn btn-secondary btn-sm" onClick={() => loadBuyers(a.id)}>Buyers</button>
                           <button className="btn btn-secondary btn-sm" style={{ color: '#ef4444' }} onClick={() => handleDelete(a.id)}>Hapus</button>
                         </div>
                       </td>
