@@ -130,7 +130,7 @@ export default function HomePage() {
   async function loadProducts() {
     const now = new Date().toISOString();
     const [{ data: pData }, { data: promoData }] = await Promise.all([
-      supabase.from('products').select('*').eq('status', 'active').order('platform_name', { ascending: true }),
+      supabase.from('products').select('*').in('status', ['active', 'inactive']).order('platform_name', { ascending: true }),
       supabase.from('promos').select('*').eq('is_active', true).lte('start_date', now).gte('end_date', now),
     ]);
     setProducts(pData || []);
@@ -798,84 +798,117 @@ export default function HomePage() {
                   gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
                   gap: '28px' 
                 }}>
-                  {products.filter(p => p.platform_name.toUpperCase() === selectedCategory).map((product, idx) => {
-                    const promo = promos.find(pr => {
-                      const now = new Date();
-                      return pr.product_id === product.id &&
-                        new Date(pr.start_date) <= now &&
-                        new Date(pr.end_date) >= now;
-                    });
+                  {products
+                    .filter(p => p.platform_name.toUpperCase() === selectedCategory)
+                    .sort((a, b) => {
+                      if (a.status === 'active' && b.status === 'inactive') return -1;
+                      if (a.status === 'inactive' && b.status === 'active') return 1;
+                      return 0;
+                    })
+                    .map((product, idx) => {
+                      const promo = promos.find(pr => {
+                        const now = new Date();
+                        return pr.product_id === product.id &&
+                          new Date(pr.start_date) <= now &&
+                          new Date(pr.end_date) >= now;
+                      });
 
-                    const hasNewcomerPrice = product.newcomer_price !== null && product.newcomer_price !== undefined;
+                      const hasNewcomerPrice = product.newcomer_price !== null && product.newcomer_price !== undefined;
+                      const isInactive = product.status === 'inactive';
 
-                    return (
-                      <motion.div
-                        key={product.id}
-                        variants={itemVariants}
-                        whileHover={{ 
-                          y: -6, 
-                          borderColor: promo 
-                            ? 'rgba(239, 68, 68, 0.4)' 
-                            : hasNewcomerPrice 
-                            ? 'rgba(59, 130, 246, 0.4)' 
-                            : 'rgba(255, 255, 255, 0.15)',
-                          boxShadow: promo 
-                            ? '0 12px 40px rgba(239, 68, 68, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.03)' 
-                            : hasNewcomerPrice 
-                            ? '0 12px 40px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.03)' 
-                            : C_SHADOW_HOVER
-                        }}
-                        style={{
-                          background: C_CARD,
-                          borderRadius: 'var(--radius-xl)',
-                          padding: '32px',
-                          boxShadow: promo
-                            ? '0 8px 30px rgba(239, 68, 68, 0.08), inset 0 0 0 1px rgba(239, 68, 68, 0.15)'
-                            : hasNewcomerPrice
-                            ? '0 8px 30px rgba(0, 122, 255, 0.08), inset 0 0 0 1px rgba(0, 122, 255, 0.15)'
-                            : C_SHADOW,
-                          border: promo
-                            ? '1px solid rgba(239, 68, 68, 0.2)'
-                            : hasNewcomerPrice
-                            ? '1px solid rgba(0, 122, 255, 0.2)'
-                            : '1px solid var(--border-secondary)',
-                          display: 'flex', flexDirection: 'column',
-                          position: 'relative',
-                          transition: 'all var(--transition-normal)',
-                        }}
-                      >
-                        {/* Promo badge — Glassmorphism */}
-                        {promo && (
+                      return (
+                        <motion.div
+                          key={product.id}
+                          variants={itemVariants}
+                          whileHover={isInactive ? {} : { 
+                            y: -6, 
+                            borderColor: promo 
+                              ? 'rgba(239, 68, 68, 0.4)' 
+                              : hasNewcomerPrice 
+                              ? 'rgba(59, 130, 246, 0.4)' 
+                              : 'rgba(255, 255, 255, 0.15)',
+                            boxShadow: promo 
+                              ? '0 12px 40px rgba(239, 68, 68, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.03)' 
+                              : hasNewcomerPrice 
+                              ? '0 12px 40px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.03)' 
+                              : C_SHADOW_HOVER
+                          }}
+                          style={{
+                            background: C_CARD,
+                            borderRadius: 'var(--radius-xl)',
+                            padding: '32px',
+                            boxShadow: isInactive
+                              ? 'none'
+                              : promo
+                              ? '0 8px 30px rgba(239, 68, 68, 0.08), inset 0 0 0 1px rgba(239, 68, 68, 0.15)'
+                              : hasNewcomerPrice
+                              ? '0 8px 30px rgba(0, 122, 255, 0.08), inset 0 0 0 1px rgba(0, 122, 255, 0.15)'
+                              : C_SHADOW,
+                            border: isInactive
+                              ? '1px solid rgba(255, 255, 255, 0.05)'
+                              : promo
+                              ? '1px solid rgba(239, 68, 68, 0.2)'
+                              : hasNewcomerPrice
+                              ? '1px solid rgba(0, 122, 255, 0.2)'
+                              : '1px solid var(--border-secondary)',
+                            display: 'flex', flexDirection: 'column',
+                            position: 'relative',
+                            transition: 'all var(--transition-normal)',
+                            opacity: isInactive ? 0.55 : 1,
+                            filter: isInactive ? 'grayscale(80%)' : 'none',
+                          }}
+                        >
+                        {/* Sold Out or Promo/Newcomer Badge */}
+                        {isInactive ? (
                           <div style={{
                             position: 'absolute', top: '-14px', left: '32px',
-                            background: 'rgba(239,68,68,0.95)',
+                            background: 'rgba(63, 63, 70, 0.95)',
                             backdropFilter: 'blur(8px)',
                             WebkitBackdropFilter: 'blur(8px)',
-                            color: '#fff',
+                            color: '#d4d4d8',
                             padding: '6px 16px', borderRadius: '12px',
                             fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.5px',
                             textTransform: 'uppercase',
-                            boxShadow: '0 4px 16px rgba(239,68,68,0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
                           }}>
-                            {promo.promo_label}
+                            SOLD OUT
                           </div>
-                        )}
+                        ) : (
+                          <>
+                            {/* Promo badge — Glassmorphism */}
+                            {promo && (
+                              <div style={{
+                                position: 'absolute', top: '-14px', left: '32px',
+                                background: 'rgba(239,68,68,0.95)',
+                                backdropFilter: 'blur(8px)',
+                                WebkitBackdropFilter: 'blur(8px)',
+                                color: '#fff',
+                                padding: '6px 16px', borderRadius: '12px',
+                                fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.5px',
+                                textTransform: 'uppercase',
+                                boxShadow: '0 4px 16px rgba(239,68,68,0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
+                              }}>
+                                {promo.promo_label}
+                              </div>
+                            )}
 
-                        {/* Newcomer badge — Glassmorphism */}
-                        {hasNewcomerPrice && !promo && (
-                          <div style={{
-                            position: 'absolute', top: '-14px', left: '32px',
-                            background: 'linear-gradient(135deg, rgba(59,130,246,0.95), rgba(99,102,241,0.95))',
-                            backdropFilter: 'blur(8px)',
-                            WebkitBackdropFilter: 'blur(8px)',
-                            color: '#fff',
-                            padding: '6px 16px', borderRadius: '12px',
-                            fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.5px',
-                            textTransform: 'uppercase',
-                            boxShadow: '0 4px 16px rgba(59,130,246,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
-                          }}>
-                            {t('newcomer_badge')}
-                          </div>
+                            {/* Newcomer badge — Glassmorphism */}
+                            {hasNewcomerPrice && !promo && (
+                              <div style={{
+                                position: 'absolute', top: '-14px', left: '32px',
+                                background: 'linear-gradient(135deg, rgba(59,130,246,0.95), rgba(99,102,241,0.95))',
+                                backdropFilter: 'blur(8px)',
+                                WebkitBackdropFilter: 'blur(8px)',
+                                color: '#fff',
+                                padding: '6px 16px', borderRadius: '12px',
+                                fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.5px',
+                                textTransform: 'uppercase',
+                                boxShadow: '0 4px 16px rgba(59,130,246,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
+                              }}>
+                                {t('newcomer_badge')}
+                              </div>
+                            )}
+                          </>
                         )}
 
                         <div style={{
@@ -946,11 +979,27 @@ export default function HomePage() {
                           </div>
                         </div>
 
-                        <Link
-                          href={`/order/${product.id}`}
-                          className="btn btn-primary"
-                          style={{ width: '100%' }}
-                        >{t('choose_plan')}</Link>
+                        {isInactive ? (
+                          <button
+                            disabled
+                            className="btn"
+                            style={{
+                              width: '100%',
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              color: 'var(--text-muted)',
+                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              cursor: 'not-allowed',
+                            }}
+                          >
+                            SOLD OUT
+                          </button>
+                        ) : (
+                          <Link
+                            href={`/order/${product.id}`}
+                            className="btn btn-primary"
+                            style={{ width: '100%' }}
+                          >{t('choose_plan')}</Link>
+                        )}
                       </motion.div>
                     );
                   })}
