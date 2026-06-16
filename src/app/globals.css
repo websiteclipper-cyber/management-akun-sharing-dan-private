@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@500;700;900&display=swap');
 
 :root {
+  color-scheme: dark;
   /* Apple/Bento Box Design System - Premium Dark Theme */
   
   /* Brand Accents */
@@ -159,9 +160,11 @@ a:hover { color: var(--accent-hover); }
 }
 .form-input::placeholder { color: var(--text-muted); }
 
-.form-select option {
-  background-color: #121212; /* Dark background to prevent white-on-white bug */
-  color: #ffffff;
+select option,
+.form-select option,
+.form-input option {
+  background-color: #1c1c1e !important; /* Dark background to prevent white-on-white bug */
+  color: #ffffff !important;
 }
 
 .form-textarea { min-height: 120px; resize: vertical; }
@@ -203,6 +206,17 @@ a:hover { color: var(--accent-hover); }
 }
 .table td:first-child { border-left: 1px solid var(--border-secondary); border-top-left-radius: var(--radius-md); border-bottom-left-radius: var(--radius-md); }
 .table td:last-child { border-right: 1px solid var(--border-secondary); border-top-right-radius: var(--radius-md); border-bottom-right-radius: var(--radius-md); }
+/* Prevent table cells in the action column (usually the last column) from wrapping */
+.table th:last-child,
+.table td:last-child {
+  white-space: nowrap !important;
+}
+.table td:last-child div {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  gap: 8px;
+}
 .table tr { transition: transform var(--transition-fast); }
 .table tr:hover td { background: var(--bg-card-hover); }
 
