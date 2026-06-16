@@ -158,6 +158,12 @@ a:hover { color: var(--accent-hover); }
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
 .form-input::placeholder { color: var(--text-muted); }
+
+.form-select option {
+  background-color: #121212; /* Dark background to prevent white-on-white bug */
+  color: #ffffff;
+}
+
 .form-textarea { min-height: 120px; resize: vertical; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
@@ -187,6 +193,7 @@ a:hover { color: var(--accent-hover); }
   padding: 12px 16px; text-align: left;
   font-size: 0.8rem; font-weight: 600; color: var(--text-muted);
   text-transform: uppercase; letter-spacing: 1px;
+  white-space: nowrap;
 }
 .table td {
   padding: 16px; font-size: 0.9rem;
