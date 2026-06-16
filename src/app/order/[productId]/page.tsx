@@ -222,8 +222,8 @@ export default function OrderPage() {
 
             {/* Order Summary */}
             <div style={{
-              background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-primary)', padding: '16px', marginBottom: '24px',
+              background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border-secondary)', padding: '16px', marginBottom: '24px',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: result.discount_amount ? '12px' : '0' }}>
                 <div>
@@ -286,9 +286,9 @@ export default function OrderPage() {
             }}>
               {['QRIS', 'BRI', 'BNI', 'CIMB', 'Permata', 'Maybank'].map(m => (
                 <span key={m} style={{
-                  fontSize: '0.65rem', fontWeight: 700, background: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-primary)', borderRadius: '6px',
-                  padding: '4px 8px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px',
+                  fontSize: '0.65rem', fontWeight: 700, background: 'var(--bg-card)',
+                  border: '1px solid var(--border-secondary)', borderRadius: '8px',
+                  padding: '6px 10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px',
                 }}>{m}</span>
               ))}
             </div>
@@ -369,7 +369,7 @@ export default function OrderPage() {
             </div>
 
             {/* Buyer Info */}
-            <div style={{ background: 'rgba(108,92,231,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-primary)', padding: '16px', marginBottom: '20px' }}>
+            <div style={{ background: 'var(--accent-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,122,255,0.2)', padding: '16px', marginBottom: '20px' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '12px' }}>
                 {t('order_buyer_data')}
               </div>
@@ -385,11 +385,10 @@ export default function OrderPage() {
               </div>
             </div>
 
-            {/* ===== QUANTITY SELECTOR ===== */}
             <div style={{
-              background: 'var(--bg-secondary)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-primary)',
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border-secondary)',
               padding: '16px',
               marginBottom: '20px',
             }}>
@@ -446,9 +445,9 @@ export default function OrderPage() {
 
             {/* ===== DISCOUNT CODE SECTION ===== */}
             <div style={{
-              background: 'var(--bg-secondary)',
-              borderRadius: 'var(--radius-md)',
-              border: `1px solid ${discountInfo ? 'rgba(74,222,128,0.4)' : 'var(--border-primary)'}`,
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: 'var(--radius-lg)',
+              border: `1px solid ${discountInfo ? 'rgba(52,199,89,0.4)' : 'var(--border-secondary)'}`,
               padding: '16px',
               marginBottom: '20px',
               transition: 'all 0.3s ease',
@@ -465,24 +464,24 @@ export default function OrderPage() {
                 /* === Successfully applied discount === */
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  background: 'rgba(74,222,128,0.08)',
-                  borderRadius: '8px', padding: '10px 14px',
-                  border: '1px solid rgba(74,222,128,0.2)',
+                  background: 'rgba(52,199,89,0.08)',
+                  borderRadius: 'var(--radius-md)', padding: '12px 16px',
+                  border: '1px solid rgba(52,199,89,0.2)',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{
                       fontSize: '1.4rem', lineHeight: 1,
-                      filter: 'drop-shadow(0 0 4px rgba(74,222,128,0.4))',
+                      filter: 'drop-shadow(0 0 4px rgba(52,199,89,0.4))',
                     }}>✅</span>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#4ade80', letterSpacing: '0.5px' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--brand-success)', letterSpacing: '0.5px' }}>
                         {discountInfo.code}
                       </div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                         {discountInfo.discount_type === 'percentage'
                           ? `Diskon ${discountInfo.discount_value}%`
                           : `Potongan ${formatPrice(discountInfo.discount_value)}`}
-                        {' '}&mdash; Hemat <strong style={{ color: '#4ade80' }}>{formatPrice(discountInfo.discount_amount)}</strong>
+                        {' '}&mdash; Hemat <strong style={{ color: 'var(--brand-success)' }}>{formatPrice(discountInfo.discount_amount)}</strong>
                       </div>
                     </div>
                   </div>
@@ -545,9 +544,9 @@ export default function OrderPage() {
 
             {/* ===== PRICE SUMMARY ===== */}
             <div style={{
-              background: 'var(--bg-secondary)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-primary)',
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border-secondary)',
               padding: '16px',
               marginBottom: '20px',
             }}>
@@ -628,9 +627,9 @@ export default function OrderPage() {
 
             {/* ===== TERMS AND CONDITIONS ===== */}
             <div style={{
-              background: 'rgba(239, 68, 68, 0.05)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
+              background: 'rgba(255, 59, 48, 0.05)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid rgba(255, 59, 48, 0.2)',
               padding: '16px',
               marginBottom: '20px',
               fontSize: '0.85rem',

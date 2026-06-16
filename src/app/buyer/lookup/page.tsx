@@ -198,7 +198,7 @@ function BuyerLookupPage() {
 
             {/* Pay now CTA for pending orders */}
             {(selectedOrder.payment_status === 'pending_payment' || selectedOrder.payment_status === 'pending') && (
-              <div style={{ background: 'linear-gradient(135deg, rgba(108,92,231,0.08), rgba(108,92,231,0.02))', border: '1px solid rgba(108,92,231,0.2)', borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px', textAlign: 'center' }}>
+              <div style={{ background: 'var(--accent-soft)', border: '1px solid rgba(0,122,255,0.2)', borderRadius: 'var(--radius-lg)', padding: '20px', marginBottom: '24px', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '12px' }}>
                   {t('lookup_pay_now')}
                 </div>
@@ -207,10 +207,7 @@ function BuyerLookupPage() {
                 </p>
                 <button
                   className="btn btn-primary"
-                  style={{
-                    width: '100%', justifyContent: 'center', padding: '14px',
-                    background: 'linear-gradient(135deg, #6c5ce7, #a29bfe)', border: 'none',
-                  }}
+                  style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
                   onClick={() => {
                     const redirectUrl = `${window.location.origin}/order/success?order=${selectedOrder.order_number}`;
                     const pakasirUrl = `https://app.pakasir.com/pay/pastipremiumid1/${selectedOrder.total_amount}?order_id=${selectedOrder.order_number}&redirect=${encodeURIComponent(redirectUrl)}`;

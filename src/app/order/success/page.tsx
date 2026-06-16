@@ -133,11 +133,10 @@ function PaymentSuccessPage() {
         {status === 'waiting' && (
           /* ===== WAITING FOR PAYMENT CONFIRMATION ===== */
           <div className="order-form-card" style={{ textAlign: 'center' }}>
-            {/* Animated spinner */}
             <div style={{
               width: '80px', height: '80px', margin: '0 auto 24px',
-              borderRadius: '50%', border: '4px solid var(--border-primary)',
-              borderTopColor: '#6c5ce7', animation: 'spin 1s linear infinite',
+              borderRadius: '50%', border: '4px solid var(--border-secondary)',
+              borderTopColor: 'var(--accent)', animation: 'spin 1s linear infinite',
             }} />
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
@@ -149,8 +148,8 @@ function PaymentSuccessPage() {
 
             {/* Order info */}
             <div style={{
-              background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-primary)', padding: '16px', marginBottom: '20px',
+              background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border-secondary)', padding: '16px', marginBottom: '20px',
             }}>
               <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '4px' }}>
                 Order #{orderNumber}
@@ -172,7 +171,7 @@ function PaymentSuccessPage() {
               {[0, 1, 2].map(i => (
                 <div key={i} style={{
                   width: '8px', height: '8px', borderRadius: '50%',
-                  background: pollCount % 3 === i ? '#6c5ce7' : 'var(--border-primary)',
+                  background: pollCount % 3 === i ? 'var(--accent)' : 'var(--border-secondary)',
                   transition: 'background 0.3s',
                 }} />
               ))}
@@ -230,8 +229,8 @@ function PaymentSuccessPage() {
 
             {/* Order Summary */}
             <div style={{
-              background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-primary)', padding: '14px 16px', marginBottom: '20px',
+              background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--border-secondary)', padding: '14px 16px', marginBottom: '20px',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
               <div>
@@ -255,9 +254,9 @@ function PaymentSuccessPage() {
                   const stock = a.stock_account as Record<string, unknown>;
                   return (
                     <div key={i} style={{
-                      background: 'linear-gradient(135deg, rgba(108,92,231,0.08), rgba(108,92,231,0.02))',
-                      border: '1px solid rgba(108,92,231,0.2)',
-                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--accent-soft)',
+                      border: '1px solid rgba(0,122,255,0.2)',
+                      borderRadius: 'var(--radius-lg)',
                       padding: '20px',
                       marginBottom: '12px',
                     }}>
@@ -316,8 +315,8 @@ function PaymentSuccessPage() {
             {/* Important Notice — dynamic by account type */}
             {(product?.account_type as string) === 'sharing' ? (
               <div style={{
-                background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)',
-                borderRadius: 'var(--radius-md)', padding: '14px 16px', marginTop: '16px', marginBottom: '20px',
+                background: 'rgba(255, 59, 48, 0.05)', border: '1px solid rgba(255, 59, 48, 0.2)',
+                borderRadius: 'var(--radius-lg)', padding: '14px 16px', marginTop: '16px', marginBottom: '20px',
               }}>
                 <div style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600, marginBottom: '4px' }}>{t('success_sharing_warning_title')}</div>
                 <ul style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, paddingLeft: '16px', lineHeight: 1.6 }}>
@@ -329,8 +328,8 @@ function PaymentSuccessPage() {
               </div>
             ) : (
               <div style={{
-                background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.15)',
-                borderRadius: 'var(--radius-md)', padding: '14px 16px', marginTop: '16px', marginBottom: '20px',
+                background: 'rgba(255, 204, 0, 0.05)', border: '1px solid rgba(255, 204, 0, 0.2)',
+                borderRadius: 'var(--radius-lg)', padding: '14px 16px', marginTop: '16px', marginBottom: '20px',
               }}>
                 <div style={{ fontSize: '0.8rem', color: '#eab308', fontWeight: 600, marginBottom: '4px' }}>{t('success_private_warning_title')}</div>
                 <ul style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, paddingLeft: '16px', lineHeight: 1.6 }}>
@@ -381,7 +380,7 @@ function CredentialField({ label, value, copyLabel, copiedLabel }: { label: stri
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px',
+      padding: '10px 12px', background: 'var(--bg-base)', borderRadius: 'var(--radius-md)',
       border: '1px solid var(--border-secondary)', marginBottom: '8px',
     }}>
       <div>
@@ -436,7 +435,7 @@ function CredentialFieldDecrypt({ label, encrypted, revealLabel, copyLabel, copi
   return (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px',
+      padding: '10px 12px', background: 'var(--bg-base)', borderRadius: 'var(--radius-md)',
       border: '1px solid var(--border-secondary)', marginBottom: '8px',
     }}>
       <div>

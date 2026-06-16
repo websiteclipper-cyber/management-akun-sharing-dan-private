@@ -182,15 +182,15 @@ export default function HomePage() {
     ? `https://wa.me/${supportWa.startsWith('0') ? '62' + supportWa.substring(1) : supportWa}?text=${encodeURIComponent('Hi admin pastipremium.my.id, I need help.')}`
     : null;
 
-  // Premium Dark Mode Color System
-  const C_BG = '#09090b';
-  const C_TEXT = '#fafafa';
-  const C_TEXT_MUTED = '#a1a1aa';
-  const C_BLUE = '#3b82f6';
-  const C_BLUE_HOVER = '#2563eb';
-  const C_CARD = '#141416';
-  const C_SHADOW = '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.02)';
-  const C_SHADOW_HOVER = '0 12px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04)';
+  // Premium Apple/Bento Box Color System
+  const C_BG = 'var(--bg-base)';
+  const C_TEXT = 'var(--text-primary)';
+  const C_TEXT_MUTED = 'var(--text-secondary)';
+  const C_BLUE = 'var(--accent)';
+  const C_BLUE_HOVER = 'var(--accent-hover)';
+  const C_CARD = 'var(--bg-card)';
+  const C_SHADOW = 'var(--shadow-md)';
+  const C_SHADOW_HOVER = 'var(--shadow-lg)';
 
   const BRAND_GLOWS: Record<string, string> = {
     NETFLIX: 'rgba(229, 9, 20, 0.15)',
@@ -238,13 +238,13 @@ export default function HomePage() {
         }
       }} />
 
-      {/* ── HEADER (Sleek Glassmorphism Dark) ── */}
+      {/* ── HEADER (Apple Glassmorphism) ── */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(9, 9, 11, 0.72)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+        background: 'var(--glass-bg)',
+        backdropFilter: 'var(--glass-blur)',
+        WebkitBackdropFilter: 'var(--glass-blur)',
+        borderBottom: '1px solid var(--glass-border)',
         padding: '0 24px',
         height: '64px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -412,28 +412,22 @@ export default function HomePage() {
           position: 'relative',
         }}
       >
-        {/* Ambient mesh gradient blobs */}
+        {/* Ambient mesh gradient blobs - Apple Style */}
         <div style={{
           position: 'absolute', top: '-100px', left: '50%', transform: 'translateX(-50%)',
           width: '140%', height: '600px', pointerEvents: 'none', zIndex: 0, overflow: 'hidden',
         }}>
           <div style={{
-            position: 'absolute', top: '0', left: '15%',
+            position: 'absolute', top: '0', left: '25%',
+            width: '500px', height: '500px', borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(0, 122, 255, 0.15) 0%, transparent 70%)',
+            filter: 'blur(100px)',
+          }} />
+          <div style={{
+            position: 'absolute', top: '50px', right: '25%',
             width: '450px', height: '450px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%)',
-            filter: 'blur(80px)',
-          }} />
-          <div style={{
-            position: 'absolute', top: '20px', right: '10%',
-            width: '400px', height: '400px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.14) 0%, transparent 70%)',
-            filter: 'blur(80px)',
-          }} />
-          <div style={{
-            position: 'absolute', top: '150px', left: '30%',
-            width: '350px', height: '350px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%)',
-            filter: 'blur(70px)',
+            background: 'radial-gradient(circle, rgba(90, 200, 250, 0.1) 0%, transparent 70%)',
+            filter: 'blur(90px)',
           }} />
         </div>
 
@@ -442,19 +436,19 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           style={{
-            fontSize: 'clamp(2.8rem, 8.5vw, 4.8rem)',
+            fontSize: '3.5rem',
             fontWeight: 800,
-            letterSpacing: '-0.04em',
-            lineHeight: 1.08,
-            marginBottom: '24px',
-            background: 'linear-gradient(135deg, #ffffff 40%, #c084fc 75%, #60a5fa 100%)',
+            letterSpacing: '-0.03em',
+            lineHeight: 1.1,
+            color: '#fff',
+            marginBottom: '16px',
+            position: 'relative',
+            zIndex: 1,
+            background: 'linear-gradient(180deg, #FFFFFF 0%, #A3A3A3 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            position: 'relative', zIndex: 1,
           }}
         >
-          {t('hero_title_1')}<br/>
           {t('hero_title_2')}
         </motion.h1>
         <motion.p
@@ -538,10 +532,10 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             style={{
               background: C_CARD,
-              borderRadius: '24px',
+              borderRadius: 'var(--radius-xl)',
               padding: '32px 36px',
               boxShadow: C_SHADOW,
-              border: '1px solid rgba(255, 255, 255, 0.05)',
+              border: '1px solid var(--border-secondary)',
               display: 'flex', flexDirection: 'column', gap: '24px',
               position: 'relative', overflow: 'hidden'
             }}
@@ -714,13 +708,13 @@ export default function HomePage() {
                                   whileTap={{ scale: 0.97 }}
                                   style={{
                                     background: C_CARD,
-                                    borderRadius: '24px',
+                                    borderRadius: 'var(--radius-xl)',
                                     padding: '36px 28px',
                                     cursor: 'pointer',
                                     boxShadow: C_SHADOW,
-                                    transition: 'border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease',
+                                    transition: 'all var(--transition-normal)',
                                     display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-                                    border: '1px solid rgba(255, 255, 255, 0.05)'
+                                    border: '1px solid var(--border-secondary)'
                                   }}
                                 >
                                   {/* Squircle icon with brand gradient */}
@@ -833,21 +827,21 @@ export default function HomePage() {
                         }}
                         style={{
                           background: C_CARD,
-                          borderRadius: '24px',
+                          borderRadius: 'var(--radius-xl)',
                           padding: '32px',
                           boxShadow: promo
                             ? '0 8px 30px rgba(239, 68, 68, 0.08), inset 0 0 0 1px rgba(239, 68, 68, 0.15)'
                             : hasNewcomerPrice
-                            ? '0 8px 30px rgba(59, 130, 246, 0.08), inset 0 0 0 1px rgba(59, 130, 246, 0.15)'
+                            ? '0 8px 30px rgba(0, 122, 255, 0.08), inset 0 0 0 1px rgba(0, 122, 255, 0.15)'
                             : C_SHADOW,
                           border: promo
                             ? '1px solid rgba(239, 68, 68, 0.2)'
                             : hasNewcomerPrice
-                            ? '1px solid rgba(59, 130, 246, 0.2)'
-                            : '1px solid rgba(255, 255, 255, 0.05)',
+                            ? '1px solid rgba(0, 122, 255, 0.2)'
+                            : '1px solid var(--border-secondary)',
                           display: 'flex', flexDirection: 'column',
                           position: 'relative',
-                          transition: 'all 0.3s ease',
+                          transition: 'all var(--transition-normal)',
                         }}
                       >
                         {/* Promo badge — Glassmorphism */}
@@ -954,25 +948,8 @@ export default function HomePage() {
 
                         <Link
                           href={`/order/${product.id}`}
-                          style={{
-                            display: 'block', textAlign: 'center',
-                            background: C_BLUE, color: '#fff', 
-                            borderRadius: '16px', padding: '16px', 
-                            fontWeight: 600, fontSize: '0.98rem',
-                            textDecoration: 'none', transition: 'all 0.25s ease',
-                            width: '100%',
-                            boxShadow: '0 4px 16px rgba(59, 130, 246, 0.2)'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = C_BLUE_HOVER;
-                            e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.35)';
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = C_BLUE;
-                            e.currentTarget.style.boxShadow = '0 4px 16px rgba(59, 130, 246, 0.2)';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                          }}
+                          className="btn btn-primary"
+                          style={{ width: '100%' }}
                         >{t('choose_plan')}</Link>
                       </motion.div>
                     );
