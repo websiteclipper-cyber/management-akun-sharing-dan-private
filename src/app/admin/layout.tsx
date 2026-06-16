@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { FiLogOut } from 'react-icons/fi';
 
 const navItems = [
   { label: 'Dashboard', href: '/admin', icon: '📊' },
@@ -202,7 +203,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
-          <h1>✦ pastipremium.my.id</h1>
+          <h1>
+            <span className="brand-glow">✦</span> pastipremium.my.id
+          </h1>
           <p>Admin Dashboard</p>
         </div>
         <nav className="sidebar-nav">
@@ -246,11 +249,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
         </nav>
-        <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-secondary)' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>{admin.name}</div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '12px' }}>{admin.role}</div>
-          <button onClick={handleLogout} className="btn btn-secondary btn-sm" style={{ width: '100%', justifyContent: 'center' }}>
-            Logout
+        <div className="sidebar-profile">
+          <div className="profile-info">
+            <div className="profile-avatar">
+              {admin.name ? admin.name.slice(0, 2).toUpperCase() : 'AD'}
+            </div>
+            <div className="profile-meta">
+              <div className="profile-name">{admin.name}</div>
+              <div className="profile-role">{admin.role}</div>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="btn-logout" title="Logout">
+            <FiLogOut style={{ fontSize: '0.95rem' }} />
           </button>
         </div>
       </aside>
