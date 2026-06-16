@@ -261,17 +261,17 @@ export default function AdminDashboardPage() {
 
         {/* ===== ROW 1: Revenue Summary ===== */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-          <div style={{ background: 'var(--accent)', borderRadius: 'var(--radius-lg)', padding: '28px', color: '#fff' }}>
+          <div style={{ background: 'var(--accent)', borderRadius: 'var(--radius-xl)', padding: '28px', color: '#fff', boxShadow: 'var(--shadow-md)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, opacity: 0.75, marginBottom: '10px' }}>💰 Total Revenue</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.03em' }}>{formatPrice(data?.totalRevenue || 0)}</div>
             <div style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '4px' }}>{formatNumber(data?.totalOrders || 0)} total pesanan</div>
           </div>
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '28px', border: '1px solid var(--border-secondary)' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', padding: '28px', border: '1px solid var(--border-secondary)', boxShadow: 'var(--shadow-md)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, color: 'var(--text-muted)', marginBottom: '10px' }}>📈 Revenue Hari Ini</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--brand-success)' }}>{formatPrice(data?.revenueToday || 0)}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{data?.paidToday} pesanan lunas hari ini</div>
           </div>
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: '28px', border: '1px solid var(--border-secondary)' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', padding: '28px', border: '1px solid var(--border-secondary)', boxShadow: 'var(--shadow-md)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, color: 'var(--text-muted)', marginBottom: '10px' }}>👥 Total Buyer</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.03em' }}>{formatNumber(data?.totalBuyers || 0)}</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{data?.ordersToday} order hari ini</div>
@@ -302,7 +302,7 @@ export default function AdminDashboardPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
 
           {/* Revenue Chart (Bar) */}
-          <div style={{ background: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-primary)', padding: '24px', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-secondary)', padding: '24px', overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px' }}>📊 Revenue 30 Hari Terakhir</h3>
             <div ref={chartScrollRef} className="custom-scrollbar" style={{ overflowX: 'auto', paddingBottom: '16px', scrollbarWidth: 'thin' }}>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', height: '180px', minWidth: '900px' }}>
@@ -331,7 +331,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Top Products */}
-          <div style={{ background: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-primary)', padding: '24px' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-secondary)', padding: '24px', boxShadow: 'var(--shadow-md)' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px' }}>🏆 Produk Terlaris</h3>
             {(data?.topProducts || []).length === 0 ? (
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Belum ada data penjualan.</p>
@@ -373,7 +373,7 @@ export default function AdminDashboardPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
 
           {/* Order Status Donut-style */}
-          <div style={{ background: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-primary)', padding: '24px' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-secondary)', padding: '24px', boxShadow: 'var(--shadow-md)' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px' }}>📋 Status Pesanan</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {Object.entries(data?.statusBreakdown || {}).sort((a, b) => b[1] - a[1]).map(([status, count]) => {
@@ -405,7 +405,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Recent Orders */}
-          <div style={{ background: 'var(--card-bg)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-primary)', padding: '24px' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-secondary)', padding: '24px', boxShadow: 'var(--shadow-md)' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px' }}>🕐 Pesanan Terbaru</h3>
             <div className="table-container" style={{ maxHeight: '340px', overflowY: 'auto' }}>
               <table className="table">

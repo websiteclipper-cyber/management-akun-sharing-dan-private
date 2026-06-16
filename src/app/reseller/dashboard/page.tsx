@@ -182,13 +182,14 @@ export default function ResellerDashboardPage() {
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px 20px 80px' }}>
         {/* Welcome Banner */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.08))',
-          border: '1px solid rgba(59,130,246,0.2)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-secondary)',
           borderRadius: 'var(--radius-xl)',
           padding: '28px 32px',
           marginBottom: '24px',
           position: 'relative',
           overflow: 'hidden',
+          boxShadow: 'var(--shadow-md)',
         }}>
           <div style={{ position: 'absolute', top: '-50px', right: '-30px', fontSize: '8rem', opacity: 0.06 }}>🤝</div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '6px' }}>
@@ -200,9 +201,9 @@ export default function ResellerDashboardPage() {
           
           {/* Referral Link */}
           <div style={{
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-primary)',
-            borderRadius: 'var(--radius-md)',
+            background: 'var(--bg-base)',
+            border: '1px solid var(--border-secondary)',
+            borderRadius: 'var(--radius-lg)',
             padding: '12px 16px',
             display: 'flex',
             alignItems: 'center',
@@ -276,8 +277,9 @@ export default function ResellerDashboardPage() {
             <div style={{
               background: 'var(--bg-card)',
               border: '1px solid var(--border-secondary)',
-              borderRadius: 'var(--radius-lg)',
+              borderRadius: 'var(--radius-xl)',
               overflow: 'hidden',
+              boxShadow: 'var(--shadow-md)',
             }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Transaksi Terbaru</h3>
@@ -329,11 +331,12 @@ export default function ResellerDashboardPage() {
               <div style={{
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border-secondary)',
-                borderRadius: 'var(--radius-lg)',
+                borderRadius: 'var(--radius-xl)',
                 padding: '24px',
                 marginTop: '16px',
                 position: 'relative',
                 overflow: 'hidden',
+                boxShadow: 'var(--shadow-md)',
               }}>
                 {/* Decorative glow */}
                 <div style={{
@@ -392,9 +395,10 @@ export default function ResellerDashboardPage() {
             <div style={{
               background: 'var(--bg-card)',
               border: '1px solid var(--border-secondary)',
-              borderRadius: 'var(--radius-lg)',
+              borderRadius: 'var(--radius-xl)',
               padding: '24px',
               marginTop: '16px',
+              boxShadow: 'var(--shadow-md)',
             }}>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '16px' }}>💡 Tips Meningkatkan Penjualan</h3>
               <div style={{ display: 'grid', gap: '12px' }}>
@@ -423,9 +427,10 @@ export default function ResellerDashboardPage() {
               <div style={{
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border-secondary)',
-                borderRadius: 'var(--radius-lg)',
+                borderRadius: 'var(--radius-xl)',
                 padding: '24px',
                 marginTop: '16px',
+                boxShadow: 'var(--shadow-md)',
               }}>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '8px' }}>📞 Laporkan Masalah Buyer</h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
@@ -475,7 +480,7 @@ export default function ResellerDashboardPage() {
               <div style={{
                 flex: 1, minWidth: '200px',
                 background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)',
-                borderRadius: 'var(--radius-md)', padding: '14px 18px',
+                borderRadius: 'var(--radius-lg)', padding: '14px 18px',
               }}>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Belum Dibayar</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#eab308' }}>{formatPrice(r.unpaid_commission)}</div>
@@ -486,7 +491,7 @@ export default function ResellerDashboardPage() {
               <div style={{
                 flex: 1, minWidth: '200px',
                 background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
-                borderRadius: 'var(--radius-md)', padding: '14px 18px',
+                borderRadius: 'var(--radius-lg)', padding: '14px 18px',
               }}>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sudah Dibayar</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--brand-success)' }}>
@@ -713,7 +718,7 @@ export default function ResellerDashboardPage() {
             {data.productCommissions.length === 0 && (
               <div style={{
                 background: 'var(--bg-card)', border: '1px solid var(--border-secondary)',
-                borderRadius: 'var(--radius-lg)', padding: '40px',
+                borderRadius: 'var(--radius-xl)', padding: '40px', boxShadow: 'var(--shadow-md)',
               }}>
                 <div className="empty-state">
                   <div className="icon">⚙️</div>
