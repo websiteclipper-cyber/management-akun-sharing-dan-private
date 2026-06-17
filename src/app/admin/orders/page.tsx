@@ -45,11 +45,22 @@ export default function OrdersPage() {
   }
 
   async function loadOrders() {
-    const { data } = await supabase
-      .from('orders')
-      .select('*, buyer:buyers(*), product:products(*)')
-      .order('created_at', { ascending: false });
-    setOrders(data || []);
+    setLoading(true);
+    let allOrders: Order[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*, buyer:buyers(*), product:products(*)')
+        .order('created_at', { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+      if (error || !data || data.length === 0) break;
+      allOrders = [...allOrders, ...data];
+      if (data.length < pageSize) break;
+      page++;
+    }
+    setOrders(allOrders);
     setLoading(false);
   }
 
