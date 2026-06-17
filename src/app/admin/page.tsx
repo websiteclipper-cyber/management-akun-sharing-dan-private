@@ -94,10 +94,8 @@ export default function AdminDashboardPage() {
       { count: needsAssignment },
       { count: openTickets },
       { count: totalBuyers },
-      { data: allPaidOrders },
+      { count: totalOrdersCount },
       { data: recentOrders },
-      { data: last30DaysOrders },
-      { data: allOrders },
     ] = await Promise.all([
       supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'active'),
       supabase.from('stock_accounts').select('*', { count: 'exact', head: true }).eq('status', 'active'),
@@ -110,15 +108,43 @@ export default function AdminDashboardPage() {
       supabase.from('orders').select('*', { count: 'exact', head: true }).eq('payment_status', 'paid').in('order_status', ['paid']),
       supabase.from('support_tickets').select('*', { count: 'exact', head: true }).in('status', ['open', 'in_progress']),
       supabase.from('buyers').select('*', { count: 'exact', head: true }),
-      supabase.from('orders').select('total_amount').eq('payment_status', 'paid'),
+      supabase.from('orders').select('*', { count: 'exact', head: true }),
       supabase.from('orders').select('*, buyer:buyers(name, phone), product:products(name, platform_name)').order('created_at', { ascending: false }).limit(10),
-      supabase.from('orders').select('total_amount, created_at, payment_status, product_id').gte('created_at', thirtyDaysAgo.toISOString()).eq('payment_status', 'paid'),
-      supabase.from('orders').select('order_status'),
     ]);
 
-    // Total revenue
-    const totalRevenue = (allPaidOrders || []).reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0);
-    const totalOrders = (allOrders || []).length;
+    const totalOrders = totalOrdersCount || 0;
+
+    // Fetch total revenue in pages to bypass PostgREST 1000 limit
+    let totalRevenue = 0;
+    let revenuePage = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: pageData, error: pageErr } = await supabase
+        .from('orders')
+        .select('total_amount')
+        .eq('payment_status', 'paid')
+        .range(revenuePage * pageSize, (revenuePage + 1) * pageSize - 1);
+      if (pageErr || !pageData || pageData.length === 0) break;
+      totalRevenue += pageData.reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0);
+      if (pageData.length < pageSize) break;
+      revenuePage++;
+    }
+
+    // Fetch last 30 days orders in pages
+    let last30DaysOrders: any[] = [];
+    let last30Page = 0;
+    while (true) {
+      const { data: pageData, error: pageErr } = await supabase
+        .from('orders')
+        .select('total_amount, created_at, payment_status, product_id')
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .eq('payment_status', 'paid')
+        .range(last30Page * pageSize, (last30Page + 1) * pageSize - 1);
+      if (pageErr || !pageData || pageData.length === 0) break;
+      last30DaysOrders = [...last30DaysOrders, ...pageData];
+      if (pageData.length < pageSize) break;
+      last30Page++;
+    }
 
     // Revenue today
     const todayPaidOrders = (last30DaysOrders || []).filter((o: any) => {
@@ -148,14 +174,21 @@ export default function AdminDashboardPage() {
       });
     }
 
-    // Top products
+    // Top products (paged fetch to prevent 1000 limit)
     const productMap: Record<number, { name: string; count: number; revenue: number }> = {};
-    (allPaidOrders || []).forEach(() => {}); // we need product info
-    // Better approach: count from recent + all orders
-    const { data: productSales } = await supabase
-      .from('orders')
-      .select('product_id, total_amount, product:products(name)')
-      .eq('payment_status', 'paid');
+    let productSales: any[] = [];
+    let productPage = 0;
+    while (true) {
+      const { data: pageData, error: pageErr } = await supabase
+        .from('orders')
+        .select('product_id, total_amount, product:products(name)')
+        .eq('payment_status', 'paid')
+        .range(productPage * pageSize, (productPage + 1) * pageSize - 1);
+      if (pageErr || !pageData || pageData.length === 0) break;
+      productSales = [...productSales, ...pageData];
+      if (pageData.length < pageSize) break;
+      productPage++;
+    }
 
     (productSales || []).forEach((o: any) => {
       const pid = o.product_id;
@@ -170,11 +203,21 @@ export default function AdminDashboardPage() {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
 
-    // Status breakdown
-    const statusBreakdown: Record<string, number> = {};
-    (allOrders || []).forEach((o: any) => {
-      statusBreakdown[o.order_status] = (statusBreakdown[o.order_status] || 0) + 1;
-    });
+    // Status breakdown (using parallel counts rather than fetching all rows)
+    const statuses = ['pending', 'paid', 'assigned', 'delivered', 'completed', 'cancelled', 'refunded', 'pending_payment', 'failed'];
+    const statusCounts = await Promise.all(
+      statuses.map(async (status) => {
+        const { count } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('order_status', status);
+        return { status, count: count || 0 };
+      })
+    );
+    const statusBreakdown = statusCounts.reduce((acc, curr) => {
+      acc[curr.status] = curr.count;
+      return acc;
+    }, {} as Record<string, number>);
 
     setData({
       totalRevenue,
