@@ -104,6 +104,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Akun reseller Anda tidak aktif. Hubungi admin.' }, { status: 403 });
     }
 
+    // Update last login IP
+    const { error: updateIpError } = await supabase
+      .from('resellers')
+      .update({
+        last_login_ip: ip,
+        last_login_at: new Date().toISOString()
+      })
+      .eq('id', reseller.id);
+    
+    if (updateIpError) {
+      console.warn('Failed to update last_login_ip (column might not exist yet):', updateIpError);
+    }
+
     // Sign JWT token
     const token = signToken({
       type: 'reseller',

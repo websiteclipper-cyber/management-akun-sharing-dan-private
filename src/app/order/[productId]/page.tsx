@@ -138,6 +138,7 @@ export default function OrderPage() {
         localStorage.removeItem('ref_code_ts');
         refCode = '';
       }
+      const resellerToken = localStorage.getItem('reseller_token') || '';
       const res = await fetch('/api/public/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,6 +150,7 @@ export default function OrderPage() {
           ref_code: refCode,
           discount_code: discountInfo ? discountInfo.code : '',
           quantity,
+          reseller_token: resellerToken,
         }),
       });
       const data = await res.json();
