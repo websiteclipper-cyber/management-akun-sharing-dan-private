@@ -20,6 +20,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Reseller not found' }, { status: 404 });
     }
 
+    // Update IP on dashboard load
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '';
+    if (ip) {
+      supabase.from('resellers').update({
+        last_login_ip: ip,
+        last_login_at: new Date().toISOString()
+      }).eq('id', reseller.id).then(); // Fire and forget
+    }
+
     // Get commissions with order details
     const { data: commissions } = await supabase
       .from('reseller_commissions')

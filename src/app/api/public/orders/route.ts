@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { sendTelegramNotification } from '@/lib/telegram';
+import { verifyToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const { buyer_name, buyer_email, buyer_phone, product_id, ref_code, discount_code, quantity: rawQty } = await request.json();
+    const { buyer_name, buyer_email, buyer_phone, product_id, ref_code, discount_code, quantity: rawQty, reseller_token } = await request.json();
     const quantity = Math.min(10, Math.max(1, Math.floor(Number(rawQty) || 1)));
 
     if (!buyer_name || !product_id) {
@@ -130,8 +131,53 @@ export async function POST(request: NextRequest) {
         .eq('status', 'active')
         .single();
       if (resellerData) {
-        resellerId = resellerData.id;
-        reseller = resellerData;
+        // ===== ANTI SELF-REFERRAL (Multi-Layer) =====
+        let isSelfReferral = false;
+        let detectionMethod = '';
+
+        const cleanBuyerPhone = (buyer.phone || buyer_phone || '').replace(/[^0-9]/g, '');
+        const cleanResellerPhone = (resellerData.phone || '').replace(/[^0-9]/g, '');
+        
+        // Level 1: Phone Match
+        if (cleanBuyerPhone && cleanResellerPhone && cleanBuyerPhone === cleanResellerPhone) {
+          isSelfReferral = true;
+          detectionMethod = 'Pencocokan Nomor HP (Level 1)';
+        }
+
+        // Level 2: Session/Token Match
+        if (!isSelfReferral && reseller_token) {
+          const sessionPayload = verifyToken(reseller_token);
+          if (sessionPayload && sessionPayload.type === 'reseller' && String(sessionPayload.id) === String(resellerData.id)) {
+            isSelfReferral = true;
+            detectionMethod = 'Deteksi Browser Session (Level 2)';
+          }
+        }
+
+        // Level 3: IP Address Match
+        if (!isSelfReferral && clientIp && resellerData.last_login_ip === clientIp) {
+          isSelfReferral = true;
+          detectionMethod = 'Pencocokan IP Address (Level 3)';
+        }
+
+        if (isSelfReferral) {
+          console.warn(`[Anti-Abuse] Blocked self-referral for reseller ${resellerData.name} (${cleanResellerPhone}). Method: ${detectionMethod}`);
+          
+          // Send Telegram notification
+          sendTelegramNotification(
+            `⚠️ <b>SELF-REFERRAL TERDETEKSI!</b>\n\n` +
+            `<b>Reseller:</b> ${resellerData.name}\n` +
+            `<b>Metode Deteksi:</b> ${detectionMethod}\n\n` +
+            `Sistem mendeteksi reseller mencoba membeli produk menggunakan link referral miliknya sendiri.\n` +
+            `<i>Komisi untuk order ini dibatalkan secara otomatis.</i>`
+          );
+          
+          // Do NOT assign resellerId to this order
+          resellerId = null;
+          reseller = null;
+        } else {
+          resellerId = resellerData.id;
+          reseller = resellerData;
+        }
       }
     }
 
