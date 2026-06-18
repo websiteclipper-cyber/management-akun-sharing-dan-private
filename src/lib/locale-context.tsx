@@ -58,9 +58,9 @@ export function LocaleProvider({ children, initialLocale, initialCurrency }: Pro
   useEffect(() => {
     const cookieLocale = getCookie('pp_locale');
     const cookieCurrency = getCookie('pp_currency');
-    if (cookieLocale && !initialLocale) setLocaleState(cookieLocale);
-    if (cookieCurrency && !initialCurrency) setCurrency(cookieCurrency);
-  }, [initialLocale, initialCurrency]);
+    if (cookieLocale) setLocaleState(cookieLocale);
+    if (cookieCurrency) setCurrency(cookieCurrency);
+  }, []);
 
   // Fetch exchange rates if not IDR
   useEffect(() => {
