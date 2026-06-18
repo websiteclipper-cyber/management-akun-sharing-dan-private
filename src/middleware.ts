@@ -54,10 +54,20 @@ export function middleware(request: NextRequest) {
   // ─── Auto-detect country and set locale/currency cookies ───
   // Only set cookies if they don't already exist (user hasn't manually chosen)
   const existingLocale = request.cookies.get('pp_locale')?.value;
+  const existingCountry = request.cookies.get('pp_country')?.value;
   
-  if (!existingLocale) {
-    // Detect country code (compatible with Vercel and Netlify)
-    const country = (request as any).geo?.country || request.headers.get('x-vercel-ip-country') || 'ID';
+  // Detect country code (compatible with Cloudflare, Vercel, and Netlify)
+  const country = (
+    request.headers.get('cf-ipcountry') || 
+    (request as any).geo?.country || 
+    request.headers.get('x-vercel-ip-country') || 
+    'ID'
+  ).toUpperCase();
+
+  // Heal settings if user's cookies say SG but their detected location is different
+  const needsFix = existingCountry === 'SG' && country !== 'SG';
+  
+  if (!existingLocale || needsFix) {
     const config = COUNTRY_LOCALE[country] || { locale: 'id', currency: 'IDR' };
 
     response.cookies.set('pp_locale', config.locale, {
