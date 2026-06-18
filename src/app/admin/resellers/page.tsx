@@ -61,6 +61,7 @@ export default function AdminResellersPage() {
   const [selectedReseller, setSelectedReseller] = useState<Reseller | null>(null);
   const [tab, setTab] = useState<'resellers' | 'commissions' | 'product-commissions'>('resellers');
   const [copied, setCopied] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -248,6 +249,15 @@ export default function AdminResellersPage() {
   const pendingCount = resellers.filter(r => r.status === 'pending').length;
   const MIN_WITHDRAW = 50000;
 
+  const filteredResellers = resellers.filter(r => {
+    const query = searchQuery.toLowerCase();
+    return (
+      r.name.toLowerCase().includes(query) ||
+      r.ref_code.toLowerCase().includes(query) ||
+      (r.phone && r.phone.toLowerCase().includes(query))
+    );
+  });
+
   async function handleApprove(r: Reseller) {
     if (!confirm(`Setujui ${r.name} sebagai mitra aktif?`)) return;
     const result = await adminUpdate('resellers', { status: 'active', updated_at: new Date().toISOString() }, { id: r.id });
@@ -327,14 +337,30 @@ export default function AdminResellersPage() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-        <button className={`btn btn-sm ${tab === 'resellers' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setTab('resellers'); setSelectedReseller(null); }}>
-          Daftar Reseller ({resellers.length})
-        </button>
-        <button className={`btn btn-sm ${tab === 'commissions' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setTab('commissions'); loadCommissions(); setSelectedReseller(null); }}>
-          Riwayat Komisi
-        </button>
+      {/* Tabs & Search */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className={`btn btn-sm ${tab === 'resellers' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setTab('resellers'); setSelectedReseller(null); }}>
+            Daftar Reseller ({resellers.length})
+          </button>
+          <button className={`btn btn-sm ${tab === 'commissions' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setTab('commissions'); loadCommissions(); setSelectedReseller(null); }}>
+            Riwayat Komisi
+          </button>
+        </div>
+        
+        {tab === 'resellers' && (
+          <div style={{ position: 'relative', minWidth: '260px' }}>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="Cari nama, ref, atau WA..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ padding: '8px 12px 8px 36px', fontSize: '0.85rem', height: '36px', borderRadius: 'var(--radius-md)' }}
+            />
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '0.9rem' }}>🔍</span>
+          </div>
+        )}
       </div>
 
       {/* ADD/EDIT FORM */}
@@ -419,7 +445,7 @@ export default function AdminResellersPage() {
                 </tr>
               </thead>
               <tbody>
-                {resellers.map(r => (
+                {filteredResellers.map(r => (
                   <tr key={r.id}>
                     <td>
                       <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{r.name}</div>
@@ -485,9 +511,23 @@ export default function AdminResellersPage() {
                     </td>
                   </tr>
                 ))}
-                {resellers.length === 0 && (
-                  <tr><td colSpan={7} className="empty-state"><div className="icon">🤝</div><h3>Belum ada reseller</h3><p>Klik &quot;+ Tambah Reseller&quot; untuk memulai.</p></td></tr>
-                )}
+                {resellers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="empty-state">
+                      <div className="icon">🤝</div>
+                      <h3>Belum ada reseller</h3>
+                      <p>Klik &quot;+ Tambah Reseller&quot; untuk memulai.</p>
+                    </td>
+                  </tr>
+                ) : filteredResellers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="empty-state">
+                      <div className="icon">🔍</div>
+                      <h3>Reseller tidak ditemukan</h3>
+                      <p>Tidak ada reseller dengan kata kunci &quot;{searchQuery}&quot;.</p>
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
