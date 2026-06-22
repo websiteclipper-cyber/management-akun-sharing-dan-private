@@ -309,7 +309,13 @@ export default function StockAccountsPage() {
                             {backupCounts[a.id].available}/{backupCounts[a.id].total}
                           </span>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>—</span>
+                          <span style={{
+                            padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600,
+                            background: 'rgba(239,68,68,0.12)',
+                            color: '#ef4444',
+                          }}>
+                            0/0
+                          </span>
                         )}
                       </td>
                       <td>
