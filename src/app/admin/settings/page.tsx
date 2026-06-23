@@ -67,6 +67,7 @@ export default function SettingsPage() {
       { key: 'global_promo_price', value: '100000', label: 'Harga Diskon Global Promo' },
       { key: 'global_promo_btn_text', value: 'AMBIL PROMO SEKARANG', label: 'Teks Tombol Global Promo' },
       { key: 'global_promo_btn_link', value: '#katalog', label: 'Link Tombol Global Promo' },
+      { key: 'warranty_auto_replace', value: 'false', label: 'Aktifkan Auto-Replace Garansi (Tanpa Persetujuan Admin)' },
     ];
   }
 
@@ -294,6 +295,61 @@ export default function SettingsPage() {
                   <div style={{ marginTop: '6px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     Nilai akan dibulatkan ke kelipatan Rp 1.000 dan ranking otomatis diurutkan dari komisi tertinggi.
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Warranty Settings ── */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-secondary)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              marginBottom: '24px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <div style={{
+                  width: '44px', height: '44px', borderRadius: '12px',
+                  background: 'rgba(59,130,246,0.15)', color: '#3b82f6',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.4rem',
+                }}>🛡️</div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px' }}>Auto-Replace Garansi</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                    Tentukan apakah sistem otomatis mengganti akun ketika buyer mengajukan klaim garansi valid.
+                  </p>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.find(s => s.key === 'warranty_auto_replace')?.value === 'true'}
+                    onChange={e => updateSetting('warranty_auto_replace', e.target.checked ? 'true' : 'false')}
+                    style={{ width: '20px', height: '20px', accentColor: 'var(--brand-success)' }}
+                  />
+                  Aktifkan Auto-Replace
+                </label>
+              </div>
+
+              <div style={{
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: 'var(--radius-md)',
+                padding: '16px',
+              }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  ⚙️ Status Saat Ini
+                </div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                  {settings.find(s => s.key === 'warranty_auto_replace')?.value === 'true' ? (
+                    <div>
+                      🟢 <strong style={{ color: '#22c55e' }}>Auto-Replace Aktif:</strong> Ketika buyer mengajukan klaim garansi dengan kredensial yang cocok, sistem akan langsung memberikan akun pengganti otomatis (jika ada backup).
+                    </div>
+                  ) : (
+                    <div>
+                      🔴 <strong style={{ color: '#ef4444' }}>Auto-Replace Nonaktif (Rekomendasi):</strong> Semua klaim garansi baru akan masuk ke antrean <strong>Pending</strong>. Penggantian akun memerlukan persetujuan admin secara manual dari dashboard Garansi.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -95,9 +95,22 @@ export async function POST(request: NextRequest) {
         claimStatus = 'invalid_claim';
         resolutionNotes = 'Masa garansi pesanan Anda sudah habis.';
       } else {
-        // 4. Try auto-replace: find backup for this specific stock account first, then by product
-        let backup = null;
-        const stockAccount = (assignment as any).stock_accounts;
+        // Check if auto replace is enabled (default to false if not found or is false)
+        const { data: autoReplaceSetting } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'warranty_auto_replace')
+          .maybeSingle();
+          
+        const isAutoReplaceEnabled = autoReplaceSetting?.value === 'true';
+
+        if (!isAutoReplaceEnabled) {
+          claimStatus = 'pending';
+          resolutionNotes = 'Laporan Anda telah diterima dan sedang menunggu persetujuan/pengecekan admin.';
+        } else {
+          // 4. Try auto-replace: find backup for this specific stock account first, then by product
+          let backup = null;
+          const stockAccount = (assignment as any).stock_accounts;
 
         // First try: backup linked to the specific stock account
         const { data: stockBackup } = await supabase
@@ -203,9 +216,10 @@ export async function POST(request: NextRequest) {
               updated_at: new Date().toISOString()
             }).eq('id', availableStock.id);
 
-          } else {
-            claimStatus = 'no_backup';
-            resolutionNotes = 'Tidak ada akun cadangan tersedia. Silakan hubungi admin untuk penanganan manual.';
+            } else {
+              claimStatus = 'no_backup';
+              resolutionNotes = 'Tidak ada akun cadangan tersedia. Silakan hubungi admin untuk penanganan manual.';
+            }
           }
         }
       }
@@ -237,8 +251,10 @@ export async function POST(request: NextRequest) {
 
     // Send Telegram Notification
     try {
-      const statusEmoji = claimStatus === 'auto_replaced' ? '✅' : '⚠️';
-      const statusText = claimStatus === 'auto_replaced' ? 'Berhasil Diganti Otomatis' : 'Butuh Penanganan Manual (Stok Kosong)';
+      const statusEmoji = claimStatus === 'auto_replaced' ? '✅' : (claimStatus === 'pending' ? '⏳' : '⚠️');
+      const statusText = claimStatus === 'auto_replaced' 
+        ? 'Berhasil Diganti Otomatis' 
+        : (claimStatus === 'pending' ? 'Menunggu Persetujuan Admin (Pending)' : 'Butuh Penanganan Manual (Stok Kosong / Error)');
       
       const message = `
 <b>${statusEmoji} Laporan Garansi Baru!</b>

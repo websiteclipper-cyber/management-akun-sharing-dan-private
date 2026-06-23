@@ -171,7 +171,7 @@ function WarrantyForm() {
             Klaim Garansi
           </h1>
           <p style={{ fontSize: '0.9rem', color: '#888', margin: 0, lineHeight: 1.5 }}>
-            Penggantian instan otomatis. Masukkan detail pesanan untuk verifikasi.
+            Form pengajuan klaim garansi. Masukkan detail pesanan untuk verifikasi.
           </p>
         </div>
 
@@ -217,7 +217,7 @@ function WarrantyForm() {
                     </div>
                   </div>
                 </div>
-              ) : result.status === 'no_backup' ? (
+              ) : ['pending', 'manual_review', 'no_backup'].includes(result.status) ? (
                 <div style={{ marginBottom: '24px', textAlign: 'center' }}>
                   <FiAlertCircle style={{ color: '#eab308', fontSize: '32px', margin: '0 auto 16px' }} />
                   <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 8px' }}>Menunggu Admin</h3>
