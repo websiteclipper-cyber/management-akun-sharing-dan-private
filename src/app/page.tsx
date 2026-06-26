@@ -803,7 +803,28 @@ export default function HomePage() {
                     .sort((a, b) => {
                       if (a.status === 'active' && b.status === 'inactive') return -1;
                       if (a.status === 'inactive' && b.status === 'active') return 1;
-                      return 0;
+                      
+                      const now = new Date();
+                      
+                      const promoA = promos.find(pr => 
+                        pr.product_id === a.id &&
+                        new Date(pr.start_date) <= now &&
+                        new Date(pr.end_date) >= now
+                      );
+                      const priceA = promoA 
+                        ? promoA.promo_price 
+                        : (a.newcomer_price !== null && a.newcomer_price !== undefined ? a.newcomer_price : a.price);
+
+                      const promoB = promos.find(pr => 
+                        pr.product_id === b.id &&
+                        new Date(pr.start_date) <= now &&
+                        new Date(pr.end_date) >= now
+                      );
+                      const priceB = promoB 
+                        ? promoB.promo_price 
+                        : (b.newcomer_price !== null && b.newcomer_price !== undefined ? b.newcomer_price : b.price);
+
+                      return priceA - priceB;
                     })
                     .map((product, idx) => {
                       const promo = promos.find(pr => {
