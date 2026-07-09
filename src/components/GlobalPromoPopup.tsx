@@ -94,9 +94,9 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
+          background: 'rgba(15, 23, 42, 0.28)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
           zIndex: 99998,
           animation: closing ? 'fadeOut 0.4s ease forwards' : 'fadeIn 0.4s ease forwards',
         }}
@@ -116,11 +116,11 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
         }}
       >
         <div style={{
-          background: '#09090b',
-          borderRadius: '24px',
+          background: '#ffffff',
+          borderRadius: '18px',
           padding: '32px 24px 24px',
-          border: '1px solid rgba(16, 163, 127, 0.3)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(16, 163, 127, 0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+          border: '1px solid #d8e0eb',
+          boxShadow: '0 24px 58px rgba(15, 23, 42, 0.16)',
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
@@ -136,19 +136,19 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
               right: '16px',
               width: '32px',
               height: '32px',
-              borderRadius: '50%',
-              background: 'rgba(255,255,255,0.05)',
-              border: 'none',
+              borderRadius: '10px',
+              background: '#f1f5f9',
+              border: '1px solid #e5eaf2',
               cursor: 'pointer',
-              color: 'rgba(255,255,255,0.6)',
+              color: '#64748b',
               fontSize: '14px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               transition: 'all 0.2s',
             }}
-            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#fff'; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
+            onMouseOver={(e) => { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#0f172a'; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b'; }}
           >
             ✕
           </button>
@@ -173,7 +173,7 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
           <h2 style={{
             fontSize: '1.4rem',
             fontWeight: 800,
-            color: '#fff',
+            color: '#0f172a',
             marginBottom: '4px',
           }}>
             {title}
@@ -192,8 +192,8 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            background: 'rgba(16, 163, 127, 0.1)',
-            border: '1px solid rgba(16, 163, 127, 0.2)',
+            background: 'rgba(22, 163, 74, 0.10)',
+            border: '1px solid rgba(22, 163, 74, 0.18)',
             color: '#10A37F',
             padding: '6px 14px',
             borderRadius: '999px',
@@ -207,14 +207,14 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
 
           {/* Price Box */}
           <div style={{
-            background: '#141416',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: '16px',
+            background: '#f8fafc',
+            border: '1px solid #e5eaf2',
+            borderRadius: '14px',
             padding: '20px',
             width: '100%',
             marginBottom: '24px',
           }}>
-            <div style={{ fontSize: '0.8rem', color: '#a1a1aa', marginBottom: '4px' }}>Harga Normal</div>
+            <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Harga Normal</div>
             <div style={{
               fontSize: '1.1rem',
               color: '#ef4444',
@@ -227,13 +227,12 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
               {formatPrice(normalPrice)}+
             </div>
 
-            <div style={{ fontSize: '0.8rem', color: '#a1a1aa', marginBottom: '4px' }}>Diskon Spesial Hari Ini</div>
+            <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '4px' }}>Diskon Spesial Hari Ini</div>
             <div style={{
               fontSize: '2.4rem',
               fontWeight: 900,
-              color: '#fff',
-              letterSpacing: '-1px',
-              textShadow: '0 2px 10px rgba(255,255,255,0.1)'
+              color: '#0f172a',
+              letterSpacing: '0',
             }}>
               {formatPrice(price)}
             </div>
@@ -252,7 +251,7 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
               fontWeight: 800,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              boxShadow: '0 4px 14px rgba(16, 163, 127, 0.3)',
+              boxShadow: '0 14px 28px rgba(16, 163, 127, 0.20)',
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.background = '#0d8f6f';
