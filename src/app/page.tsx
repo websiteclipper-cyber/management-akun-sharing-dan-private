@@ -182,7 +182,7 @@ export default function HomePage() {
     ? `https://wa.me/${supportWa.startsWith('0') ? '62' + supportWa.substring(1) : supportWa}?text=${encodeURIComponent('Hi admin pastipremium.my.id, I need help.')}`
     : null;
 
-  // Premium Apple/Bento Box Color System
+  // Modern clean color system
   const C_BG = 'var(--bg-base)';
   const C_TEXT = 'var(--text-primary)';
   const C_TEXT_MUTED = 'var(--text-secondary)';
@@ -191,6 +191,8 @@ export default function HomePage() {
   const C_CARD = 'var(--bg-card)';
   const C_SHADOW = 'var(--shadow-md)';
   const C_SHADOW_HOVER = 'var(--shadow-lg)';
+  const C_BORDER = 'var(--border-primary)';
+  const C_SURFACE = 'var(--bg-secondary)';
 
   const BRAND_GLOWS: Record<string, string> = {
     NETFLIX: 'rgba(229, 9, 20, 0.15)',
@@ -200,12 +202,12 @@ export default function HomePage() {
     VIDIO: 'rgba(255, 0, 85, 0.15)',
     VIU: 'rgba(255, 204, 0, 0.12)',
     PRIME: 'rgba(0, 168, 225, 0.15)',
-    APPLE: 'rgba(255, 255, 255, 0.1)',
+    APPLE: 'rgba(15, 23, 42, 0.1)',
     CANVA: 'rgba(0, 196, 204, 0.15)',
     CHATGPT: 'rgba(16, 163, 127, 0.15)',
     GEMINI: 'rgba(142, 117, 178, 0.15)',
-    GROK: 'rgba(255, 255, 255, 0.08)',
-    CAPCUT: 'rgba(255, 255, 255, 0.08)',
+    GROK: 'rgba(15, 23, 42, 0.08)',
+    CAPCUT: 'rgba(15, 23, 42, 0.08)',
     WINK: 'rgba(255, 0, 85, 0.15)',
     DEFAULT: 'rgba(245, 158, 11, 0.15)',
   };
@@ -238,7 +240,7 @@ export default function HomePage() {
         }
       }} />
 
-      {/* ── HEADER (Apple Glassmorphism) ── */}
+      {/* Header */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 100,
         background: 'var(--glass-bg)',
@@ -246,19 +248,31 @@ export default function HomePage() {
         WebkitBackdropFilter: 'var(--glass-blur)',
         borderBottom: '1px solid var(--glass-border)',
         padding: '0 24px',
-        height: '64px',
+        height: '68px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        transition: 'all 0.3s ease',
+        transition: 'all 0.2s ease',
+        boxShadow: '0 1px 0 rgba(15, 23, 42, 0.03)',
       }}>
         {/* Logo */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <span style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '10px',
+            background: C_TEXT,
+            color: '#fff',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.78rem',
+            fontWeight: 800,
+            boxShadow: '0 8px 18px rgba(15, 23, 42, 0.12)',
+          }}>PP</span>
           <span style={{ 
-            fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.02em', 
-            background: 'linear-gradient(135deg, #ffffff 50%, #a29bfe 100%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
+            fontWeight: 800, fontSize: '1.05rem', letterSpacing: '0', 
+            color: C_TEXT,
           }}>
-            ✦ PastiPremium
+            PastiPremium
           </span>
         </Link>
 
@@ -272,7 +286,7 @@ export default function HomePage() {
               fontSize: '0.85rem', fontWeight: 500,
               color: C_TEXT_MUTED, textDecoration: 'none', transition: 'color 0.2s',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+            onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT}
             onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}
           >Ketentuan</Link>
           <Link
@@ -282,7 +296,7 @@ export default function HomePage() {
               fontSize: '0.85rem', fontWeight: 500,
               color: C_TEXT_MUTED, textDecoration: 'none', transition: 'color 0.2s',
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+            onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT}
             onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}
           >{t('header_mitra')}</Link>
 
@@ -292,19 +306,20 @@ export default function HomePage() {
                 href="/buyer/lookup"
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
-                  background: 'rgba(255, 255, 255, 0.08)', 
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '20px', padding: '8px 16px',
-                  fontSize: '0.8rem', fontWeight: 600, color: '#fff',
-                  textDecoration: 'none', transition: 'all 0.2s'
+                  background: C_SURFACE,
+                  border: `1px solid ${C_BORDER}`,
+                  borderRadius: '10px', padding: '8px 14px',
+                  fontSize: '0.8rem', fontWeight: 600, color: C_TEXT,
+                  textDecoration: 'none', transition: 'all 0.2s',
+                  boxShadow: 'var(--shadow-sm)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)';
+                  e.currentTarget.style.background = 'var(--bg-card)';
+                  e.currentTarget.style.borderColor = 'var(--border-hover)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.background = C_SURFACE;
+                  e.currentTarget.style.borderColor = 'var(--border-primary)';
                 }}
               >
                 {t('header_my_orders')}
@@ -326,18 +341,18 @@ export default function HomePage() {
               className="hide-on-mobile"
               style={{
                 background: C_BLUE, color: '#fff',
-                padding: '8px 18px', borderRadius: '20px',
+                padding: '9px 16px', borderRadius: '10px',
                 fontSize: '0.8rem', fontWeight: 600,
                 textDecoration: 'none', transition: 'all 0.2s',
-                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
+                boxShadow: '0 10px 22px rgba(37, 99, 235, 0.18)'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = C_BLUE_HOVER;
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.35)';
+                e.currentTarget.style.boxShadow = '0 14px 28px rgba(37, 99, 235, 0.24)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = C_BLUE;
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.2)';
+                e.currentTarget.style.boxShadow = '0 10px 22px rgba(37, 99, 235, 0.18)';
               }}
             >{t('header_login')}</Link>
           )}
@@ -346,7 +361,20 @@ export default function HomePage() {
           <button 
             className="mobile-menu-btn"
             onClick={() => setMenuOpen(!menuOpen)}
-            style={{ marginLeft: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px' }}
+            style={{
+              marginLeft: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              border: `1px solid ${C_BORDER}`,
+              background: C_CARD,
+              color: C_TEXT,
+              cursor: 'pointer',
+              boxShadow: 'var(--shadow-sm)',
+            }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               {menuOpen ? (
@@ -375,78 +403,56 @@ export default function HomePage() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
             style={{
-              position: 'fixed', top: '64px', left: 0, right: 0,
-              background: 'rgba(9, 9, 11, 0.98)',
-              backdropFilter: 'blur(20px)',
-              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              position: 'fixed', top: '68px', left: 0, right: 0,
+              background: 'rgba(255, 255, 255, 0.96)',
+              backdropFilter: 'blur(18px)',
+              borderBottom: '1px solid var(--border-primary)',
               padding: '20px 24px',
               zIndex: 99,
               display: 'flex', flexDirection: 'column', gap: '20px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+              boxShadow: 'var(--shadow-lg)'
             }}
           >
-            <Link href="/ketentuan" onClick={() => setMenuOpen(false)} style={{ color: '#fff', textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>Ketentuan</Link>
-            <Link href="/reseller/login" onClick={() => setMenuOpen(false)} style={{ color: '#fff', textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>{t('header_mitra')}</Link>
+            <Link href="/ketentuan" onClick={() => setMenuOpen(false)} style={{ color: C_TEXT, textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>Ketentuan</Link>
+            <Link href="/reseller/login" onClick={() => setMenuOpen(false)} style={{ color: C_TEXT, textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>{t('header_mitra')}</Link>
             
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+            <div style={{ height: '1px', background: 'var(--border-primary)' }} />
             
             {buyer ? (
               <>
-                <Link href="/buyer/lookup" onClick={() => setMenuOpen(false)} style={{ color: '#fff', textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>{t('header_my_orders')}</Link>
+                <Link href="/buyer/lookup" onClick={() => setMenuOpen(false)} style={{ color: C_TEXT, textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>{t('header_my_orders')}</Link>
                 <button onClick={handleLogout} style={{ color: '#ef4444', textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600, background: 'transparent', border: 'none', textAlign: 'left', padding: 0, cursor: 'pointer' }}>{t('header_logout')}</button>
               </>
             ) : (
-              <Link href="/buyer/login" onClick={() => setMenuOpen(false)} style={{ color: '#3b82f6', textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>{t('header_login')}</Link>
+              <Link href="/buyer/login" onClick={() => setMenuOpen(false)} style={{ color: C_BLUE, textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>{t('header_login')}</Link>
             )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── HERO with Mesh Gradient ── */}
+      {/* Hero */}
       <section
         ref={heroRef}
         style={{
-          padding: '100px 20px 80px',
+          padding: '88px 20px 64px',
           textAlign: 'center',
-          maxWidth: '900px', margin: '0 auto',
+          maxWidth: '920px', margin: '0 auto',
           position: 'relative',
         }}
       >
-        {/* Ambient mesh gradient blobs - Apple Style */}
-        <div style={{
-          position: 'absolute', top: '-100px', left: '50%', transform: 'translateX(-50%)',
-          width: '140%', height: '600px', pointerEvents: 'none', zIndex: 0, overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute', top: '0', left: '25%',
-            width: '500px', height: '500px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(0, 122, 255, 0.15) 0%, transparent 70%)',
-            filter: 'blur(100px)',
-          }} />
-          <div style={{
-            position: 'absolute', top: '50px', right: '25%',
-            width: '450px', height: '450px', borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(90, 200, 250, 0.1) 0%, transparent 70%)',
-            filter: 'blur(90px)',
-          }} />
-        </div>
-
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           style={{
-            fontSize: '3.5rem',
+            fontSize: '3.3rem',
             fontWeight: 800,
-            letterSpacing: '-0.03em',
+            letterSpacing: 0,
             lineHeight: 1.1,
-            color: '#fff',
+            color: C_TEXT,
             marginBottom: '16px',
             position: 'relative',
             zIndex: 1,
-            background: 'linear-gradient(180deg, #FFFFFF 0%, #A3A3A3 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
           }}
         >
           {t('hero_title_2')}
@@ -481,19 +487,19 @@ export default function HomePage() {
             }}
             style={{
               background: C_BLUE, color: '#fff', border: 'none',
-              padding: '16px 36px', borderRadius: '30px',
+              padding: '15px 30px', borderRadius: '12px',
               fontSize: '1rem', fontWeight: 600,
               cursor: 'pointer', transition: 'all 0.25s ease',
-              boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)'
+              boxShadow: '0 14px 28px rgba(37, 99, 235, 0.20)'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = C_BLUE_HOVER;
-              e.currentTarget.style.boxShadow = '0 6px 24px rgba(59, 130, 246, 0.45)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 18px 34px rgba(37, 99, 235, 0.25)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = C_BLUE;
-              e.currentTarget.style.boxShadow = '0 4px 20px rgba(59, 130, 246, 0.3)';
+              e.currentTarget.style.boxShadow = '0 14px 28px rgba(37, 99, 235, 0.20)';
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >{t('view_catalog')}</button>
@@ -501,21 +507,22 @@ export default function HomePage() {
             <a
               href={waUrl} target="_blank" rel="noopener noreferrer"
               style={{
-                background: 'rgba(255, 255, 255, 0.06)', color: '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                padding: '16px 36px', borderRadius: '30px',
+                background: C_CARD, color: C_TEXT,
+                border: `1px solid ${C_BORDER}`,
+                padding: '15px 30px', borderRadius: '12px',
                 fontSize: '1rem', fontWeight: 600,
                 textDecoration: 'none', transition: 'all 0.25s ease',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: 'var(--shadow-sm)',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.background = 'var(--bg-card-hover)';
+                e.currentTarget.style.borderColor = 'var(--border-hover)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.background = C_CARD;
+                e.currentTarget.style.borderColor = 'var(--border-primary)';
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >{t('help')}</a>
@@ -523,7 +530,7 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* ── LEADERBOARD (Apple Fitness Medals) ── */}
+      {/* Leaderboard */}
       {leaderboard.length > 0 && (
         <section style={{ padding: '0 24px 60px', maxWidth: '1050px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <motion.div
@@ -535,26 +542,18 @@ export default function HomePage() {
               borderRadius: 'var(--radius-xl)',
               padding: '32px 36px',
               boxShadow: C_SHADOW,
-              border: '1px solid var(--border-secondary)',
+              border: `1px solid ${C_BORDER}`,
               display: 'flex', flexDirection: 'column', gap: '24px',
               position: 'relative', overflow: 'hidden'
             }}
           >
-            {/* Background blur highlight for the leaderboard */}
-            <div style={{
-              position: 'absolute', bottom: '-80px', right: '-80px',
-              width: '200px', height: '200px', borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(162, 155, 254, 0.08) 0%, transparent 70%)',
-              filter: 'blur(40px)', pointerEvents: 'none'
-            }} />
-
             <div style={{ 
               display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', 
-              borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '20px',
+              borderBottom: `1px solid ${C_BORDER}`, paddingBottom: '20px',
               flexWrap: 'wrap', gap: '16px'
             }}>
               <div>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '6px', color: '#fff' }}>{t('leaderboard_title')}</h3>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 700, letterSpacing: 0, marginBottom: '6px', color: C_TEXT }}>{t('leaderboard_title')}</h3>
                 <p style={{ fontSize: '0.88rem', color: C_TEXT_MUTED, margin: 0 }}>{t('leaderboard_subtitle')}</p>
               </div>
               <Link href="/reseller/register" style={{ 
@@ -578,18 +577,18 @@ export default function HomePage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5, delay: idx * 0.08 }}
-                    whileHover={{ scale: 1.02, background: 'rgba(255,255,255,0.03)' }}
+                    whileHover={{ y: -2, background: 'var(--bg-card-hover)', borderColor: 'var(--border-hover)' }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '16px',
-                      padding: '16px 20px', borderRadius: '18px',
-                      background: isTopThree ? 'rgba(255,255,255,0.02)' : 'transparent',
-                      border: '1px solid rgba(255,255,255,0.04)',
+                      padding: '16px 20px', borderRadius: '14px',
+                      background: isTopThree ? C_SURFACE : '#fff',
+                      border: `1px solid ${C_BORDER}`,
                       transition: 'all 0.2s ease',
                     }}
                   >
                     <div style={{
                       width: '46px', height: '46px', borderRadius: '50%',
-                      background: medal ? medal.bg : 'rgba(255,255,255,0.05)',
+                      background: medal ? medal.bg : C_SURFACE,
                       boxShadow: medal ? medal.shadow : 'none',
                       flexShrink: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -601,7 +600,7 @@ export default function HomePage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        fontWeight: 700, fontSize: '1rem', color: '#fff',
+                        fontWeight: 700, fontSize: '1rem', color: C_TEXT,
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                       }}>
                         {entry.avatar_emoji} {entry.mitra_name}
@@ -618,19 +617,19 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── KATALOG with AnimatePresence ── */}
+      {/* Catalog */}
       <section id="katalog" style={{ padding: '0 24px 100px', maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         {loading ? (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             height: '240px', flexDirection: 'column', gap: '16px',
           }}>
-            <div style={{ width: '28px', height: '28px', border: '3px solid rgba(255,255,255,0.05)', borderTopColor: C_BLUE, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            <div style={{ width: '28px', height: '28px', border: '3px solid var(--border-secondary)', borderTopColor: C_BLUE, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
           </div>
 
         ) : products.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 20px', color: C_TEXT_MUTED }}>
-            <h3 style={{ fontWeight: 700, fontSize: '1.3rem', marginBottom: '8px', color: '#fff' }}>{t('catalog_empty_title')}</h3>
+            <h3 style={{ fontWeight: 700, fontSize: '1.3rem', marginBottom: '8px', color: C_TEXT }}>{t('catalog_empty_title')}</h3>
             <p>{t('catalog_empty_desc')}</p>
           </div>
 
@@ -645,7 +644,7 @@ export default function HomePage() {
                 exit="exit"
               >
                 <div style={{ marginBottom: '44px', textAlign: 'center' }}>
-                  <h2 style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '10px', color: '#fff' }}>
+                  <h2 style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: 0, marginBottom: '10px', color: C_TEXT }}>
                     {t('choose_platform')}
                   </h2>
                   <p style={{ fontSize: '1.05rem', color: C_TEXT_MUTED }}>{t('categories_available', { count: categories.length })}</p>
@@ -681,7 +680,7 @@ export default function HomePage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
                       {groupedCategories.map(group => (
                         <div key={group.title}>
-                          <h3 style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '24px', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '12px' }}>
+                          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '18px', color: C_TEXT, borderBottom: `1px solid ${C_BORDER}`, paddingBottom: '12px' }}>
                             {group.title}
                           </h3>
                           <div style={{
@@ -701,9 +700,9 @@ export default function HomePage() {
                                   variants={itemVariants}
                                   onClick={() => setSelectedCategory(category)}
                                   whileHover={{ 
-                                    y: -8, 
+                                    y: -4, 
                                     borderColor: glowColor.replace('0.15', '0.4').replace('0.12', '0.35').replace('0.08', '0.2').replace('0.1', '0.3'),
-                                    boxShadow: `0 12px 40px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.03)`
+                                    boxShadow: `0 18px 36px ${glowColor}`
                                   }}
                                   whileTap={{ scale: 0.97 }}
                                   style={{
@@ -714,7 +713,7 @@ export default function HomePage() {
                                     boxShadow: C_SHADOW,
                                     transition: 'all var(--transition-normal)',
                                     display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-                                    border: '1px solid var(--border-secondary)'
+                                    border: `1px solid ${C_BORDER}`
                                   }}
                                 >
                                   {/* Squircle icon with brand gradient */}
@@ -731,7 +730,7 @@ export default function HomePage() {
                                   onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1) rotate(0deg)'}
                                   >{icon}</div>
 
-                                  <h3 style={{ fontWeight: 700, fontSize: '1.25rem', color: '#fff', marginBottom: '6px' }}>
+                                  <h3 style={{ fontWeight: 700, fontSize: '1.2rem', color: C_TEXT, marginBottom: '6px' }}>
                                     {category}
                                   </h3>
                                   <p style={{ fontSize: '0.9rem', color: C_TEXT_MUTED, fontWeight: 500 }}>
@@ -758,24 +757,25 @@ export default function HomePage() {
                 {/* Category Header */}
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '20px',
-                  marginBottom: '40px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '28px'
+                  marginBottom: '40px', borderBottom: `1px solid ${C_BORDER}`, paddingBottom: '28px'
                 }}>
                   <motion.button
-                    whileHover={{ scale: 1.08, background: 'rgba(255, 255, 255, 0.15)' }}
+                    whileHover={{ scale: 1.04, background: 'var(--bg-card-hover)' }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setSelectedCategory(null)}
                     style={{
                       width: '42px', height: '42px',
-                      background: 'rgba(255,255,255,0.08)', borderRadius: '50%',
-                      cursor: 'pointer', color: '#fff', border: '1px solid rgba(255,255,255,0.06)',
+                      background: C_CARD, borderRadius: '12px',
+                      cursor: 'pointer', color: C_TEXT, border: `1px solid ${C_BORDER}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '1.3rem', flexShrink: 0, transition: 'all 0.2s ease'
+                      fontSize: '1.3rem', flexShrink: 0, transition: 'all 0.2s ease',
+                      boxShadow: 'var(--shadow-sm)',
                     }}
                   >←</motion.button>
                   <div>
                     <h2 style={{
-                      fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '2px',
-                      display: 'flex', alignItems: 'center', gap: '14px', color: '#fff'
+                      fontSize: '2rem', fontWeight: 800, letterSpacing: 0, marginBottom: '2px',
+                      display: 'flex', alignItems: 'center', gap: '14px', color: C_TEXT
                     }}>
                       {/* Smaller squircle icon in header */}
                       <span style={{
@@ -842,16 +842,16 @@ export default function HomePage() {
                           key={product.id}
                           variants={itemVariants}
                           whileHover={isInactive ? {} : { 
-                            y: -6, 
+                            y: -4, 
                             borderColor: promo 
                               ? 'rgba(239, 68, 68, 0.4)' 
                               : hasNewcomerPrice 
                               ? 'rgba(59, 130, 246, 0.4)' 
-                              : 'rgba(255, 255, 255, 0.15)',
+                              : 'var(--border-hover)',
                             boxShadow: promo 
-                              ? '0 12px 40px rgba(239, 68, 68, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.03)' 
+                              ? '0 18px 38px rgba(239, 68, 68, 0.12)' 
                               : hasNewcomerPrice 
-                              ? '0 12px 40px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.03)' 
+                              ? '0 18px 38px rgba(37, 99, 235, 0.12)' 
                               : C_SHADOW_HOVER
                           }}
                           style={{
@@ -861,17 +861,17 @@ export default function HomePage() {
                             boxShadow: isInactive
                               ? 'none'
                               : promo
-                              ? '0 8px 30px rgba(239, 68, 68, 0.08), inset 0 0 0 1px rgba(239, 68, 68, 0.15)'
+                              ? '0 14px 34px rgba(239, 68, 68, 0.08)'
                               : hasNewcomerPrice
-                              ? '0 8px 30px rgba(0, 122, 255, 0.08), inset 0 0 0 1px rgba(0, 122, 255, 0.15)'
+                              ? '0 14px 34px rgba(37, 99, 235, 0.08)'
                               : C_SHADOW,
                             border: isInactive
-                              ? '1px solid rgba(255, 255, 255, 0.05)'
+                              ? '1px solid var(--border-secondary)'
                               : promo
                               ? '1px solid rgba(239, 68, 68, 0.2)'
                               : hasNewcomerPrice
-                              ? '1px solid rgba(0, 122, 255, 0.2)'
-                              : '1px solid var(--border-secondary)',
+                              ? '1px solid rgba(37, 99, 235, 0.18)'
+                              : `1px solid ${C_BORDER}`,
                             display: 'flex', flexDirection: 'column',
                             position: 'relative',
                             transition: 'all var(--transition-normal)',
@@ -883,14 +883,14 @@ export default function HomePage() {
                         {isInactive ? (
                           <div style={{
                             position: 'absolute', top: '-14px', left: '32px',
-                            background: 'rgba(63, 63, 70, 0.95)',
+                            background: '#334155',
                             backdropFilter: 'blur(8px)',
                             WebkitBackdropFilter: 'blur(8px)',
-                            color: '#d4d4d8',
+                            color: '#f8fafc',
                             padding: '6px 16px', borderRadius: '12px',
                             fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.5px',
                             textTransform: 'uppercase',
-                            boxShadow: '0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
+                            boxShadow: '0 8px 18px rgba(15,23,42,0.16)',
                           }}>
                             SOLD OUT
                           </div>
@@ -907,7 +907,7 @@ export default function HomePage() {
                                 padding: '6px 16px', borderRadius: '12px',
                                 fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.5px',
                                 textTransform: 'uppercase',
-                                boxShadow: '0 4px 16px rgba(239,68,68,0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
+                                boxShadow: '0 8px 18px rgba(239,68,68,0.22)',
                               }}>
                                 {promo.promo_label}
                               </div>
@@ -917,14 +917,14 @@ export default function HomePage() {
                             {hasNewcomerPrice && !promo && (
                               <div style={{
                                 position: 'absolute', top: '-14px', left: '32px',
-                                background: 'linear-gradient(135deg, rgba(59,130,246,0.95), rgba(99,102,241,0.95))',
+                                background: C_BLUE,
                                 backdropFilter: 'blur(8px)',
                                 WebkitBackdropFilter: 'blur(8px)',
                                 color: '#fff',
                                 padding: '6px 16px', borderRadius: '12px',
                                 fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.5px',
                                 textTransform: 'uppercase',
-                                boxShadow: '0 4px 16px rgba(59,130,246,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
+                                boxShadow: '0 8px 18px rgba(37,99,235,0.22)',
                               }}>
                                 {t('newcomer_badge')}
                               </div>
@@ -941,8 +941,8 @@ export default function HomePage() {
                         </div>
                         
                         <h3 style={{
-                          fontSize: '1.35rem', fontWeight: 700, color: '#fff',
-                          marginBottom: '14px', lineHeight: 1.3, letterSpacing: '-0.02em'
+                          fontSize: '1.32rem', fontWeight: 700, color: C_TEXT,
+                          marginBottom: '14px', lineHeight: 1.3, letterSpacing: 0
                         }}>{product.name}</h3>
 
                         {product.description && (
@@ -962,7 +962,7 @@ export default function HomePage() {
                                 <div style={{ fontSize: '0.88rem', color: C_TEXT_MUTED, textDecoration: 'line-through', marginBottom: '2px' }}>
                                   {formatPrice(promo.original_price)}
                                 </div>
-                                <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ef4444', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                                <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#dc2626', letterSpacing: 0, lineHeight: 1 }}>
                                   {formatPrice(promo.promo_price)}
                                 </div>
                               </>
@@ -971,28 +971,28 @@ export default function HomePage() {
                                 <div style={{ fontSize: '0.88rem', color: C_TEXT_MUTED, textDecoration: 'line-through', marginBottom: '2px' }}>
                                   {formatPrice(product.price)}
                                 </div>
-                                <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#3b82f6', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                                <div style={{ fontSize: '1.75rem', fontWeight: 800, color: C_BLUE, letterSpacing: 0, lineHeight: 1 }}>
                                   {formatPrice(product.newcomer_price!)}
                                 </div>
-                                <div style={{ fontSize: '0.75rem', color: '#818cf8', fontWeight: 600, marginTop: '6px' }}>
+                                <div style={{ fontSize: '0.75rem', color: C_BLUE_HOVER, fontWeight: 600, marginTop: '6px' }}>
                                   {t('first_purchase')} • {t('normal_price')} {formatPrice(product.price)}
                                 </div>
                               </>
                             ) : (
-                              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                              <div style={{ fontSize: '1.75rem', fontWeight: 800, color: C_TEXT, letterSpacing: 0, lineHeight: 1 }}>
                                 {formatPrice(product.price)}
                               </div>
                             )}
                           </div>
                           
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.88rem', color: '#fff', fontWeight: 600, marginBottom: '6px' }}>
+                            <div style={{ fontSize: '0.88rem', color: C_TEXT, fontWeight: 600, marginBottom: '6px' }}>
                               {product.duration_days} {t('days')}
                             </div>
                             <div style={{ 
-                              fontSize: '0.78rem', color: C_TEXT_MUTED, background: 'rgba(255,255,255,0.06)', 
-                              border: '1px solid rgba(255,255,255,0.04)',
-                              padding: '5px 12px', borderRadius: '12px', display: 'inline-block',
+                              fontSize: '0.78rem', color: C_TEXT_MUTED, background: C_SURFACE,
+                              border: `1px solid ${C_BORDER}`,
+                              padding: '5px 12px', borderRadius: '10px', display: 'inline-block',
                               textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px'
                             }}>
                               {product.account_type}
@@ -1006,9 +1006,9 @@ export default function HomePage() {
                             className="btn"
                             style={{
                               width: '100%',
-                              background: 'rgba(255, 255, 255, 0.05)',
+                              background: C_SURFACE,
                               color: 'var(--text-muted)',
-                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              border: `1px solid ${C_BORDER}`,
                               cursor: 'not-allowed',
                             }}
                           >
@@ -1031,7 +1031,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* ── FLOATING WA BUTTON ── */}
+      {/* Floating WA button */}
       {waUrl && (
         <a
           href={waUrl}
@@ -1044,7 +1044,7 @@ export default function HomePage() {
             padding: '12px 16px', borderRadius: '30px',
             fontWeight: 600, fontSize: '0.85rem',
             textDecoration: 'none',
-            boxShadow: '0 4px 20px rgba(37,211,102,0.4)',
+            boxShadow: '0 14px 30px rgba(37,211,102,0.24)',
             transition: 'all 0.2s ease',
           }}
           onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05) translateY(-2px)'}
@@ -1057,27 +1057,27 @@ export default function HomePage() {
         </a>
       )}
 
-      {/* ── FOOTER ── */}
+      {/* Footer */}
       <footer style={{
         padding: '48px 20px',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-        textAlign: 'center', background: '#0c0c0e',
+        borderTop: `1px solid ${C_BORDER}`,
+        textAlign: 'center', background: '#ffffff',
         position: 'relative', zIndex: 1
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           gap: '8px', marginBottom: '20px',
         }}>
-          <span style={{ fontWeight: 800, fontSize: '1rem', color: '#fff', letterSpacing: '-0.01em' }}>✦ PastiPremium</span>
+          <span style={{ fontWeight: 800, fontSize: '1rem', color: C_TEXT, letterSpacing: 0 }}>PastiPremium</span>
         </div>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           gap: '24px', marginBottom: '24px', flexWrap: 'wrap',
         }}>
-          <Link href="/ketentuan" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>⚠️ Ketentuan &amp; Garansi</Link>
-          <Link href="/warranty" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>🛡️ Klaim Garansi</Link>
-          <Link href="/buyer/lookup" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>📦 Cek Pesanan</Link>
-          <Link href="/reseller/login" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = '#fff'} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>🤝 Mitra Reseller</Link>
+          <Link href="/ketentuan" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>Ketentuan &amp; Garansi</Link>
+          <Link href="/warranty" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>Klaim Garansi</Link>
+          <Link href="/buyer/lookup" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>Cek Pesanan</Link>
+          <Link href="/reseller/login" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>Mitra Reseller</Link>
         </div>
         <p style={{ fontSize: '0.8rem', color: C_TEXT_MUTED, margin: 0, fontWeight: 400, opacity: 0.8 }}>
           {t('footer_copyright')}

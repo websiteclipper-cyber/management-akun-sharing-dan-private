@@ -29,18 +29,25 @@ export default function LanguageSwitcher() {
           display: 'flex',
           alignItems: 'center',
           gap: '4px',
-          background: 'transparent',
-          border: '1px solid rgba(255,255,255,0.15)',
-          borderRadius: '20px',
-          padding: '5px 10px',
+          background: '#ffffff',
+          border: '1px solid #d8e0eb',
+          borderRadius: '10px',
+          padding: '6px 10px',
           cursor: 'pointer',
           fontSize: '0.78rem',
-          fontWeight: 500,
-          color: '#fafafa',
+          fontWeight: 600,
+          color: '#0f172a',
           transition: 'all 0.2s',
+          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.05)',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = '#f8fafc';
+          e.currentTarget.style.borderColor = '#b6c2d2';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = '#ffffff';
+          e.currentTarget.style.borderColor = '#d8e0eb';
+        }}
       >
         <span style={{ fontSize: '1rem', lineHeight: 1 }}>{current.flag}</span>
         <span style={{ fontSize: '0.72rem' }}>{current.code.toUpperCase()}</span>
@@ -55,9 +62,9 @@ export default function LanguageSwitcher() {
             position: 'absolute',
             top: 'calc(100% + 8px)',
             right: 0,
-            background: '#141416',
+            background: '#ffffff',
             borderRadius: '14px',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08)',
+            boxShadow: '0 18px 44px rgba(15, 23, 42, 0.14), 0 0 0 1px #d8e0eb',
             padding: '6px',
             zIndex: 200,
             minWidth: '200px',
@@ -78,17 +85,17 @@ export default function LanguageSwitcher() {
                 width: '100%',
                 padding: '10px 14px',
                 border: 'none',
-                background: locale === lang.code ? 'rgba(59,130,246,0.15)' : 'transparent',
+                background: locale === lang.code ? 'rgba(37, 99, 235, 0.10)' : 'transparent',
                 borderRadius: '10px',
                 cursor: 'pointer',
                 fontSize: '0.85rem',
                 fontWeight: locale === lang.code ? 600 : 400,
-                color: locale === lang.code ? '#3b82f6' : '#fafafa',
+                color: locale === lang.code ? '#2563eb' : '#0f172a',
                 transition: 'all 0.15s',
                 textAlign: 'left',
               }}
               onMouseEnter={(e) => {
-                if (locale !== lang.code) e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                if (locale !== lang.code) e.currentTarget.style.background = '#f8fafc';
               }}
               onMouseLeave={(e) => {
                 if (locale !== lang.code) e.currentTarget.style.background = 'transparent';
@@ -97,12 +104,12 @@ export default function LanguageSwitcher() {
               <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{lang.flag}</span>
               <div>
                 <div>{lang.nativeName}</div>
-                <div style={{ fontSize: '0.7rem', color: '#a1a1aa', fontWeight: 400 }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 400 }}>
                   {lang.name}
                 </div>
               </div>
               {locale === lang.code && (
-                <span style={{ marginLeft: 'auto', color: '#3b82f6', fontSize: '0.9rem' }}>✓</span>
+                <span style={{ marginLeft: 'auto', color: '#2563eb', fontSize: '0.9rem' }}>✓</span>
               )}
             </button>
           ))}
