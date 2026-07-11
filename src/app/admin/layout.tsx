@@ -36,10 +36,24 @@ interface RealtimeNotification {
   read: boolean;
 }
 
+interface AdminSession {
+  name: string;
+  role: string;
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [admin, setAdmin] = useState<{ name: string; role: string } | null>(null);
+  const [admin] = useState<AdminSession | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const session = localStorage.getItem('admin_session');
+    if (!session) return null;
+    try {
+      return JSON.parse(session) as AdminSession;
+    } catch {
+      return null;
+    }
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -63,9 +77,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     if (session) {
-      const parsed = JSON.parse(session);
-      setAdmin(parsed);
-
       // Verify JWT token if available
       if (token) {
         fetch('/api/admin/auth/verify', {
@@ -85,11 +96,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [pathname, router]);
 
+  const playNotifSound = useCallback(() => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.frequency.value = 880;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.1;
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.15);
+      setTimeout(() => {
+        const osc2 = audioCtx.createOscillator();
+        osc2.connect(gainNode);
+        osc2.frequency.value = 1100;
+        osc2.type = 'sine';
+        osc2.start();
+        osc2.stop(audioCtx.currentTime + 0.15);
+      }, 180);
+    } catch {
+      // Audio not supported
+    }
+  }, []);
+
   // Feature 3: Realtime Notifications
   useEffect(() => {
     if (!admin || pathname === '/admin/login') return;
 
-    loadPendingCounts();
+    const initPendingCounts = async () => {
+      await loadPendingCounts();
+    };
+    void initPendingCounts();
 
     // Subscribe to new orders (realtime)
     const ordersChannel = supabase
@@ -138,32 +177,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(ticketsChannel);
     };
-  }, [admin, pathname, loadPendingCounts]);
-
-  function playNotifSound() {
-    try {
-      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscillator.frequency.value = 880;
-      oscillator.type = 'sine';
-      gainNode.gain.value = 0.1;
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.15);
-      setTimeout(() => {
-        const osc2 = audioCtx.createOscillator();
-        osc2.connect(gainNode);
-        osc2.frequency.value = 1100;
-        osc2.type = 'sine';
-        osc2.start();
-        osc2.stop(audioCtx.currentTime + 0.15);
-      }, 180);
-    } catch {
-      // Audio not supported
-    }
-  }
+  }, [admin, pathname, loadPendingCounts, playNotifSound]);
 
   if (pathname === '/admin/login') {
     return <>{children}</>;
@@ -273,11 +287,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={() => setShowNotifications(!showNotifications)}
             style={{
               position: 'relative',
-              background: 'none',
-              border: 'none',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-secondary)',
+              borderRadius: '999px',
               fontSize: '1.3rem',
               cursor: 'pointer',
-              padding: '4px',
+              padding: '6px',
             }}
           >
             🔔
@@ -298,8 +313,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
           gap: '12px', padding: '8px 28px',
-          background: 'rgba(10,10,12,0.85)',
-          borderBottom: '1px solid var(--border-secondary)',
+          background: 'rgba(255,255,255,0.92)',
+          borderBottom: '1px solid var(--border-primary)',
           backdropFilter: 'blur(12px)',
           position: 'sticky', top: 0, zIndex: 90,
         }} className="desktop-notif-bar">
@@ -307,9 +322,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {pendingOrdersCount > 0 && (
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <Link href="/admin/orders" style={{
-                background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.3)',
+                background: 'var(--admin-warning-soft)', border: '1px solid rgba(180,83,9,0.22)',
                 borderRadius: '999px', padding: '4px 12px', fontSize: '0.75rem',
-                fontWeight: 600, color: '#eab308', textDecoration: 'none',
+                fontWeight: 700, color: 'var(--admin-warning)', textDecoration: 'none',
               }}>
                 💳 {pendingOrdersCount} Belum Bayar
               </Link>
@@ -321,10 +336,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               style={{
-                background: 'var(--bg-card)', border: '1px solid var(--border-secondary)',
+                background: 'var(--bg-card)', border: '1px solid var(--border-primary)',
                 borderRadius: '50%', width: '36px', height: '36px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', fontSize: '1rem', position: 'relative',
+                color: 'var(--text-secondary)',
                 transition: 'all 0.2s',
               }}
             >
@@ -352,7 +368,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div style={{
                   position: 'absolute', top: '44px', right: 0,
                   background: 'var(--bg-card)', border: '1px solid var(--border-primary)',
-                  borderRadius: 'var(--radius-lg)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                  borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)',
                   width: '360px', maxHeight: '440px', overflow: 'hidden',
                   zIndex: 100, animation: 'fadeIn 0.2s ease',
                 }}>
@@ -391,7 +407,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           style={{
                             display: 'block', width: '100%',
                             padding: '12px 16px', textAlign: 'left',
-                            background: notif.read ? 'transparent' : 'rgba(108,92,231,0.06)',
+                            background: notif.read ? 'transparent' : 'var(--admin-accent-soft)',
                             border: 'none', borderBottom: '1px solid var(--border-secondary)',
                             cursor: 'pointer', transition: 'background 0.2s',
                             color: 'inherit',

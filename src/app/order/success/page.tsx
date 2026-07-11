@@ -49,8 +49,6 @@ function PaymentSuccessPage() {
       // Mark local storage to disable newcomer promo in the future for this browser
       localStorage.setItem('pastipremium_newcomer_claimed', '1');
 
-      setStatus('delivered');
-
       // Load account assignments
       const { data: assignData } = await supabase
         .from('account_assignments')
@@ -97,11 +95,11 @@ function PaymentSuccessPage() {
     checkOrderStatus();
 
     const interval = setInterval(() => {
-      if (status === 'waiting') {
+      if (status === 'waiting' || status === 'paid') {
         setPollCount(prev => {
           const newCount = prev + 1;
           // Every 5th poll (every ~15s), also actively check with Pakasir API
-          if (newCount % 5 === 0) {
+          if (newCount % 5 === 0 && status === 'waiting') {
             checkPakasirDirectly();
           }
           return newCount;

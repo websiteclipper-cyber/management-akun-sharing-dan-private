@@ -184,7 +184,11 @@ export default function HomePage() {
     setMenuOpen(false);
   }
 
-  const categories = Array.from(new Set(products.map(p => p.platform_name.toUpperCase())));
+  const categories = Array.from(new Set(
+    products
+      .filter(p => p.status === 'active')
+      .map(p => p.platform_name.toUpperCase())
+  ));
   const waUrl = supportWa
     ? `https://wa.me/${supportWa.startsWith('0') ? '62' + supportWa.substring(1) : supportWa}?text=${encodeURIComponent('Hi admin pastipremium.my.id, I need help.')}`
     : null;
@@ -696,7 +700,7 @@ export default function HomePage() {
                             gap: '24px',
                           }}>
                             {group.platforms.map(category => {
-                              const count = products.filter(p => p.platform_name.toUpperCase() === category).length;
+                              const count = products.filter(p => p.platform_name.toUpperCase() === category && p.status === 'active').length;
                               const icon = getPlatformIcon(category);
                               const gradient = getPlatformGradient(category);
                               const glowColor = getPlatformGlow(category);
