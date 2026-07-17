@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
 
 interface RecentOrder {
   id: number;
@@ -92,6 +91,18 @@ export default function AdminDashboardPage() {
   }
 
   async function loadDashboard() {
+    const token = localStorage.getItem('admin_token') || '';
+    const response = await fetch('/api/admin/dashboard', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (response.ok) {
+      setData(await response.json() as SalesData);
+    }
+    setLoading(false);
+    return;
+
+    /* Legacy browser queries retained temporarily as migration reference.
+       The early return above ensures they are never executed.
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
@@ -260,6 +271,7 @@ export default function AdminDashboardPage() {
       statusBreakdown,
     });
     setLoading(false);
+    */
   }
 
   useEffect(() => { loadDashboard(); }, []);
