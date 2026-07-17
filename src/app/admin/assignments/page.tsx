@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { adminRpc } from '@/lib/adminApi';
+import { adminRpc, adminSelect, adminUpdate } from '@/lib/adminApi';
 
 export default function AssignmentsPage() {
   const [assignments, setAssignments] = useState<Array<Record<string, unknown>>>([]);
@@ -12,11 +11,13 @@ export default function AssignmentsPage() {
   useEffect(() => { loadAssignments(); }, []);
 
   async function loadAssignments() {
-    const { data } = await supabase
-      .from('account_assignments')
-      .select('*, order:orders(order_number), buyer:buyers(name), stock_account:stock_accounts(account_identifier, account_type)')
-      .order('created_at', { ascending: false });
-    setAssignments(data || []);
+    const { data } = await adminSelect(
+      'account_assignments',
+      '*, order:orders(order_number), buyer:buyers(name), stock_account:stock_accounts(account_identifier, account_type)',
+    );
+    setAssignments((data || []).sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
+      String(b.created_at).localeCompare(String(a.created_at)),
+    ));
     setLoading(false);
   }
 
@@ -48,10 +49,11 @@ export default function AssignmentsPage() {
       return;
     }
     
-    const { error } = await supabase
-      .from('account_assignments')
-      .update({ warranty_expired_at: newDate.toISOString() })
-      .eq('id', assignmentId);
+    const { error } = await adminUpdate(
+      'account_assignments',
+      { warranty_expired_at: newDate.toISOString() },
+      { id: assignmentId },
+    );
 
     if (error) {
       alert('Gagal update garansi: ' + error.message);
