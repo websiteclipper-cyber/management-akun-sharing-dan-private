@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { decrypt } from '@/lib/crypto';
+import { getAdminFromRequest } from '@/lib/auth';
 
-// CATATAN: Endpoint ini khusus digunakan admin (yang login dari dashboard frontend)
-// Karena saat ini auth di admin menggunakan localStorage & Supabase dummy auth,
-// ini adalah pendekatan sederhana untuk decrypt satu password secara on-demand.
+// Password is decrypted only after the application admin token is verified.
 
 export async function GET(request: NextRequest) {
+  if (!getAdminFromRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const accountId = request.nextUrl.searchParams.get('id');
     if (!accountId) {
@@ -32,7 +35,8 @@ export async function GET(request: NextRequest) {
     const decryptedSecret = decrypt(account.account_secret_encrypted);
 
     return NextResponse.json({ secret: decryptedSecret }, { status: 200 });
-  } catch (err: any) {
-    return NextResponse.json({ error: 'Failed to decrypt', detail: err.message }, { status: 500 });
+  } catch (error: unknown) {
+    const detail = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: 'Failed to decrypt', detail }, { status: 500 });
   }
 }
