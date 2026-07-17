@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
 
 export default function BuyerLoginPageWrapper() {
   return (
@@ -19,8 +20,45 @@ function BuyerLoginPage() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '' });
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [profileRequired, setProfileRequired] = useState(false);
+  const [verifiedAccessToken, setVerifiedAccessToken] = useState('');
+  const [profileName, setProfileName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+
+  useEffect(() => {
+    async function exchangeMagicLinkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      setLoading(true);
+      const response = await fetch('/api/buyer/auth/exchange', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const data = await response.json();
+      if (response.ok && data.needs_profile) {
+        setVerifiedAccessToken(session.access_token);
+        setEmail(data.email || session.user.email || '');
+        setProfileName(data.profile?.name || '');
+        setProfilePhone(data.profile?.phone || '');
+        setProfileRequired(true);
+        setError('');
+        setLoading(false);
+        return;
+      }
+      if (!response.ok || !data.token) {
+        setError(data.error || 'Gagal memverifikasi akun buyer.');
+        setLoading(false);
+        return;
+      }
+      localStorage.setItem('buyer_token', data.token);
+      localStorage.setItem('buyer_session', JSON.stringify(data.buyer));
+      router.replace(redirect);
+    }
+    void exchangeMagicLinkSession();
+  }, [redirect, router]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -28,10 +66,10 @@ function BuyerLoginPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/buyer/auth/login', {
+      const res = await fetch('/api/buyer/auth/magic-link', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: form.name.trim(), phone: form.phone.trim() }),
+        body: JSON.stringify({ email, redirect }),
       });
       const data = await res.json();
 
@@ -41,16 +79,41 @@ function BuyerLoginPage() {
         return;
       }
 
-      // Store JWT token + buyer session
-      if (data.token) {
-        localStorage.setItem('buyer_token', data.token);
-      }
-      localStorage.setItem('buyer_session', JSON.stringify(data.buyer));
-
-      // Redirect
-      router.push(redirect);
+      setError(data.message || 'Link masuk telah dikirim. Cek inbox email Anda.');
+      setLoading(false);
     } catch {
       setError(t('login_error_generic'));
+      setLoading(false);
+    }
+  }
+
+  async function handleCompleteProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!verifiedAccessToken) return;
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/buyer/auth/complete-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${verifiedAccessToken}`,
+        },
+        body: JSON.stringify({ name: profileName, phone: profilePhone }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.token) {
+        setError(data.error || 'Gagal menyimpan profil buyer.');
+        setLoading(false);
+        return;
+      }
+
+      localStorage.setItem('buyer_token', data.token);
+      localStorage.setItem('buyer_session', JSON.stringify(data.buyer));
+      router.replace(redirect);
+    } catch {
+      setError('Terjadi kesalahan jaringan. Silakan coba lagi.');
       setLoading(false);
     }
   }
@@ -73,40 +136,75 @@ function BuyerLoginPage() {
 
           {error && <div className="login-error">{error}</div>}
 
-          <form onSubmit={handleLogin}>
-            <div className="form-group">
-              <label className="form-label">{t('login_name')}</label>
-              <input
-                className="form-input"
-                value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
-                placeholder={t('login_name_placeholder')}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">{t('login_phone')}</label>
-              <input
-                className="form-input"
-                value={form.phone}
-                onChange={e => setForm({ ...form, phone: e.target.value })}
-                placeholder={t('login_phone_placeholder')}
-                required
-              />
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                {t('login_phone_desc')}
-              </p>
-            </div>
-            <button
-              type="submit"
-              className="btn btn-primary btn-lg"
-              style={{ width: '100%', justifyContent: 'center' }}
-              disabled={loading}
-            >
-              {loading ? <span className="loading-spinner" /> : t('login_submit')}
-            </button>
-          </form>
+          {profileRequired ? (
+            <form onSubmit={handleCompleteProfile}>
+              <div className="form-group">
+                <label className="form-label">Email terverifikasi</label>
+                <input className="form-input" type="email" value={email} disabled />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nama lengkap</label>
+                <input
+                  className="form-input"
+                  type="text"
+                  value={profileName}
+                  onChange={e => setProfileName(e.target.value)}
+                  placeholder="Nama lengkap"
+                  minLength={2}
+                  maxLength={100}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Nomor WhatsApp</label>
+                <input
+                  className="form-input"
+                  type="tel"
+                  inputMode="tel"
+                  value={profilePhone}
+                  onChange={e => setProfilePhone(e.target.value)}
+                  placeholder="08xxxxxxxxxx"
+                  required
+                />
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Nomor ini digunakan admin untuk mengidentifikasi dan menghubungi Anda terkait pesanan.
+                </p>
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary btn-lg"
+                style={{ width: '100%', justifyContent: 'center' }}
+                disabled={loading}
+              >
+                {loading ? <span className="loading-spinner" /> : 'Simpan profil & lanjutkan'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin}>
+              <div className="form-group">
+                <label className="form-label">Email pembelian</label>
+                <input
+                  className="form-input"
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="email@contoh.com"
+                  required
+                />
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Kami akan mengirim link masuk aman ke email ini.
+                </p>
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary btn-lg"
+                style={{ width: '100%', justifyContent: 'center' }}
+                disabled={loading}
+              >
+                {loading ? <span className="loading-spinner" /> : 'Kirim link masuk'}
+              </button>
+            </form>
+          )}
 
           <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
             {t('login_safe')}

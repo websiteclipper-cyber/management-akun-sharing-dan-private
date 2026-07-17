@@ -139,13 +139,14 @@ export default function OrderPage() {
         refCode = '';
       }
       const resellerToken = localStorage.getItem('reseller_token') || '';
+      const buyerToken = localStorage.getItem('buyer_token') || '';
       const res = await fetch('/api/public/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${buyerToken}`,
+        },
         body: JSON.stringify({
-          buyer_name: buyer.name,
-          buyer_email: buyer.email,
-          buyer_phone: buyer.phone,
           product_id: product!.id,
           ref_code: refCode,
           discount_code: discountInfo ? discountInfo.code : '',
