@@ -1,8 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
+import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
 
 export async function POST(request: Request) {
+  const admin = getAdminFromRequest(request);
+  if (!admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!isSuperAdmin(admin)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const { reseller_id, new_pin } = await request.json();
 

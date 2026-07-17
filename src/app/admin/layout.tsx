@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { adminSelect } from '@/lib/adminApi';
 import { FiLogOut } from 'react-icons/fi';
 
 const navItems = [
@@ -61,10 +62,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Load initial pending counts
   const loadPendingCounts = useCallback(async () => {
-    const [{ count: pending }] = await Promise.all([
-      supabase.from('orders').select('*', { count: 'exact', head: true }).eq('payment_status', 'pending_payment'),
-    ]);
-    setPendingOrdersCount(pending || 0);
+    const { data } = await adminSelect('orders', 'id', { payment_status: 'pending_payment' });
+    setPendingOrdersCount((data || []).length);
   }, []);
 
   useEffect(() => {

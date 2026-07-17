@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { getAdminFromRequest } from '@/lib/auth';
+import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
 import { getPakasirTransaction } from '@/lib/pakasir';
 import { sendTelegramNotification } from '@/lib/telegram';
 
@@ -9,6 +9,9 @@ export async function POST(request: Request) {
   const admin = getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!isSuperAdmin(admin)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {

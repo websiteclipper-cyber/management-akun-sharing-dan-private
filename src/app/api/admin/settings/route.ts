@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { getAdminFromRequest } from '@/lib/auth';
+import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
 
 // Ensure site_settings table exists
 async function ensureTable() {
@@ -24,6 +24,9 @@ export async function GET(request: Request) {
   const admin = getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!isSuperAdmin(admin)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
@@ -53,6 +56,9 @@ export async function POST(request: Request) {
   const admin = getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!isSuperAdmin(admin)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
