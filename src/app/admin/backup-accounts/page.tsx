@@ -2,6 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 
+function getAdminAuthHeaders(): HeadersInit {
+  const token = typeof window === 'undefined' ? '' : localStorage.getItem('admin_token') || '';
+  return { 'Authorization': `Bearer ${token}` };
+}
+
 export default function AdminBackupAccounts() {
   const [backups, setBackups] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -31,7 +36,7 @@ export default function AdminBackupAccounts() {
   const fetchBackups = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/backup-accounts');
+      const res = await fetch('/api/admin/backup-accounts', { headers: getAdminAuthHeaders() });
       const data = await res.json();
       setBackups(Array.isArray(data) ? data : []);
     } finally { setLoading(false); }
@@ -39,7 +44,7 @@ export default function AdminBackupAccounts() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('/api/admin/products');
+      const res = await fetch('/api/admin/products', { headers: getAdminAuthHeaders() });
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
     } catch {}
@@ -47,7 +52,7 @@ export default function AdminBackupAccounts() {
 
   const fetchStockAccounts = async () => {
     try {
-      const res = await fetch('/api/admin/inventory');
+      const res = await fetch('/api/admin/inventory', { headers: getAdminAuthHeaders() });
       const data = await res.json();
       setStockAccounts(Array.isArray(data) ? data : []);
     } catch {}
@@ -60,7 +65,7 @@ export default function AdminBackupAccounts() {
 
     await fetch('/api/admin/backup-accounts', {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAdminAuthHeaders() },
       body: JSON.stringify(payload)
     });
 
@@ -71,7 +76,10 @@ export default function AdminBackupAccounts() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus akun cadangan ini?')) return;
-    await fetch(`/api/admin/backup-accounts?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/admin/backup-accounts?id=${id}`, {
+      method: 'DELETE',
+      headers: getAdminAuthHeaders(),
+    });
     fetchBackups();
   };
 
@@ -90,7 +98,7 @@ export default function AdminBackupAccounts() {
       if (parts.length >= 2) {
         await fetch('/api/admin/backup-accounts', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAdminAuthHeaders() },
           body: JSON.stringify({
             stock_account_id: bulkStockAccountId || undefined,
             product_id: bulkProductId || undefined,
@@ -105,7 +113,7 @@ export default function AdminBackupAccounts() {
         // Link-based backup (e.g., invitation link)
         await fetch('/api/admin/backup-accounts', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAdminAuthHeaders() },
           body: JSON.stringify({
             stock_account_id: bulkStockAccountId || undefined,
             product_id: bulkProductId || undefined,
@@ -130,7 +138,9 @@ export default function AdminBackupAccounts() {
 
   const decryptPassword = async (id: string) => {
     try {
-      const res = await fetch(`/api/admin/backup-accounts/decrypt?id=${id}`);
+      const res = await fetch(`/api/admin/backup-accounts/decrypt?id=${id}`, {
+        headers: getAdminAuthHeaders(),
+      });
       const data = await res.json();
       setShowPassword(prev => ({ ...prev, [id]: data.secret || '(kosong)' }));
     } catch {

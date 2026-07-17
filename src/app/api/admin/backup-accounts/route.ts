@@ -1,34 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { encrypt } from '@/lib/crypto';
+import { getAdminFromRequest } from '@/lib/auth';
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Internal server error';
+}
 
 export async function GET(request: NextRequest) {
+  if (!getAdminFromRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('product_id');
     const stockAccountId = searchParams.get('stock_account_id');
     const status = searchParams.get('status');
+    const summaryOnly = searchParams.get('summary') === '1';
 
-    let query = supabase.from('backup_accounts').select(`
-      *,
+    const selectColumns = summaryOnly ? 'id, stock_account_id, is_used' : `
+      id, stock_account_id, product_id, account_identifier,
+      profile_info, pin_info, notes, sort_order, status, is_used,
+      created_at, updated_at,
       stock_accounts (id, account_identifier, product_id, products:product_id (name, code)),
       products (name, code)
-    `).order('created_at', { ascending: false });
+    `;
+    const rows: unknown[] = [];
+    const pageSize = 1000;
 
-    if (stockAccountId) query = query.eq('stock_account_id', stockAccountId);
-    if (productId) query = query.eq('product_id', productId);
-    if (status) query = query.eq('status', status);
+    for (let from = 0; ; from += pageSize) {
+      let query = supabase
+        .from('backup_accounts')
+        .select(selectColumns)
+        .order('created_at', { ascending: false });
+      if (stockAccountId) query = query.eq('stock_account_id', stockAccountId);
+      if (productId) query = query.eq('product_id', productId);
+      if (status) query = query.eq('status', status);
 
-    const { data, error } = await query;
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      const { data, error } = await query.range(from, from + pageSize - 1);
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-    return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+      const pageRows = data || [];
+      rows.push(...pageRows);
+      if (pageRows.length < pageSize) break;
+    }
+
+    return NextResponse.json(rows);
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  if (!getAdminFromRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { stock_account_id, product_id, account_identifier, account_secret, profile_info, pin_info, notes, sort_order } = body;
@@ -79,19 +107,23 @@ export async function POST(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
+  if (!getAdminFromRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { id, stock_account_id, product_id, account_identifier, account_secret, profile_info, pin_info, status, is_used, notes } = body;
 
     if (!id) return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 });
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       account_identifier,
       profile_info: profile_info || null,
       pin_info: pin_info || null,
@@ -111,12 +143,16 @@ export async function PUT(request: NextRequest) {
     const { data, error } = await supabase.from('backup_accounts').update(updateData).eq('id', id).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json(data);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!getAdminFromRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -127,7 +163,7 @@ export async function DELETE(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: getErrorMessage(error) }, { status: 500 });
   }
 }

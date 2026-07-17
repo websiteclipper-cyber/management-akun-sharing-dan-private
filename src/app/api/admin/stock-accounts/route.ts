@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { encrypt } from '@/lib/crypto';
+import { getAdminFromRequest } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
+  if (!getAdminFromRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const {
@@ -43,6 +48,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  if (!getAdminFromRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { id, product_id, account_identifier, account_secret, profile_info, pin_info, notes_internal, purchase_cost, account_type, max_slot, current_used_slot } = body;

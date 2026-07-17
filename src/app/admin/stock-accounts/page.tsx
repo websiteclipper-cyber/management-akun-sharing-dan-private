@@ -1,11 +1,21 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
-import { adminDelete, adminUpdate } from '@/lib/adminApi';
+import { adminDelete, adminSelect, adminUpdate } from '@/lib/adminApi';
 import { StockAccount, Product } from '@/lib/types';
 
 const ITEMS_PER_PAGE = 15;
+
+interface BackupSummary {
+  id: number;
+  stock_account_id: number | null;
+  is_used: boolean;
+}
+
+function getAdminAuthHeaders(): HeadersInit {
+  const token = typeof window === 'undefined' ? '' : localStorage.getItem('admin_token') || '';
+  return { 'Authorization': `Bearer ${token}` };
+}
 
 export default function StockAccountsPage() {
   const [accounts, setAccounts] = useState<StockAccount[]>([]);
@@ -18,6 +28,7 @@ export default function StockAccountsPage() {
   const [showBuyers, setShowBuyers] = useState<number | null>(null);
   const [buyers, setBuyers] = useState<Array<{ id: number; buyer_name: string; status: string; start_at: string; expired_at: string }>>([]); 
   const [backupCounts, setBackupCounts] = useState<Record<number, { available: number; total: number }>>({});
+  const [loadError, setLoadError] = useState('');
 
   // Feature 4: Search & Pagination state
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,20 +38,34 @@ export default function StockAccountsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'identifier'>('newest');
 
-  useEffect(() => { loadData(); }, []);
-
   async function loadData() {
-    const [{ data: accs }, { data: prods }, { data: backups }] = await Promise.all([
-      supabase.from('stock_accounts').select('*, product:products(*)').order('created_at', { ascending: false }),
-      supabase.from('products').select('*').eq('status', 'active').order('name'),
-      supabase.from('backup_accounts').select('id, stock_account_id, is_used'),
+    setLoading(true);
+    setLoadError('');
+    const [accountResult, productResult, backupResponse] = await Promise.all([
+      adminSelect(
+        'stock_accounts',
+        'id, product_id, account_identifier, profile_info, pin_info, notes_internal, account_type, max_slot, current_used_slot, status, purchase_cost, acquired_at, created_at, updated_at, product:products(*)',
+      ),
+      adminSelect('products', '*', { status: 'active' }),
+      fetch('/api/admin/backup-accounts?summary=1', { headers: getAdminAuthHeaders() }),
     ]);
-    setAccounts(accs || []);
-    setProducts(prods || []);
+    if (accountResult.error || productResult.error || !backupResponse.ok) {
+      setLoadError('Gagal memuat stok akun. Silakan login ulang atau muat ulang halaman.');
+      setLoading(false);
+      return;
+    }
+
+    const accs = accountResult.data;
+    const prods = productResult.data;
+    const backups = backupResponse.ok ? await backupResponse.json() as BackupSummary[] : [];
+    setAccounts(((accs || []) as StockAccount[]).sort((a, b) =>
+      String(b.created_at).localeCompare(String(a.created_at)),
+    ));
+    setProducts(((prods || []) as Product[]).sort((a, b) => a.name.localeCompare(b.name)));
     
     // Calculate backup counts per stock account
     const counts: Record<number, { available: number; total: number }> = {};
-    (backups || []).forEach((b: any) => {
+    backups.forEach((b) => {
       if (b.stock_account_id) {
         if (!counts[b.stock_account_id]) counts[b.stock_account_id] = { available: 0, total: 0 };
         counts[b.stock_account_id].total++;
@@ -51,12 +76,14 @@ export default function StockAccountsPage() {
     setLoading(false);
   }
 
+  useEffect(() => { loadData(); }, []);
+
   async function loadBuyers(accountId: number) {
-    const { data } = await supabase
-      .from('account_assignments')
-      .select('id, status, start_at, expired_at, buyer:buyers(name)')
-      .eq('stock_account_id', accountId)
-      .eq('status', 'active');
+    const { data } = await adminSelect(
+      'account_assignments',
+      'id, status, start_at, expired_at, buyer:buyers(name)',
+      { stock_account_id: accountId, status: 'active' },
+    );
     setBuyers((data || []).map((d: Record<string, unknown>) => ({
       id: d.id as number,
       buyer_name: (d.buyer as Record<string, unknown>)?.name as string || 'Unknown',
@@ -159,6 +186,7 @@ export default function StockAccountsPage() {
         </div>
       </div>
       <div style={{ padding: '32px' }}>
+        {loadError && <div className="login-error" style={{ marginBottom: '16px' }}>{loadError}</div>}
         {/* Quick Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', marginBottom: '20px' }}>
           {[
@@ -509,7 +537,9 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
     if (!account?.id) return;
     setFetchingPassword(true);
     try {
-      const res = await fetch(`/api/admin/stock-accounts/decrypt?id=${account.id}`);
+      const res = await fetch(`/api/admin/stock-accounts/decrypt?id=${account.id}`, {
+        headers: getAdminAuthHeaders(),
+      });
       const data = await res.json();
       if (res.ok) {
         setShowPasswordStr(data.secret);
@@ -532,7 +562,7 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
     try {
       const res = await fetch('/api/admin/stock-accounts', {
         method: isEdit ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAdminAuthHeaders() },
         body: JSON.stringify({
           id: isEdit ? account?.id : undefined,
           product_id: parseInt(form.product_id),
@@ -721,7 +751,7 @@ function BulkImportModal({ products, onClose, onDone }: {
       try {
         const res = await fetch('/api/admin/stock-accounts', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAdminAuthHeaders() },
           body: JSON.stringify({
             product_id: parseInt(productId),
             account_identifier: identifier,
