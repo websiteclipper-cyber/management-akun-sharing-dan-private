@@ -5,6 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { FcGoogle } from 'react-icons/fc';
+
+function safeInternalRedirect(value: string | null): string {
+  return value?.startsWith('/') && !value.startsWith('//') ? value : '/';
+}
 
 export default function BuyerLoginPageWrapper() {
   return (
@@ -18,17 +23,17 @@ function BuyerLoginPage() {
   const { t } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/';
+  const redirect = safeInternalRedirect(searchParams.get('redirect'));
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => searchParams.get('error_description') || '');
   const [profileRequired, setProfileRequired] = useState(false);
   const [verifiedAccessToken, setVerifiedAccessToken] = useState('');
   const [profileName, setProfileName] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
 
   useEffect(() => {
-    async function exchangeMagicLinkSession() {
+    async function exchangeVerifiedSession() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return;
 
@@ -57,8 +62,31 @@ function BuyerLoginPage() {
       localStorage.setItem('buyer_session', JSON.stringify(data.buyer));
       router.replace(redirect);
     }
-    void exchangeMagicLinkSession();
+    void exchangeVerifiedSession();
   }, [redirect, router]);
+
+  async function handleGoogleLogin() {
+    setLoading(true);
+    setError('');
+
+    try {
+      const callbackUrl = new URL('/buyer/login', window.location.origin);
+      callbackUrl.searchParams.set('redirect', redirect);
+
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: callbackUrl.toString() },
+      });
+
+      if (oauthError) {
+        setError(`Login Google gagal: ${oauthError.message}`);
+        setLoading(false);
+      }
+    } catch {
+      setError('Tidak dapat membuka login Google. Silakan coba lagi.');
+      setLoading(false);
+    }
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -180,30 +208,57 @@ function BuyerLoginPage() {
               </button>
             </form>
           ) : (
-            <form onSubmit={handleLogin}>
-              <div className="form-group">
-                <label className="form-label">Email pembelian</label>
-                <input
-                  className="form-input"
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="email@contoh.com"
-                  required
-                />
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  Kami akan mengirim link masuk aman ke email ini.
-                </p>
-              </div>
+            <>
               <button
-                type="submit"
-                className="btn btn-primary btn-lg"
-                style={{ width: '100%', justifyContent: 'center' }}
+                type="button"
+                className="btn btn-lg"
+                style={{
+                  width: '100%',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  background: '#fff',
+                  color: '#1f2937',
+                  border: '1px solid #d1d5db',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.06)',
+                }}
                 disabled={loading}
+                onClick={() => void handleGoogleLogin()}
               >
-                {loading ? <span className="loading-spinner" /> : 'Kirim link masuk'}
+                {loading ? <span className="loading-spinner" /> : <FcGoogle style={{ fontSize: '1.35rem' }} />}
+                <span>Lanjutkan dengan Google</span>
               </button>
-            </form>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '22px 0' }}>
+                <div style={{ height: '1px', flex: 1, background: 'var(--border-primary)' }} />
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>atau lewat email</span>
+                <div style={{ height: '1px', flex: 1, background: 'var(--border-primary)' }} />
+              </div>
+
+              <form onSubmit={handleLogin}>
+                <div className="form-group">
+                  <label className="form-label">Email pembelian</label>
+                  <input
+                    className="form-input"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="email@contoh.com"
+                    required
+                  />
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Kami akan mengirim link masuk aman ke email ini.
+                  </p>
+                </div>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-lg"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  disabled={loading}
+                >
+                  {loading ? <span className="loading-spinner" /> : 'Kirim link masuk'}
+                </button>
+              </form>
+            </>
           )}
 
           <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
