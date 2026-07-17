@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { adminUpdate, adminInsert, adminDelete } from '@/lib/adminApi';
+import { adminUpdate, adminInsert, adminDelete, adminSelect } from '@/lib/adminApi';
 
 interface Reseller {
   id: string;
@@ -59,6 +58,8 @@ export default function AdminResellersPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedReseller, setSelectedReseller] = useState<Reseller | null>(null);
+  const [selectedResellerIds, setSelectedResellerIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [tab, setTab] = useState<'resellers' | 'commissions' | 'product-commissions'>('resellers');
   const [copied, setCopied] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,30 +82,30 @@ export default function AdminResellersPage() {
   }, []);
 
   async function loadProducts() {
-    const { data } = await supabase.from('products').select('id, name, price').eq('status', 'active');
+    const { data } = await adminSelect('products', 'id, name, price', { status: 'active' });
     if (data) setProducts(data);
   }
 
   async function loadResellers() {
     setLoading(true);
-    const { data } = await supabase.from('resellers').select('*').order('created_at', { ascending: false });
-    if (data) setResellers(data);
+    const { data } = await adminSelect('resellers');
+    if (data) {
+      const nextResellers = (data as Reseller[]).sort((a, b) => b.created_at.localeCompare(a.created_at));
+      const availableIds = new Set(nextResellers.map(r => r.id));
+      setResellers(nextResellers);
+      setSelectedResellerIds(previous => new Set([...previous].filter(id => availableIds.has(id))));
+    }
     setLoading(false);
   }
 
   async function loadCommissions(resellerId?: string) {
     setLoading(true);
-    let query = supabase
-      .from('reseller_commissions')
-      .select('*, order:orders(order_number, total_amount, buyer:buyers(name)), reseller:resellers(name, ref_code)')
-      .order('created_at', { ascending: false });
-
-    if (resellerId) {
-      query = query.eq('reseller_id', resellerId);
-    }
-
-    const { data } = await query;
-    if (data) setCommissions(data as unknown as Commission[]);
+    const { data } = await adminSelect(
+      'reseller_commissions',
+      '*, order:orders(order_number, total_amount, buyer:buyers(name)), reseller:resellers(name, ref_code)',
+      resellerId ? { reseller_id: resellerId } : undefined,
+    );
+    if (data) setCommissions((data as unknown as Commission[]).sort((a, b) => b.created_at.localeCompare(a.created_at)));
     setLoading(false);
   }
 
@@ -112,10 +113,10 @@ export default function AdminResellersPage() {
     setSelectedReseller(r);
     setTab('product-commissions');
     setLoading(true);
-    const { data } = await supabase.from('reseller_product_commissions').select('*').eq('reseller_id', r.id);
+    const { data } = await adminSelect('reseller_product_commissions', '*', { reseller_id: r.id });
     const mapping: Record<number, ResellerProductCommission | null> = {};
     if (data) {
-      data.forEach(item => {
+      (data as ResellerProductCommission[]).forEach(item => {
         mapping[item.product_id] = item;
       });
     }
@@ -128,7 +129,7 @@ export default function AdminResellersPage() {
 
     let result;
     if (editingId) {
-      const updatePayload: Record<string, any> = {
+      const updatePayload: Record<string, unknown> = {
         name: form.name,
         phone: form.phone,
         default_commission_type: form.default_commission_type,
@@ -188,22 +189,88 @@ export default function AdminResellersPage() {
     setShowForm(true);
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Hapus reseller ini? Semua data komisinya juga akan terhapus.')) return;
-    
+  async function deleteResellerRecords(id: string) {
     // Trik hapus foreign key (manual cleanup) jika ON DELETE CASCADE tidak aktif
     const oRes = await adminUpdate('orders', { reseller_id: null }, { reseller_id: id });
-    if (oRes.error) { alert('DB Update Orders failed: ' + JSON.stringify(oRes.error)); return; }
+    if (oRes.error) return `Gagal melepas relasi pesanan: ${oRes.error.message}`;
 
     const rcRes = await adminDelete('reseller_commissions', { reseller_id: id });
-    if (rcRes.error) { alert('DB Delete RC failed: ' + JSON.stringify(rcRes.error)); return; }
+    if (rcRes.error) return `Gagal menghapus riwayat komisi: ${rcRes.error.message}`;
 
     const rpcRes = await adminDelete('reseller_product_commissions', { reseller_id: id });
-    if (rpcRes.error) { alert('DB Delete RPC failed: ' + JSON.stringify(rpcRes.error)); return; }
+    if (rpcRes.error) return `Gagal menghapus pengaturan komisi: ${rpcRes.error.message}`;
 
     const result = await adminDelete('resellers', { id });
-    if (result.error) { alert('Gagal menghapus Reseller: ' + JSON.stringify(result.error)); return; }
-    loadResellers();
+    if (result.error) return `Gagal menghapus reseller: ${result.error.message}`;
+
+    return null;
+  }
+
+  async function handleDelete(id: string) {
+    const reseller = resellers.find(r => r.id === id);
+    if (!confirm(`Hapus reseller "${reseller?.name || 'ini'}"? Relasi pesanan akan dilepas dan semua data komisinya akan dihapus.`)) return;
+
+    const error = await deleteResellerRecords(id);
+    if (error) {
+      alert(error);
+      return;
+    }
+
+    setSelectedResellerIds(previous => {
+      const next = new Set(previous);
+      next.delete(id);
+      return next;
+    });
+    await loadResellers();
+  }
+
+  function toggleResellerSelection(id: string) {
+    setSelectedResellerIds(previous => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    const selected = resellers.filter(r => selectedResellerIds.has(r.id));
+    if (selected.length === 0 || bulkDeleting) return;
+
+    const preview = selected.slice(0, 10).map(r => `• ${r.name} (${r.ref_code})`).join('\n');
+    const remaining = selected.length > 10 ? `\n• dan ${selected.length - 10} reseller lainnya` : '';
+    const confirmed = confirm(
+      `Hapus ${selected.length} reseller berikut sekaligus?\n\n${preview}${remaining}\n\nRelasi pesanan akan dilepas dan semua data komisinya akan dihapus. Tindakan ini tidak dapat dibatalkan.`
+    );
+    if (!confirmed) return;
+
+    setBulkDeleting(true);
+    const deletedIds = new Set<string>();
+    const failures: string[] = [];
+
+    try {
+      // Jalankan berurutan agar kegagalan dapat dilaporkan untuk setiap reseller.
+      for (const reseller of selected) {
+        const error = await deleteResellerRecords(reseller.id);
+        if (error) failures.push(`${reseller.name}: ${error}`);
+        else deletedIds.add(reseller.id);
+      }
+
+      setSelectedResellerIds(previous => {
+        const next = new Set(previous);
+        deletedIds.forEach(id => next.delete(id));
+        return next;
+      });
+      await loadResellers();
+
+      if (failures.length > 0) {
+        alert(`${deletedIds.size} reseller berhasil dihapus. ${failures.length} gagal:\n\n${failures.join('\n')}`);
+      } else {
+        alert(`${deletedIds.size} reseller berhasil dihapus.`);
+      }
+    } finally {
+      setBulkDeleting(false);
+    }
   }
 
   async function handlePayAll(reseller: Reseller) {
@@ -257,6 +324,20 @@ export default function AdminResellersPage() {
       (r.phone && r.phone.toLowerCase().includes(query))
     );
   });
+  const allVisibleResellersSelected = filteredResellers.length > 0
+    && filteredResellers.every(r => selectedResellerIds.has(r.id));
+
+  function toggleAllVisibleResellers() {
+    setSelectedResellerIds(previous => {
+      const next = new Set(previous);
+      if (allVisibleResellersSelected) {
+        filteredResellers.forEach(r => next.delete(r.id));
+      } else {
+        filteredResellers.forEach(r => next.add(r.id));
+      }
+      return next;
+    });
+  }
 
   async function handleApprove(r: Reseller) {
     if (!confirm(`Setujui ${r.name} sebagai mitra aktif?`)) return;
@@ -288,8 +369,8 @@ export default function AdminResellersPage() {
       
       alert(`Berhasil diterapkan ke ${json.count} reseller aktif!`);
       if (selectedReseller) editProductCommissions(selectedReseller);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Terjadi kesalahan yang tidak diketahui');
       setLoading(false);
     }
   }
@@ -343,7 +424,7 @@ export default function AdminResellersPage() {
           <button className={`btn btn-sm ${tab === 'resellers' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setTab('resellers'); setSelectedReseller(null); }}>
             Daftar Reseller ({resellers.length})
           </button>
-          <button className={`btn btn-sm ${tab === 'commissions' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setTab('commissions'); loadCommissions(); setSelectedReseller(null); }}>
+          <button className={`btn btn-sm ${tab === 'commissions' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => { setTab('commissions'); loadCommissions(); setSelectedReseller(null); setSelectedResellerIds(new Set()); }}>
             Riwayat Komisi
           </button>
         </div>
@@ -355,13 +436,42 @@ export default function AdminResellersPage() {
               className="form-input" 
               placeholder="Cari nama, ref, atau WA..." 
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => { setSearchQuery(e.target.value); setSelectedResellerIds(new Set()); }}
               style={{ padding: '8px 12px 8px 36px', fontSize: '0.85rem', height: '36px', borderRadius: 'var(--radius-md)' }}
             />
             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, fontSize: '0.9rem' }}>🔍</span>
           </div>
         )}
       </div>
+
+      {tab === 'resellers' && selectedResellerIds.size > 0 && (
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px',
+          padding: '12px 16px', marginBottom: '14px', flexWrap: 'wrap',
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.28)',
+          borderRadius: 'var(--radius-md)'
+        }}>
+          <div>
+            <strong>{selectedResellerIds.size} reseller dipilih</strong>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '2px' }}>
+              Periksa kembali pilihan sebelum menghapus.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => setSelectedResellerIds(new Set())} disabled={bulkDeleting}>
+              Batalkan Pilihan
+            </button>
+            <button
+              className="btn btn-sm"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+              style={{ background: '#ef4444', color: '#fff', border: 'none', fontWeight: 700 }}
+            >
+              {bulkDeleting ? 'Menghapus...' : `Hapus ${selectedResellerIds.size} Terpilih`}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ADD/EDIT FORM */}
       {showForm && (
@@ -435,6 +545,17 @@ export default function AdminResellersPage() {
             <table className="table">
               <thead>
                 <tr>
+                  <th style={{ width: '44px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={allVisibleResellersSelected}
+                      onChange={toggleAllVisibleResellers}
+                      disabled={filteredResellers.length === 0 || bulkDeleting}
+                      aria-label="Pilih semua reseller yang tampil"
+                      title="Pilih semua reseller yang tampil"
+                      style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                    />
+                  </th>
                   <th>Nama</th>
                   <th>Kode Ref</th>
                   <th>Penjualan</th>
@@ -446,7 +567,17 @@ export default function AdminResellersPage() {
               </thead>
               <tbody>
                 {filteredResellers.map(r => (
-                  <tr key={r.id}>
+                  <tr key={r.id} style={selectedResellerIds.has(r.id) ? { background: 'rgba(37,99,235,0.06)' } : undefined}>
+                    <td style={{ textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedResellerIds.has(r.id)}
+                        onChange={() => toggleResellerSelection(r.id)}
+                        disabled={bulkDeleting}
+                        aria-label={`Pilih reseller ${r.name}`}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                    </td>
                     <td>
                       <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{r.name}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{r.phone || '-'}</div>
@@ -506,14 +637,14 @@ export default function AdminResellersPage() {
                           </button>
                         )}
                         <button className="btn btn-secondary btn-sm" onClick={() => handleEdit(r)} title="Edit Reseller" style={{ padding: '6px 8px' }}>✏️</button>
-                        <button className="btn btn-secondary btn-sm" style={{ color: '#ef4444', padding: '6px 8px' }} onClick={() => handleDelete(r.id)} title="Hapus">🗑️</button>
+                        <button className="btn btn-secondary btn-sm" style={{ color: '#ef4444', padding: '6px 8px' }} onClick={() => handleDelete(r.id)} disabled={bulkDeleting} title="Hapus">🗑️</button>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {resellers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="empty-state">
+                    <td colSpan={8} className="empty-state">
                       <div className="icon">🤝</div>
                       <h3>Belum ada reseller</h3>
                       <p>Klik &quot;+ Tambah Reseller&quot; untuk memulai.</p>
@@ -521,7 +652,7 @@ export default function AdminResellersPage() {
                   </tr>
                 ) : filteredResellers.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="empty-state">
+                    <td colSpan={8} className="empty-state">
                       <div className="icon">🔍</div>
                       <h3>Reseller tidak ditemukan</h3>
                       <p>Tidak ada reseller dengan kata kunci &quot;{searchQuery}&quot;.</p>
@@ -696,7 +827,7 @@ export default function AdminResellersPage() {
                       </td>
                       <td>
                         <div><code style={{ color: 'var(--accent)' }}>{c.order?.order_number || '-'}</code></div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{(c.order?.buyer as any)?.name || '-'}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{c.order?.buyer?.name || '-'}</div>
                       </td>
                       <td style={{ fontWeight: 600 }}>{c.product_name || '-'}</td>
                       <td>
