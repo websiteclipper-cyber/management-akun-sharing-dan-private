@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { sendTelegramNotification } from '@/lib/telegram';
-import { verifyToken } from '@/lib/auth';
+import { getBuyerFromRequest, verifyToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const { buyer_name, buyer_email, buyer_phone, product_id, ref_code, discount_code, quantity: rawQty, reseller_token } = await request.json();
+    const authenticatedBuyer = getBuyerFromRequest(request);
+    if (!authenticatedBuyer) {
+      return NextResponse.json({ error: 'Silakan login kembali sebelum membuat pesanan.' }, { status: 401 });
+    }
+
+    const { product_id, ref_code, discount_code, quantity: rawQty, reseller_token } = await request.json();
     const quantity = Math.min(10, Math.max(1, Math.floor(Number(rawQty) || 1)));
 
-    if (!buyer_name || !product_id) {
+    if (!product_id) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 });
     }
 
@@ -24,39 +29,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 });
     }
 
-    // Find or create buyer
-    let buyer;
-    if (buyer_email) {
-      const { data: existingBuyer } = await supabase
-        .from('buyers')
-        .select('*')
-        .eq('email', buyer_email)
-        .single();
-
-      if (existingBuyer) {
-        buyer = existingBuyer;
-      }
-    }
-
-    if (!buyer) {
-      const now = new Date().toISOString();
-      const { data: newBuyer, error: buyerError } = await supabase
-        .from('buyers')
-        .insert({
-          name: buyer_name,
-          email: buyer_email || null,
-          phone: buyer_phone || null,
-          status: 'active',
-          created_at: now,
-          updated_at: now,
-        })
-        .select()
-        .single();
-
-      if (buyerError) {
-        return NextResponse.json({ error: 'Gagal membuat data buyer' }, { status: 500 });
-      }
-      buyer = newBuyer;
+    // Resolve identity from the verified application token, never from buyer
+    // fields supplied by the browser.
+    const { data: buyer, error: buyerError } = await supabase
+      .from('buyers')
+      .select('*')
+      .eq('id', authenticatedBuyer.id)
+      .eq('status', 'active')
+      .single();
+    if (buyerError || !buyer || !buyer.name || !buyer.phone || !buyer.email) {
+      return NextResponse.json({ error: 'Profil buyer belum lengkap atau tidak aktif.' }, { status: 403 });
     }
 
     // ===== CHECK IF BUYER IS A NEWCOMER (first-time buyer) =====
@@ -135,7 +117,7 @@ export async function POST(request: NextRequest) {
         let isSelfReferral = false;
         let detectionMethod = '';
 
-        const cleanBuyerPhone = (buyer.phone || buyer_phone || '').replace(/[^0-9]/g, '');
+        const cleanBuyerPhone = (buyer.phone || '').replace(/[^0-9]/g, '');
         const cleanResellerPhone = (resellerData.phone || '').replace(/[^0-9]/g, '');
         
         // Level 1: Phone Match
