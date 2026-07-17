@@ -45,6 +45,14 @@ export async function adminDelete(table: string, match: Record<string, unknown>)
   return adminFetch({ table, operation: 'delete', match });
 }
 
+export async function adminSelect(
+  table: string,
+  select = '*',
+  match?: Record<string, unknown>,
+) {
+  return adminFetch({ table, operation: 'select', select, match });
+}
+
 export async function adminRpc(rpc: string, rpcParams?: Record<string, unknown>) {
   return adminFetch({ rpc, rpcParams });
 }

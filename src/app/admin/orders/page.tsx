@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
-import { adminRpc } from '@/lib/adminApi';
+import { adminRpc, adminSelect } from '@/lib/adminApi';
 import { Order } from '@/lib/types';
 
 const ITEMS_PER_PAGE = 15;
@@ -46,20 +45,10 @@ export default function OrdersPage() {
 
   async function loadOrders() {
     setLoading(true);
-    let allOrders: Order[] = [];
-    let page = 0;
-    const pageSize = 1000;
-    while (true) {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*, buyer:buyers(*), product:products(*)')
-        .order('created_at', { ascending: false })
-        .range(page * pageSize, (page + 1) * pageSize - 1);
-      if (error || !data || data.length === 0) break;
-      allOrders = [...allOrders, ...data];
-      if (data.length < pageSize) break;
-      page++;
-    }
+    const { data } = await adminSelect('orders', '*, buyer:buyers(*), product:products(*)');
+    const allOrders = ((data || []) as Order[]).sort((a, b) =>
+      String(b.created_at).localeCompare(String(a.created_at)),
+    );
     setOrders(allOrders);
     setLoading(false);
   }
@@ -109,12 +98,11 @@ export default function OrdersPage() {
     const product = order.product as unknown as { name: string; duration_days: number; account_type: string };
 
     try {
-      const { data: assignments, error: assignErr } = await supabase
-        .from('account_assignments')
-        .select('*, stock_account:stock_accounts(*)')
-        .eq('order_id', order.id)
-        .eq('status', 'active')
-        .order('id', { ascending: true });
+      const { data: assignments, error: assignErr } = await adminSelect(
+        'account_assignments',
+        '*, stock_account:stock_accounts(*)',
+        { order_id: order.id, status: 'active' },
+      );
 
       if (assignErr || !assignments || assignments.length === 0) {
         alert('Berhasil di-assign, namun gagal membuka WhatsApp. Gunakan tombol "Kirim WA" secara manual.');
@@ -124,13 +112,12 @@ export default function OrdersPage() {
       let accountsText = '';
       for (let i = 0; i < assignments.length; i++) {
         const assignment = assignments[i];
-        const res = await fetch('/api/buyer/decrypt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ encrypted: assignment.stock_account.account_secret_encrypted }),
+        const token = localStorage.getItem('admin_token') || '';
+        const res = await fetch(`/api/admin/stock-accounts/decrypt?id=${encodeURIComponent(String(assignment.stock_account.id))}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
         });
         const decData = await res.json();
-        const password = decData.decrypted || 'Gagal-Dekripsi';
+        const password = decData.secret || 'Gagal-Dekripsi';
         const sa = assignment.stock_account;
         
         accountsText += `👤 *Email/User:* ${sa.account_identifier}\n` +

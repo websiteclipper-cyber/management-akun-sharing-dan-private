@@ -14,8 +14,18 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { table, operation, data, match, select, rpc, rpcParams } = body;
 
-    // RPC call support
+    // RPC call support. Never pass a client-supplied function name through to
+    // the service-role client: privileged functions (including SQL helpers)
+    // must not become an arbitrary admin-controlled execution surface.
     if (rpc) {
+      const allowedRpcs = new Set([
+        'assign_account_for_order',
+        'replace_account_assignment',
+      ]);
+      if (typeof rpc !== 'string' || !allowedRpcs.has(rpc)) {
+        return NextResponse.json({ error: 'RPC not allowed' }, { status: 403 });
+      }
+
       const { data: result, error } = await supabase.rpc(rpc, rpcParams || {});
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       return NextResponse.json({ success: true, data: result });
@@ -36,19 +46,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Table not allowed' }, { status: 403 });
     }
 
-    let query;
-
     switch (operation) {
       case 'select': {
-        query = supabase.from(table).select(select || '*');
-        if (match) {
-          for (const [key, value] of Object.entries(match)) {
-            query = query.eq(key, value);
+        const selectedRows: unknown[] = [];
+        const pageSize = 1000;
+
+        for (let from = 0; ; from += pageSize) {
+          let selectQuery = supabase.from(table).select(select || '*');
+          if (match) {
+            for (const [key, value] of Object.entries(match)) {
+              selectQuery = selectQuery.eq(key, value);
+            }
           }
+
+          const { data: pageData, error: selectErr } = await selectQuery
+            .range(from, from + pageSize - 1);
+          if (selectErr) {
+            return NextResponse.json({ error: selectErr.message }, { status: 400 });
+          }
+
+          const rows = pageData || [];
+          selectedRows.push(...rows);
+          if (rows.length < pageSize) break;
         }
-        const { data: selectData, error: selectErr } = await query;
-        if (selectErr) return NextResponse.json({ error: selectErr.message }, { status: 400 });
-        return NextResponse.json({ success: true, data: selectData });
+
+        return NextResponse.json({ success: true, data: selectedRows });
       }
 
       case 'insert': {
