@@ -178,10 +178,12 @@ export default function HomePage() {
       .catch(() => {});
   }, []);
 
-  function handleLogout() {
+  async function handleLogout() {
     localStorage.removeItem('buyer_session');
+    localStorage.removeItem('buyer_token');
     setBuyer(null);
     setMenuOpen(false);
+    await supabase.auth.signOut({ scope: 'local' });
   }
 
   const categories = Array.from(new Set(
