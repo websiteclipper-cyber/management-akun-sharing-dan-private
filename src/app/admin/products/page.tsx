@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { adminUpdate, adminInsert, adminDelete } from '@/lib/adminApi';
+import { adminUpdate, adminInsert, adminDelete, adminSelect } from '@/lib/adminApi';
 import { Product } from '@/lib/types';
 import Link from 'next/link';
 
@@ -17,11 +16,10 @@ export default function ProductsPage() {
   useEffect(() => { loadProducts(); }, []);
 
   async function loadProducts() {
-    const { data } = await supabase.from('products')
-      .select('*')
-      .order('platform_name', { ascending: true })
-      .order('name', { ascending: true });
-    setProducts(data || []);
+    const { data } = await adminSelect('products');
+    setProducts(((data || []) as Product[]).sort((a, b) =>
+      `${a.platform_name}:${a.name}`.localeCompare(`${b.platform_name}:${b.name}`),
+    ));
     setLoading(false);
   }
 

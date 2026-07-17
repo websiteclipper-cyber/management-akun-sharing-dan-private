@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 
@@ -42,7 +41,7 @@ function BuyerLookupPage() {
     }
     const parsed = JSON.parse(session);
     setBuyer(parsed);
-    loadAllOrders(parsed.email);
+    loadAllOrders();
   }, [router]);
 
   useEffect(() => {
@@ -54,40 +53,25 @@ function BuyerLookupPage() {
     }
   }, [orders, searchParams]);
 
-  async function loadAllOrders(email: string) {
+  async function loadAllOrders() {
     setLoading(true);
-    // Find buyer by email
-    const { data: buyerData } = await supabase
-      .from('buyers')
-      .select('id')
-      .eq('email', email)
-      .single();
-
-    if (!buyerData) {
+    const token = localStorage.getItem('buyer_token') || '';
+    const response = await fetch('/api/buyer/orders', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!response.ok) {
       setOrders([]);
       setLoading(false);
       return;
     }
-
-    const { data: orderData } = await supabase
-      .from('orders')
-      .select('*, product:products(*)')
-      .eq('buyer_id', buyerData.id)
-      .order('created_at', { ascending: false });
-
-    setOrders(orderData || []);
+    const data = await response.json();
+    setOrders(data.orders || []);
     setLoading(false);
   }
 
   async function selectOrder(order: Record<string, unknown>) {
     setSelectedOrder(order);
-    // Load assignments for this order
-    const { data: assignData } = await supabase
-      .from('account_assignments')
-      .select('*, stock_account:stock_accounts(*)')
-      .eq('order_id', order.id)
-      .eq('status', 'active');
-    setAssignments(assignData || []);
+    setAssignments((order.assignments as Array<Record<string, unknown>>) || []);
   }
 
   async function handleSearch(e: React.FormEvent) {
@@ -363,7 +347,10 @@ function PasswordReveal({ encrypted }: { encrypted: string }) {
     try {
       const res = await fetch('/api/buyer/decrypt', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
+        },
         body: JSON.stringify({ encrypted }),
       });
       const data = await res.json();

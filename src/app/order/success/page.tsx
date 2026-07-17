@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 
@@ -30,11 +29,12 @@ function PaymentSuccessPage() {
   const checkOrderStatus = useCallback(async () => {
     if (!orderNumber) return;
 
-    const { data: orderData } = await supabase
-      .from('orders')
-      .select('*, product:products(*)')
-      .eq('order_number', orderNumber)
-      .single();
+    const token = localStorage.getItem('buyer_token') || '';
+    const response = await fetch(`/api/buyer/orders?order=${encodeURIComponent(orderNumber)}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    const data = response.ok ? await response.json() : null;
+    const orderData = data?.orders?.[0];
 
     if (!orderData) {
       setStatus('error');
@@ -49,12 +49,7 @@ function PaymentSuccessPage() {
       // Mark local storage to disable newcomer promo in the future for this browser
       localStorage.setItem('pastipremium_newcomer_claimed', '1');
 
-      // Load account assignments
-      const { data: assignData } = await supabase
-        .from('account_assignments')
-        .select('*, stock_account:stock_accounts(*)')
-        .eq('order_id', orderData.id)
-        .eq('status', 'active');
+      const assignData = orderData.assignments;
 
       if (assignData && assignData.length > 0) {
         setAssignments(assignData);
@@ -412,7 +407,10 @@ function CredentialFieldDecrypt({ label, encrypted, revealLabel, copyLabel, copi
     try {
       const res = await fetch('/api/buyer/decrypt', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
+        },
         body: JSON.stringify({ encrypted }),
       });
       const data = await res.json();

@@ -6,6 +6,14 @@ import { sendTelegramNotification } from '@/lib/telegram';
 // Pakasir will POST to this endpoint when payment is completed
 export async function POST(request: NextRequest) {
   try {
+    const webhookSecret = process.env.PAKASIR_WEBHOOK_SECRET;
+    const suppliedSecret = request.headers.get('x-pakasir-webhook-secret');
+
+    // Fail closed until the gateway integration is configured with a secret.
+    if (!webhookSecret || !suppliedSecret || suppliedSecret !== webhookSecret) {
+      return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
+    }
+
     const payload = await request.json();
     const { amount, order_id, project, status, payment_method, completed_at } = payload;
 
@@ -43,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Validate amount matches
     if (Number(amount) !== Number(order.total_amount)) {
       console.error(`Amount mismatch: webhook=${amount}, order=${order.total_amount}`);
-      // Still process but log warning
+      return NextResponse.json({ error: 'Payment amount mismatch' }, { status: 400 });
     }
 
     if (status !== 'completed') {

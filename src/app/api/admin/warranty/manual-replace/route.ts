@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { decrypt } from '@/lib/crypto';
+import { getAdminFromRequest } from '@/lib/auth';
 
 /**
  * POST /api/admin/warranty/manual-replace
  * Admin manually assigns a backup account to resolve a warranty claim.
  */
 export async function POST(request: NextRequest) {
+  if (!getAdminFromRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { claim_id, backup_account_id, admin_notes } = await request.json();
 
@@ -118,6 +123,10 @@ export async function POST(request: NextRequest) {
  * Fetches available (unused) backup accounts for a given product
  */
 export async function GET(request: NextRequest) {
+  if (!getAdminFromRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('product_id');

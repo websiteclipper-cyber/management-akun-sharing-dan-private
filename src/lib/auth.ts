@@ -2,7 +2,7 @@ import crypto from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ENCRYPTION_KEY || 'change-this-secret-key';
 
-interface AdminPayload {
+export interface AdminPayload {
   id: number;
   name: string;
   email: string;
@@ -17,7 +17,7 @@ interface BuyerPayload {
 }
 
 type TokenPayload = {
-  type: 'admin' | 'buyer' | 'reseller';
+  type: 'admin' | 'buyer' | 'reseller' | 'admin_password_reset';
   id: number;
   name: string;
   email: string;
@@ -71,7 +71,12 @@ export function verifyToken(token: string): TokenPayload | null {
       .update(`${headerB64}.${payloadB64}`)
       .digest('base64url');
 
-    if (signature !== expectedSig) return null;
+    const signatureBuffer = Buffer.from(signature);
+    const expectedSignatureBuffer = Buffer.from(expectedSig);
+    if (
+      signatureBuffer.length !== expectedSignatureBuffer.length ||
+      !crypto.timingSafeEqual(signatureBuffer, expectedSignatureBuffer)
+    ) return null;
 
     // Decode payload
     const payload: TokenPayload = JSON.parse(base64UrlDecode(payloadB64));
@@ -96,6 +101,10 @@ export function getAdminFromRequest(request: Request): AdminPayload | null {
   if (!payload || payload.type !== 'admin') return null;
 
   return payload as AdminPayload;
+}
+
+export function isSuperAdmin(admin: AdminPayload | null): admin is AdminPayload {
+  return admin?.role === 'super_admin';
 }
 
 // Helper to extract and verify buyer token from request headers

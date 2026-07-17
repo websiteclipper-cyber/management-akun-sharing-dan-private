@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { adminUpdate } from '@/lib/adminApi';
+import { adminSelect, adminUpdate } from '@/lib/adminApi';
 
 export default function BuyersPage() {
   const [buyers, setBuyers] = useState<Array<Record<string, unknown>>>([]);
@@ -11,8 +10,10 @@ export default function BuyersPage() {
   useEffect(() => { loadBuyers(); }, []);
 
   async function loadBuyers() {
-    const { data } = await supabase.from('buyers').select('*').order('created_at', { ascending: false });
-    setBuyers(data || []);
+    const { data } = await adminSelect('buyers');
+    setBuyers((data || []).sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
+      String(b.created_at).localeCompare(String(a.created_at)),
+    ));
     setLoading(false);
   }
 
