@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
 interface BuyerSession {
@@ -32,6 +33,13 @@ function BuyerLookupPage() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
+
+  async function handleLogout() {
+    localStorage.removeItem('buyer_session');
+    localStorage.removeItem('buyer_token');
+    await supabase.auth.signOut({ scope: 'local' });
+    router.push('/buyer/login');
+  }
 
   useEffect(() => {
     const session = localStorage.getItem('buyer_session');
@@ -120,7 +128,7 @@ function BuyerLookupPage() {
               🛡️ Klaim Garansi
             </Link>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>👤 {buyer.name}</span>
-            <button className="btn btn-secondary btn-sm" onClick={() => { localStorage.removeItem('buyer_session'); router.push('/buyer/login'); }}>{t('header_logout')}</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => void handleLogout()}>{t('header_logout')}</button>
           </div>
         )}
       </header>

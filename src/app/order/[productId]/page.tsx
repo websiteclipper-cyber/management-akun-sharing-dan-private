@@ -14,6 +14,17 @@ interface BuyerSession {
   phone: string;
 }
 
+interface RefreshedBuyerSession {
+  token: string;
+  buyer: BuyerSession;
+}
+
+interface PromoInfo {
+  promo_price: number;
+  promo_label: string;
+  original_price: number;
+}
+
 interface DiscountInfo {
   campaign_id: string;
   code: string;
@@ -24,15 +35,75 @@ interface DiscountInfo {
   final_price: number;
 }
 
+function clearBuyerLocalSession() {
+  localStorage.removeItem('buyer_session');
+  localStorage.removeItem('buyer_token');
+}
+
+function readStoredBuyer(): BuyerSession | null {
+  try {
+    const session = localStorage.getItem('buyer_session');
+    return session ? JSON.parse(session) as BuyerSession : null;
+  } catch {
+    return null;
+  }
+}
+
+// This client-side check is only used to avoid sending a known-expired token.
+// The API remains responsible for verifying the token signature and buyer identity.
+function isBuyerTokenFresh(token: string): boolean {
+  try {
+    const payloadPart = token.split('.')[1];
+    if (!payloadPart) return false;
+
+    const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    const payload = JSON.parse(atob(padded)) as { type?: string; exp?: number };
+
+    return payload.type === 'buyer'
+      && typeof payload.exp === 'number'
+      && payload.exp > Math.floor(Date.now() / 1000) + 30;
+  } catch {
+    return false;
+  }
+}
+
+async function refreshBuyerAppSession(): Promise<RefreshedBuyerSession | null> {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session?.access_token) return null;
+
+    const response = await fetch('/api/buyer/auth/exchange', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${session.access_token}` },
+    });
+    const data = await response.json();
+
+    if (!response.ok || data.needs_profile || !data.token || !data.buyer) return null;
+
+    const refreshed = data as RefreshedBuyerSession;
+    localStorage.setItem('buyer_token', refreshed.token);
+    localStorage.setItem('buyer_session', JSON.stringify(refreshed.buyer));
+    return refreshed;
+  } catch {
+    return null;
+  }
+}
+
+function buildPakasirPaymentUrl(orderNumber: string, amount: number): string {
+  const redirectUrl = `${window.location.origin}/order/success?order=${orderNumber}`;
+  return `https://app.pakasir.com/pay/pastipremiumid1/${amount}?order_id=${orderNumber}&redirect=${encodeURIComponent(redirectUrl)}`;
+}
+
 export default function OrderPage() {
-  const { t, formatPrice, isIDR, currency } = useLocale();
+  const { t, formatPrice } = useLocale();
   const params = useParams();
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [buyer, setBuyer] = useState<BuyerSession | null>(null);
-  const [promo, setPromo] = useState<any>(null);
+  const [promo, setPromo] = useState<PromoInfo | null>(null);
   const [isNewcomer, setIsNewcomer] = useState(false);
   const [result, setResult] = useState<{ order_number: string; amount: number; discount_amount?: number; quantity?: number } | null>(null);
   const [error, setError] = useState('');
@@ -46,15 +117,22 @@ export default function OrderPage() {
   const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
-    const session = localStorage.getItem('buyer_session');
-    if (!session) {
-      router.push(`/buyer/login?redirect=/order/${params.productId}`);
-      return;
-    }
-    const parsedBuyer = JSON.parse(session);
-    setBuyer(parsedBuyer);
-
     async function load() {
+      let parsedBuyer = readStoredBuyer();
+      const storedToken = localStorage.getItem('buyer_token') || '';
+
+      if (!parsedBuyer || !isBuyerTokenFresh(storedToken)) {
+        const refreshed = await refreshBuyerAppSession();
+        if (!refreshed) {
+          clearBuyerLocalSession();
+          router.replace(`/buyer/login?redirect=/order/${params.productId}`);
+          return;
+        }
+        parsedBuyer = refreshed.buyer;
+      }
+
+      setBuyer(parsedBuyer);
+
       const { data } = await supabase.from('products').select('*').eq('id', params.productId).eq('status', 'active').single();
       setProduct(data);
       if (data) {
@@ -87,6 +165,17 @@ export default function OrderPage() {
     }
     load();
   }, [params.productId, router]);
+
+  function redirectToBuyerLogin() {
+    clearBuyerLocalSession();
+    router.replace(`/buyer/login?redirect=/order/${params.productId}`);
+  }
+
+  async function handleBuyerLogout() {
+    clearBuyerLocalSession();
+    await supabase.auth.signOut({ scope: 'local' });
+    router.push(`/buyer/login?redirect=/order/${params.productId}`);
+  }
 
   async function handleApplyDiscount() {
     if (!discountCode.trim() || !product || !buyer) return;
@@ -139,24 +228,64 @@ export default function OrderPage() {
         refCode = '';
       }
       const resellerToken = localStorage.getItem('reseller_token') || '';
-      const buyerToken = localStorage.getItem('buyer_token') || '';
-      const res = await fetch('/api/public/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${buyerToken}`,
-        },
-        body: JSON.stringify({
-          product_id: product!.id,
-          ref_code: refCode,
-          discount_code: discountInfo ? discountInfo.code : '',
-          quantity,
-          reseller_token: resellerToken,
-        }),
-      });
+      const orderPayload = {
+        product_id: product!.id,
+        ref_code: refCode,
+        discount_code: discountInfo ? discountInfo.code : '',
+        quantity,
+        reseller_token: resellerToken,
+      };
+
+      async function createOrder(token: string) {
+        return fetch('/api/public/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(orderPayload),
+        });
+      }
+
+      let buyerToken = localStorage.getItem('buyer_token') || '';
+      if (!isBuyerTokenFresh(buyerToken)) {
+        const refreshed = await refreshBuyerAppSession();
+        if (!refreshed) {
+          redirectToBuyerLogin();
+          return;
+        }
+        buyerToken = refreshed.token;
+      }
+
+      let res = await createOrder(buyerToken);
+
+      // The application token may have become invalid after a deployment or
+      // while the checkout page was left open. Refresh once, then retry only
+      // the request that was rejected before any order could be created.
+      if (res.status === 401) {
+        const refreshed = await refreshBuyerAppSession();
+        if (refreshed) res = await createOrder(refreshed.token);
+      }
+
       const data = await res.json();
-      if (!res.ok) { setError(data.error || t('order_submit_error')); setSubmitting(false); return; }
-      setResult({ order_number: data.order_number, amount: data.amount, discount_amount: data.discount_amount, quantity: data.quantity });
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          redirectToBuyerLogin();
+          return;
+        }
+        setError(data.error || t('order_submit_error'));
+        setSubmitting(false);
+        return;
+      }
+
+      const createdOrder = {
+        order_number: data.order_number,
+        amount: Number(data.amount),
+        discount_amount: data.discount_amount,
+        quantity: data.quantity,
+      };
+      setResult(createdOrder);
+      window.location.assign(buildPakasirPaymentUrl(createdOrder.order_number, createdOrder.amount));
     } catch {
       setError(t('order_connection_error'));
       setSubmitting(false);
@@ -165,14 +294,7 @@ export default function OrderPage() {
 
   function handlePayWithPakasir() {
     if (!result) return;
-    // Redirect to Pakasir payment page
-    const redirectUrl = `${window.location.origin}/order/success?order=${result.order_number}`;
-    const pakasirUrl = `https://app.pakasir.com/pay/pastipremiumid1/${result.amount}?order_id=${result.order_number}&redirect=${encodeURIComponent(redirectUrl)}`;
-    window.location.href = pakasirUrl;
-  }
-
-  function formatPriceIDR(price: number) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
+    window.location.assign(buildPakasirPaymentUrl(result.order_number, result.amount));
   }
 
   if (loading) return <div className="public-layout"><div className="loading-page"><div className="loading-spinner" /></div></div>;
@@ -206,7 +328,7 @@ export default function OrderPage() {
         {buyer && (
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>👤 {buyer.name}</span>
-            <button className="btn btn-secondary btn-sm" onClick={() => { localStorage.removeItem('buyer_session'); router.push('/buyer/login'); }}>Logout</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => void handleBuyerLogout()}>Logout</button>
           </div>
         )}
       </header>
@@ -651,7 +773,7 @@ export default function OrderPage() {
                 <li>Jika akun tidak bisa digunakan lagi (selain kasus terblokir), kami akan bantu alihkan ke aplikasi/platform alternatif sejenis dengan cara paling mudah dan cepat.</li>
                 <li><strong>Pembelian ini bersifat final.</strong></li>
               </ul>
-              <p style={{ marginBottom: '12px' }}>Dengan membeli, kamu secara otomatis setuju dengan semua ketentuan di atas, termasuk batasan garansi yang sudah dijelaskan. Mau lanjut beli? Ketik "SETUJU" atau centang kotak di bawah ini lalu langsung checkout sekarang. Kami siap proses secepat mungkin setelah konfirmasi kamu. Salam hangat, Tim pastipremium.my.id.</p>
+              <p style={{ marginBottom: '12px' }}>Dengan membeli, kamu secara otomatis setuju dengan semua ketentuan di atas, termasuk batasan garansi yang sudah dijelaskan. Mau lanjut beli? Ketik &quot;SETUJU&quot; atau centang kotak di bawah ini lalu langsung checkout sekarang. Kami siap proses secepat mungkin setelah konfirmasi kamu. Salam hangat, Tim pastipremium.my.id.</p>
               <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
                   <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: 'var(--brand-primary)' }} />
@@ -670,7 +792,7 @@ export default function OrderPage() {
               <button
                 className="btn btn-secondary btn-sm"
                 style={{ background: 'transparent', border: 'none', fontSize: '0.8rem', color: 'var(--text-muted)' }}
-                onClick={() => { localStorage.removeItem('buyer_session'); router.push(`/buyer/login?redirect=/order/${product.id}`); }}
+                onClick={() => void handleBuyerLogout()}
               >
                 {t('order_not_you', { name: buyer?.name || '' })}
               </button>
