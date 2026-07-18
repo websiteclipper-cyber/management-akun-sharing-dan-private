@@ -768,31 +768,38 @@ export default function OrderPage() {
             {/* ===== CUSTOM PRODUCT TERMS ===== */}
             {product.terms && (
               <div style={{
-                background: 'rgba(59, 130, 246, 0.05)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid rgba(59, 130, 246, 0.2)',
-                padding: '16px',
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.05))',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid rgba(59, 130, 246, 0.22)',
+                padding: '18px',
                 marginBottom: '20px',
-                fontSize: '0.85rem',
-                lineHeight: '1.5',
                 color: 'var(--text-primary)',
-                animation: 'fadeIn 0.3s ease'
+                animation: 'fadeIn 0.3s ease',
               }}>
                 <h4 style={{ color: 'var(--accent)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
                   <span>📋</span> Ketentuan & Catatan Khusus {product.name}
                 </h4>
-                <div style={{ whiteSpace: 'pre-wrap', margin: 0, color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
-                  {product.terms}
+                <div style={{ display: 'grid', gap: '8px' }}>
+                  {product.terms.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map((line, index) => (
+                    <div key={`${line}-${index}`} style={{
+                      display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '10px 12px',
+                      borderRadius: '10px', background: 'rgba(255,255,255,0.72)', color: 'var(--text-secondary)',
+                      fontSize: '0.82rem', lineHeight: 1.55,
+                    }}>
+                      <span style={{ color: 'var(--accent)', fontWeight: 800, lineHeight: 1.45 }}>•</span>
+                      <span>{line.replace(/^[-•\d.\s]+/, '')}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
             {/* ===== TERMS AND CONDITIONS ===== */}
             <div style={{
-              background: 'rgba(255, 59, 48, 0.05)',
+              background: 'linear-gradient(145deg, rgba(255, 59, 48, 0.08), rgba(255, 149, 0, 0.04))',
               borderRadius: 'var(--radius-lg)',
-              border: '1px solid rgba(255, 59, 48, 0.2)',
-              padding: '16px',
+              border: '1px solid rgba(255, 59, 48, 0.24)',
+              padding: '20px',
               marginBottom: '20px',
               fontSize: '0.85rem',
               lineHeight: '1.5',
@@ -801,21 +808,37 @@ export default function OrderPage() {
               <h4 style={{ color: 'var(--brand-danger)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span>⚠️</span> Catatan Penting & Ketentuan Garansi untuk Pembeli Akun Premium
               </h4>
-              <p style={{ marginBottom: '8px' }}>Halo! Terima kasih sudah memilih kami untuk mendapatkan akun premium dengan harga jauh lebih murah dibanding harga resminya. Sebelum kamu lanjut checkout, mohon baca catatan ini dengan teliti ya:</p>
-              <ul style={{ paddingLeft: '20px', marginBottom: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <li>Akun ini diperoleh melalui promo trial resmi yang sedang berjalan (event harga murah terbatas waktu). Harga super hemat yang kamu bayar ini karena memanfaatkan kesempatan trial tersebut.</li>
-                <li><strong>Garansi yang berlaku hanya 1 jenis saja:</strong> Jika masa aktif akun habis secara normal (expired sesuai masa trial), kami akan ganti dengan akun baru gratis.</li>
-                <li><strong>Tidak ada garansi jika akun terblokir / dibanned oleh pihak resmi platform.</strong> Kondisi ini tidak tercover garansi.</li>
-                <li>Setelah event/trial ini berakhir, kami tidak bisa menjamin akun tetap aktif selamanya karena sepenuhnya bergantung pada kebijakan platform.</li>
-                <li>Jika akun tidak bisa digunakan lagi (selain kasus terblokir), kami akan bantu alihkan ke aplikasi/platform alternatif sejenis dengan cara paling mudah dan cepat.</li>
-                <li><strong>Pembelian ini bersifat final.</strong></li>
-              </ul>
-              <p style={{ marginBottom: '12px' }}>Dengan membeli, kamu secara otomatis setuju dengan semua ketentuan di atas, termasuk batasan garansi yang sudah dijelaskan. Mau lanjut beli? Ketik &quot;SETUJU&quot; atau centang kotak di bawah ini lalu langsung checkout sekarang. Kami siap proses secepat mungkin setelah konfirmasi kamu. Salam hangat, Tim pastipremium.my.id.</p>
-              <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600 }}>
-                  <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: 'var(--brand-primary)' }} />
-                  Saya Setuju dengan ketentuan di atas
+              <p style={{ margin: '0 0 14px', fontSize: '0.84rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+                Sebelum melanjutkan pembayaran, pastikan Anda memahami poin-poin berikut.
+              </p>
+              <div style={{ display: 'grid', gap: '9px', marginBottom: '16px' }}>
+                {[
+                  { text: 'Garansi penggantian diberikan jika akun expired normal sebelum waktunya.', tone: 'success' },
+                  { text: 'Akun yang dibanned atau diblokir platform tidak termasuk garansi.', tone: 'danger' },
+                  { text: 'Ketersediaan layanan setelah promo berakhir mengikuti kebijakan platform.', tone: 'neutral' },
+                  { text: 'Jika layanan bermasalah selain banned, kami bantu alihkan ke alternatif sejenis.', tone: 'info' },
+                  { text: 'Pembelian bersifat final sesuai ketentuan garansi.', tone: 'danger' },
+                ].map(({ text, tone }) => {
+                  const color = tone === 'success' ? 'var(--brand-success)' : tone === 'danger' ? 'var(--brand-danger)' : tone === 'info' ? 'var(--accent)' : 'var(--text-muted)';
+                  return (
+                    <div key={text} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '0.81rem', lineHeight: 1.55, color: 'var(--text-secondary)' }}>
+                      <span style={{ color, fontWeight: 900, lineHeight: 1.4 }}>{tone === 'danger' ? '×' : '✓'}</span>
+                      <span>{text}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{
+                background: agreed ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.8)',
+                padding: '14px', borderRadius: '12px',
+                border: `1px solid ${agreed ? 'rgba(34, 197, 94, 0.35)' : 'var(--border-primary)'}`,
+                transition: 'all 0.2s ease',
+              }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.87rem', color: agreed ? 'var(--brand-success)' : 'var(--text-primary)' }}>
+                  <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: '20px', height: '20px', accentColor: 'var(--brand-success)', flexShrink: 0 }} />
+                  {agreed ? 'Saya sudah membaca dan menyetujui ketentuan' : 'Saya setuju dengan seluruh ketentuan di atas'}
                 </label>
+                {!agreed && <p style={{ margin: '6px 0 0 30px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Centang untuk membuka tombol pembayaran.</p>}
               </div>
             </div>
 
