@@ -3,6 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { signToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
+import {
+  checkAdminAuthRateLimit,
+  cleanupAdminAuthEvents,
+  getAdminAuthFingerprint,
+  normalizeAdminEmail,
+  recordAdminAuthEvent,
+} from '@/lib/adminAuthSecurity';
 
 const GENERIC_RESPONSE = {
   success: true,
@@ -12,11 +19,24 @@ const GENERIC_RESPONSE = {
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
-    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const normalizedEmail = normalizeAdminEmail(email);
 
     if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return NextResponse.json(GENERIC_RESPONSE);
     }
+
+    const fingerprint = getAdminAuthFingerprint(request, normalizedEmail);
+    const rateLimit = await checkAdminAuthRateLimit(fingerprint, {
+      eventType: 'password_reset_request',
+      windowMinutes: 60,
+      maxPerEmail: 3,
+      maxPerIp: 10,
+    });
+
+    if (rateLimit.limited) return NextResponse.json(GENERIC_RESPONSE);
+
+    await recordAdminAuthEvent(fingerprint, 'password_reset_request');
+    await cleanupAdminAuthEvents();
 
     const { data: admin } = await supabaseAdmin
       .from('admins')
@@ -43,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     const resetUrl = new URL(
       process.env.ADMIN_PASSWORD_RESET_REDIRECT_URL ||
-        'https://pastipremium.my.id/admin/reset-password'
+        'https://www.pastipremium.my.id/admin/reset-password'
     );
     resetUrl.searchParams.set('token', token);
 

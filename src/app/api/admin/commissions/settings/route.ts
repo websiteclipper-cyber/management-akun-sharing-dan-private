@@ -4,7 +4,7 @@ import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
 
 // GET: Fetch current global commission settings (from the first active reseller as template)
 export async function GET(request: Request) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
       .order('name');
 
     // Get product-specific commissions from the template reseller
-    let productCommissions: Record<number, { commission_type: string; commission_value: number }> = {};
+    const productCommissions: Record<number, { commission_type: string; commission_value: number }> = {};
 
     if (templateReseller) {
       const { data: firstActiveReseller } = await supabase
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
 
 // POST: Save commission settings and apply to ALL resellers
 export async function POST(request: Request) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

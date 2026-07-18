@@ -4,7 +4,7 @@ import { decrypt } from '@/lib/crypto';
 import { getAdminFromRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
-  if (!getAdminFromRequest(request)) {
+  if (!(await getAdminFromRequest(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

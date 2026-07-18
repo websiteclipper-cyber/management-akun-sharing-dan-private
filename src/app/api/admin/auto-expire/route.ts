@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { sendTelegramNotification } from '@/lib/telegram';
+import { getAdminFromRequest } from '@/lib/auth';
 
 // This endpoint can be called by:
 // 1. Vercel Cron (vercel.json cron schedule)
@@ -17,10 +18,7 @@ export async function POST(request: NextRequest) {
     if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
       // Authorized via cron secret
     } else if (authHeader?.startsWith('Bearer ')) {
-      // Check admin token
-      const { verifyToken } = await import('@/lib/auth');
-      const payload = verifyToken(authHeader.slice(7));
-      if (!payload || payload.type !== 'admin') {
+      if (!(await getAdminFromRequest(request))) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
     } else {

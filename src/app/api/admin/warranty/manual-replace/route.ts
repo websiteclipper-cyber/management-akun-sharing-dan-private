@@ -8,7 +8,7 @@ import { getAdminFromRequest } from '@/lib/auth';
  * Admin manually assigns a backup account to resolve a warranty claim.
  */
 export async function POST(request: NextRequest) {
-  if (!getAdminFromRequest(request)) {
+  if (!(await getAdminFromRequest(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -109,10 +109,11 @@ export async function POST(request: NextRequest) {
       new_password: newPasswordDecrypted,
       message: 'Akun berhasil diganti secara manual',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Manual replace error:', error);
+    const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem';
     return NextResponse.json(
-      { error: error.message || 'Terjadi kesalahan sistem' },
+      { error: message },
       { status: 500 }
     );
   }
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
  * Fetches available (unused) backup accounts for a given product
  */
 export async function GET(request: NextRequest) {
-  if (!getAdminFromRequest(request)) {
+  if (!(await getAdminFromRequest(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -147,7 +148,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(data || []);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

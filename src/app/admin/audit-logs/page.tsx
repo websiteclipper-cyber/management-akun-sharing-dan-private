@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<Array<Record<string, unknown>>>([]);
@@ -10,13 +9,16 @@ export default function AuditLogsPage() {
   useEffect(() => { loadLogs(); }, []);
 
   async function loadLogs() {
-    const { data } = await supabase
-      .from('audit_logs')
-      .select('*, admin:admins(name)')
-      .order('created_at', { ascending: false })
-      .limit(100);
-    setLogs(data || []);
-    setLoading(false);
+    try {
+      const token = localStorage.getItem('admin_token') || '';
+      const response = await fetch('/api/admin/audit-logs', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      setLogs(response.ok ? data.logs || [] : []);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

@@ -1,12 +1,20 @@
 import crypto from 'crypto';
+import { supabaseAdmin } from '@/lib/supabase';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.ENCRYPTION_KEY || 'change-this-secret-key';
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET || process.env.ENCRYPTION_KEY;
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT_SECRET or ENCRYPTION_KEY must be at least 32 characters.');
+  }
+  return secret;
+}
 
 export interface AdminPayload {
   id: number;
   name: string;
   email: string;
   role: string;
+  tokenVersion: number;
 }
 
 interface BuyerPayload {
@@ -25,6 +33,7 @@ type TokenPayload = {
   iat: number;
   // Admin-specific
   role?: string;
+  tokenVersion?: number;
   // Buyer-specific
   phone?: string;
   [key: string]: unknown;
@@ -51,7 +60,7 @@ export function signToken(payload: Omit<TokenPayload, 'iat' | 'exp'>, expiresInH
   const headerB64 = base64UrlEncode(JSON.stringify(header));
   const payloadB64 = base64UrlEncode(JSON.stringify(fullPayload));
   const signature = crypto
-    .createHmac('sha256', JWT_SECRET)
+    .createHmac('sha256', getJwtSecret())
     .update(`${headerB64}.${payloadB64}`)
     .digest('base64url');
 
@@ -65,14 +74,20 @@ export function verifyToken(token: string): TokenPayload | null {
 
     const [headerB64, payloadB64, signature] = parts;
 
+    const header = JSON.parse(base64UrlDecode(headerB64)) as {
+      alg?: string;
+      typ?: string;
+    };
+    if (header.alg !== 'HS256' || header.typ !== 'JWT') return null;
+
     // Verify signature
     const expectedSig = crypto
-      .createHmac('sha256', JWT_SECRET)
+      .createHmac('sha256', getJwtSecret())
       .update(`${headerB64}.${payloadB64}`)
       .digest('base64url');
 
-    const signatureBuffer = Buffer.from(signature);
-    const expectedSignatureBuffer = Buffer.from(expectedSig);
+    const signatureBuffer = Buffer.from(signature, 'base64url');
+    const expectedSignatureBuffer = Buffer.from(expectedSig, 'base64url');
     if (
       signatureBuffer.length !== expectedSignatureBuffer.length ||
       !crypto.timingSafeEqual(signatureBuffer, expectedSignatureBuffer)
@@ -83,7 +98,11 @@ export function verifyToken(token: string): TokenPayload | null {
 
     // Check expiration
     const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) return null;
+    if (
+      !Number.isInteger(payload.iat) ||
+      !Number.isInteger(payload.exp) ||
+      payload.exp <= now
+    ) return null;
 
     return payload;
   } catch {
@@ -92,15 +111,39 @@ export function verifyToken(token: string): TokenPayload | null {
 }
 
 // Helper to extract and verify admin token from request headers
-export function getAdminFromRequest(request: Request): AdminPayload | null {
+export async function getAdminFromRequest(request: Request): Promise<AdminPayload | null> {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
 
   const token = authHeader.slice(7);
   const payload = verifyToken(token);
-  if (!payload || payload.type !== 'admin') return null;
+  if (
+    !payload ||
+    payload.type !== 'admin' ||
+    !Number.isInteger(payload.tokenVersion)
+  ) return null;
 
-  return payload as AdminPayload;
+  const { data: admin, error } = await supabaseAdmin
+    .from('admins')
+    .select('id, name, email, role, status, token_version')
+    .eq('id', payload.id)
+    .maybeSingle();
+
+  if (
+    error ||
+    !admin ||
+    admin.status !== 'active' ||
+    String(admin.email || '').toLowerCase() !== payload.email.toLowerCase() ||
+    Number(admin.token_version) !== payload.tokenVersion
+  ) return null;
+
+  return {
+    id: Number(admin.id),
+    name: String(admin.name || payload.name || 'Admin'),
+    email: String(admin.email),
+    role: String(admin.role),
+    tokenVersion: Number(admin.token_version),
+  };
 }
 
 export function isSuperAdmin(admin: AdminPayload | null): admin is AdminPayload {

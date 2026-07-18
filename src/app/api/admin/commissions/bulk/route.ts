@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
 
 export async function POST(request: Request) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   if (!isSuperAdmin(admin)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
@@ -40,7 +40,8 @@ export async function POST(request: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, count: data.length });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

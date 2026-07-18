@@ -21,7 +21,7 @@ async function ensureTable() {
 
 // GET: Fetch all settings
 export async function GET(request: Request) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
 
 // POST: Update settings
 export async function POST(request: Request) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
