@@ -45,14 +45,14 @@ export default function KetentuanPage() {
   const productsInCategory = products.filter(p => (p.platform_name || 'Lainnya') === selectedCategory);
 
   return (
-    <div style={{
+    <div className="terms-page" style={{
       minHeight: '100vh',
-      background: '#fbfbfd',
+      background: 'radial-gradient(circle at top, #fff7ed 0, #fbfbfd 34%, #f8fafc 100%)',
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif",
       color: '#1d1d1f',
     }}>
       {/* Header */}
-      <header style={{
+      <header className="terms-header" style={{
         position: 'sticky', top: 0, zIndex: 100,
         background: 'rgba(255,255,255,0.72)',
         backdropFilter: 'blur(20px) saturate(180%)',
@@ -79,10 +79,10 @@ export default function KetentuanPage() {
       </header>
 
       {/* Page Content */}
-      <main style={{ maxWidth: '760px', margin: '0 auto', padding: '48px 24px 80px' }}>
+      <main className="terms-main" style={{ maxWidth: '860px', margin: '0 auto', padding: '56px 24px 88px' }}>
 
         {/* Page Title */}
-        <div style={{ marginBottom: '40px', textAlign: 'center' }}>
+        <div className="terms-hero" style={{ marginBottom: '36px', textAlign: 'center' }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: '64px', height: '64px', borderRadius: '20px',
@@ -102,15 +102,23 @@ export default function KetentuanPage() {
           <p style={{ fontSize: '1rem', color: '#86868b', fontWeight: 400, maxWidth: '500px', margin: '0 auto' }}>
             Kebijakan penting yang perlu Anda ketahui sebelum menggunakan layanan premium kami.
           </p>
+          <div className="terms-hero-tags" style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '20px' }}>
+            {['Garansi transparan', 'Aturan per produk', 'Bantuan klaim'].map((label) => (
+              <span key={label} style={{
+                padding: '7px 11px', borderRadius: '999px', background: 'rgba(255,255,255,0.78)',
+                border: '1px solid rgba(0,0,0,0.07)', color: '#555', fontSize: '0.76rem', fontWeight: 650,
+              }}>{label}</span>
+            ))}
+          </div>
         </div>
 
         {/* Greeting Card */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.6)',
+        <div className="terms-intro-card" style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.92), rgba(239,246,255,0.84))',
           backdropFilter: 'blur(12px)',
           border: '1px solid rgba(0,0,0,0.05)',
-          borderRadius: '20px', padding: '24px', marginBottom: '32px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.02)'
+          borderRadius: '20px', padding: '22px 24px', marginBottom: '32px',
+          boxShadow: '0 10px 28px rgba(37,99,235,0.06)'
         }}>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
             <div style={{ color: '#0071e3', marginTop: '2px' }}><FiInfo size={24} /></div>
@@ -122,7 +130,7 @@ export default function KetentuanPage() {
 
         {/* Section - Garansi */}
         <section style={{ marginBottom: '32px' }}>
-          <div style={{
+          <div className="terms-card" style={{
             background: '#ffffff',
             border: '1px solid rgba(0,0,0,0.06)',
             borderRadius: '24px',
@@ -184,7 +192,7 @@ export default function KetentuanPage() {
 
         {/* Interactive Warranty Checker */}
         <section style={{ marginBottom: '32px' }}>
-          <div style={{
+          <div className="terms-card" style={{
             background: 'linear-gradient(145deg, #ffffff, #fcfcfd)',
             border: '1px solid rgba(0,0,0,0.06)',
             borderRadius: '24px',
@@ -286,7 +294,7 @@ export default function KetentuanPage() {
 
         {/* Section - Kebijakan Kelangsungan Layanan */}
         <section style={{ marginBottom: '32px' }}>
-          <div style={{
+          <div className="terms-card" style={{
             background: '#ffffff',
             border: '1px solid rgba(0,0,0,0.06)',
             borderRadius: '24px',
@@ -315,7 +323,7 @@ export default function KetentuanPage() {
         {/* Section - Product-specific Terms (Interactive) */}
         {!loading && products.length > 0 && (
           <section style={{ marginBottom: '40px' }}>
-            <div style={{
+            <div className="terms-card product-terms-card" style={{
               background: '#ffffff',
               border: '1px solid rgba(0,0,0,0.06)',
               borderRadius: '24px',
@@ -454,14 +462,17 @@ export default function KetentuanPage() {
                       Tipe: {selectedProduct.account_type}
                     </span>
                   </div>
-                  <div style={{
-                    fontSize: '0.9rem',
-                    color: '#3d3d3d',
-                    lineHeight: 1.7,
-                    whiteSpace: 'pre-wrap',
-                    margin: 0,
-                  }}>
-                    {selectedProduct.terms}
+                  <div style={{ display: 'grid', gap: '9px' }}>
+                    {(selectedProduct.terms || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean).map((line, index) => (
+                      <div key={`${line}-${index}`} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '11px 12px',
+                        borderRadius: '10px', background: 'rgba(255,255,255,0.75)', color: '#3d3d3d',
+                        fontSize: '0.88rem', lineHeight: 1.55,
+                      }}>
+                        <span style={{ color: '#6c5ce7', fontWeight: 800, lineHeight: 1.4 }}>•</span>
+                        <span>{line.replace(/^[-•\d.\s]+/, '')}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -470,7 +481,7 @@ export default function KetentuanPage() {
         )}
 
         {/* Summary Box */}
-        <div style={{
+        <div className="terms-summary" style={{
           background: 'linear-gradient(135deg, #1d1d1f, #2d2d2f)',
           borderRadius: '24px', padding: '36px',
           marginBottom: '40px', color: '#fff',
@@ -496,7 +507,7 @@ export default function KetentuanPage() {
         </div>
 
         {/* CTA */}
-        <div style={{ textAlign: 'center' }}>
+        <div className="terms-cta" style={{ textAlign: 'center' }}>
           <p style={{ fontSize: '0.95rem', color: '#86868b', marginBottom: '24px' }}>
             Punya pertanyaan lain? Tim CS kami siap membantu Anda.
           </p>
@@ -541,6 +552,25 @@ export default function KetentuanPage() {
           </p>
         </div>
       </main>
+      <style jsx>{`
+        .terms-page :global(button), .terms-page :global(a) { -webkit-tap-highlight-color: transparent; }
+        .terms-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .terms-card:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(15, 23, 42, 0.07) !important; }
+        .terms-cta :global(a) { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .terms-cta :global(a):hover { transform: translateY(-2px); }
+        @media (max-width: 640px) {
+          .terms-header { height: 52px !important; }
+          .terms-main { padding: 36px 16px 64px !important; }
+          .terms-hero { text-align: left !important; margin-bottom: 28px !important; }
+          .terms-hero > div:first-child { margin-bottom: 16px !important; }
+          .terms-hero h1 { font-size: 1.85rem !important; }
+          .terms-hero p { margin-left: 0 !important; }
+          .terms-hero-tags { justify-content: flex-start !important; }
+          .terms-intro-card, .terms-card, .terms-summary { padding: 20px !important; border-radius: 18px !important; }
+          .product-terms-card { padding: 20px !important; }
+          .terms-cta :global(a) { width: 100%; justify-content: center; padding: 14px 20px !important; }
+        }
+      `}</style>
     </div>
   );
 }
