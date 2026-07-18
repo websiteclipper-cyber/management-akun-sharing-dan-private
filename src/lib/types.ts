@@ -213,12 +213,15 @@ export interface ResellerCommission {
 
 // ===== Discount Campaigns =====
 export type DiscountType = 'fixed' | 'percentage';
+export type FixedDiscountMode = 'per_item' | 'per_order';
 
 export interface DiscountCampaign {
   id: string;
   code: string;
   discount_type: DiscountType;
   discount_value: number;
+  min_quantity: number;
+  fixed_discount_mode: FixedDiscountMode;
   product_id: number | null;
   max_uses: number | null;
   current_uses: number;

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { useLocale } from '@/lib/locale-context';
 
 interface ActiveCampaign {
@@ -9,7 +8,8 @@ interface ActiveCampaign {
   code: string;
   discount_type: 'fixed' | 'percentage';
   discount_value: number;
-  product_id: number | null;
+  min_quantity: number;
+  fixed_discount_mode: 'per_item' | 'per_order';
   valid_from: string;
   valid_until: string;
   product?: {
@@ -17,10 +17,9 @@ interface ActiveCampaign {
     price: number;
     platform_name: string;
   };
-  // We'll compute these
-  original_price?: number;
-  final_price?: number;
-  promo_price?: number;
+  original_price: number;
+  final_price: number;
+  discount_amount: number;
 }
 
 export default function PromoPopup() {
@@ -30,60 +29,25 @@ export default function PromoPopup() {
   const [copied, setCopied] = useState(false);
   const [closing, setClosing] = useState(false);
 
-  async function loadActiveCampaign() {
-    const now = new Date().toISOString();
-
-    // Fetch the newest active campaign that has a product_id (specific product promo)
-    const { data } = await supabase
-      .from('discount_campaigns')
-      .select('*, product:products(name, price, platform_name)')
-      .eq('is_active', true)
-      .lte('valid_from', now)
-      .gte('valid_until', now)
-      .not('product_id', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (!data || !data.product) return;
-
-    const product = data.product as unknown as { name: string; price: number; platform_name: string };
-    const originalPrice = product.price;
-
-    // Check for active promo (sale price) on the product
-    const { data: promoData } = await supabase
-      .from('promos')
-      .select('promo_price')
-      .eq('product_id', data.product_id)
-      .eq('is_active', true)
-      .lte('start_date', now)
-      .gte('end_date', now)
-      .maybeSingle();
-
-    const basePrice = promoData ? Number(promoData.promo_price) : originalPrice;
-
-    let discountAmount = 0;
-    if (data.discount_type === 'percentage') {
-      discountAmount = Math.round(basePrice * data.discount_value / 100);
-    } else {
-      discountAmount = Math.min(data.discount_value, basePrice);
-    }
-
-    const finalPrice = basePrice - discountAmount;
-
-    setCampaign({
-      ...data,
-      product: product,
-      original_price: basePrice,
-      final_price: finalPrice,
-    });
-
-    // Small delay before showing for smooth entrance
-    setTimeout(() => setVisible(true), 500);
-  }
-
   useEffect(() => {
-    loadActiveCampaign();
+    let cancelled = false;
+    let showTimer: ReturnType<typeof setTimeout> | undefined;
+
+    fetch('/api/public/discounts/featured', { cache: 'no-store' })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (cancelled || !data?.campaign) return;
+        setCampaign(data.campaign as ActiveCampaign);
+        showTimer = setTimeout(() => {
+          if (!cancelled) setVisible(true);
+        }, 500);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+      if (showTimer) clearTimeout(showTimer);
+    };
   }, []);
 
   function handleClose() {
@@ -281,6 +245,16 @@ export default function PromoPopup() {
             }}>
               {campaign.product?.name}
             </div>
+            {campaign.min_quantity > 1 && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                background: '#fff7d6', color: '#8a6500', borderRadius: '999px',
+                padding: '5px 12px', fontSize: '0.72rem', fontWeight: 800,
+                marginBottom: '14px',
+              }}>
+                Berlaku minimal beli {campaign.min_quantity} item
+              </div>
+            )}
 
             {/* Price Comparison */}
             <div style={{
@@ -307,7 +281,7 @@ export default function PromoPopup() {
                   textDecorationColor: '#e74c3c',
                   textDecorationThickness: '2px',
                 }}>
-                  {formatPrice(campaign.original_price || 0)}
+                  {formatPrice(campaign.original_price)}
                 </div>
               </div>
 
@@ -331,7 +305,7 @@ export default function PromoPopup() {
                   fontWeight: 900,
                   color: '#111',
                 }}>
-                  {formatPrice(campaign.final_price || 0)}
+                  {formatPrice(campaign.final_price)}
                 </div>
               </div>
             </div>
@@ -349,7 +323,7 @@ export default function PromoPopup() {
               fontWeight: 700,
               marginBottom: '20px',
             }}>
-              {t('promo_save')} {formatPrice((campaign.original_price || 0) - (campaign.final_price || 0))}
+              {t('promo_save')} {formatPrice(campaign.discount_amount)}
             </div>
 
             {/* Copy Button */}
