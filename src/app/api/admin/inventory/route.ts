@@ -3,7 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { getAdminFromRequest } from '@/lib/auth';
 
 export async function GET(request: Request) {
-  if (!getAdminFromRequest(request)) {
+  if (!(await getAdminFromRequest(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -80,23 +80,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return;
     }
 
-    if (session) {
-      // Verify JWT token if available
-      if (token) {
-        fetch('/api/admin/auth/verify', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }).then(res => {
-          if (!res.ok) {
-            // Token expired/invalid — redirect to login
-            localStorage.removeItem('admin_session');
-            localStorage.removeItem('admin_token');
-            router.push('/admin/login');
-          }
-        }).catch(() => {
-          // Network error — allow usage but log warning
-          console.warn('Could not verify auth token');
-        });
-      }
+    if (session && !token) {
+      localStorage.removeItem('admin_session');
+      router.push('/admin/login');
+      return;
+    }
+
+    if (session && token) {
+      fetch('/api/admin/auth/verify', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      }).then(res => {
+        if (!res.ok) {
+          localStorage.removeItem('admin_session');
+          localStorage.removeItem('admin_token');
+          router.push('/admin/login');
+        }
+      }).catch(() => {
+        // Every sensitive API call still performs a server-side admin check.
+        console.warn('Could not verify auth token');
+      });
     }
   }, [isPublicAuthPath, pathname, router]);
 

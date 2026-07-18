@@ -6,7 +6,7 @@ import { getAdminFromRequest } from '@/lib/auth';
 // Password is decrypted only after the application admin token is verified.
 
 export async function GET(request: NextRequest) {
-  if (!getAdminFromRequest(request)) {
+  if (!(await getAdminFromRequest(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

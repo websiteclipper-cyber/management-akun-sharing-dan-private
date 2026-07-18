@@ -7,7 +7,7 @@ import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
  * Call POST /api/admin/migrate with admin token to run
  */
 export async function POST(request: Request) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

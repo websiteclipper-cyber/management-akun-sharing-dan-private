@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     const { data: admin } = await supabaseAdmin
       .from('admins')
-      .select('id, email, password_hash')
+      .select('id, email, password_hash, token_version')
       .eq('id', payload.id)
       .ilike('email', payload.email)
       .eq('status', 'active')
@@ -58,11 +58,16 @@ export async function POST(request: NextRequest) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+    const currentTokenVersion = Number(admin.token_version || 0);
     const { data: updated, error } = await supabaseAdmin
       .from('admins')
-      .update({ password_hash: passwordHash })
+      .update({
+        password_hash: passwordHash,
+        token_version: currentTokenVersion + 1,
+      })
       .eq('id', admin.id)
       .eq('password_hash', admin.password_hash)
+      .eq('token_version', currentTokenVersion)
       .select('id')
       .maybeSingle();
 

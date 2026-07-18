@@ -27,7 +27,7 @@ async function ensureTable() {
 
 // GET: List all leaderboard entries
 export async function GET(request: NextRequest) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
 // POST: Create new entry
 export async function POST(request: NextRequest) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
 
 // PUT: Update entry
 export async function PUT(request: NextRequest) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -133,7 +133,7 @@ export async function PUT(request: NextRequest) {
 
 // PATCH: Manual reset — randomize commissions
 export async function PATCH(request: NextRequest) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -211,7 +211,7 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE: Remove entry
 export async function DELETE(request: NextRequest) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

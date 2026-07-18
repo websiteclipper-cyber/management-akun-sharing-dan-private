@@ -5,7 +5,7 @@ import { getAdminFromRequest } from '@/lib/auth';
 // Generic admin CRUD endpoint — all writes go through here
 // Verifies admin JWT before executing any operation
 export async function POST(request: Request) {
-  const admin = getAdminFromRequest(request);
+  const admin = await getAdminFromRequest(request);
   if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
