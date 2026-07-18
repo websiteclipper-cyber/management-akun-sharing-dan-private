@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { sendTelegramNotification } from '@/lib/telegram';
 import { getBuyerFromRequest, verifyToken } from '@/lib/auth';
+import {
+  calculateCampaignDiscount,
+  getMinimumQuantity,
+  normalizeOrderQuantity,
+} from '@/lib/discount-pricing';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { product_id, ref_code, discount_code, quantity: rawQty, reseller_token } = await request.json();
-    const quantity = Math.min(10, Math.max(1, Math.floor(Number(rawQty) || 1)));
+    const quantity = normalizeOrderQuantity(rawQty);
 
     if (!product_id) {
       return NextResponse.json({ error: 'Data tidak lengkap' }, { status: 400 });
@@ -67,33 +72,6 @@ export async function POST(request: NextRequest) {
         isNewcomer = false; // Block newcomer price! Suspected abuse.
         console.warn(`[Anti-Abuse] Blocked newcomer promo for IP ${clientIp}`);
       }
-    }
-
-    // Anti-spam: Check if buyer already has a pending order for the same product within last 10 minutes
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-    const { data: existingOrder } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('buyer_id', buyer.id)
-      .eq('product_id', product.id)
-      .eq('quantity', quantity)
-      .eq('payment_status', 'pending_payment')
-      .gte('created_at', tenMinutesAgo)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (existingOrder) {
-      // Return existing pending order instead of creating a new one
-      return NextResponse.json({
-        order_id: existingOrder.id,
-        order_number: existingOrder.order_number,
-        payment_status: existingOrder.payment_status,
-        order_status: existingOrder.order_status,
-        amount: existingOrder.total_amount,
-        reused: true,
-        is_newcomer: isNewcomer,
-      });
     }
 
     // Generate order number
@@ -188,6 +166,7 @@ export async function POST(request: NextRequest) {
     // ===== DISCOUNT CODE HANDLING =====
     let discountCampaignId: string | null = null;
     let discountAmount = 0;
+    let campaignToClaim: { id: string; currentUses: number } | null = null;
 
     if (discount_code) {
       const trimmedCode = discount_code.toUpperCase().trim();
@@ -202,51 +181,123 @@ export async function POST(request: NextRequest) {
         .gte('valid_until', now)
         .maybeSingle();
 
-      if (campaign) {
-        // Check product restriction
-        const productMatch = !campaign.product_id || campaign.product_id === product.id;
-
-        // Check usage quota
-        const quotaOk = campaign.max_uses === null || campaign.current_uses < campaign.max_uses;
-
-        // Check buyer hasn't used this code before
-        let buyerUsedBefore = false;
-        const { data: prevOrder } = await supabase
-          .from('orders')
-          .select('id')
-          .eq('buyer_id', buyer.id)
-          .eq('discount_campaign_id', campaign.id)
-          .in('payment_status', ['paid', 'pending_payment'])
-          .maybeSingle();
-
-        if (prevOrder) buyerUsedBefore = true;
-
-        if (productMatch && quotaOk && !buyerUsedBefore) {
-          // Calculate discount on total base price
-          if (campaign.discount_type === 'percentage') {
-            discountAmount = Math.round(totalBasePrice * Number(campaign.discount_value) / 100);
-          } else {
-            discountAmount = Number(campaign.discount_value) * quantity;
-          }
-          // Cap discount at total base price
-          discountAmount = Math.min(discountAmount, totalBasePrice);
-          discountCampaignId = campaign.id;
-
-          // Increment campaign usage atomically
-          await supabase
-            .from('discount_campaigns')
-            .update({
-              current_uses: campaign.current_uses + 1,
-              updated_at: now,
-            })
-            .eq('id', campaign.id);
-        }
-        // If conditions not met, silently proceed without discount
-        // (validation was already done on the frontend)
+      if (!campaign) {
+        return NextResponse.json({ error: 'Kode diskon tidak valid atau sudah kadaluarsa' }, { status: 400 });
       }
+
+      if (campaign.product_id && campaign.product_id !== product.id) {
+        return NextResponse.json({ error: 'Kode diskon tidak berlaku untuk produk ini' }, { status: 400 });
+      }
+
+      const minQuantity = getMinimumQuantity(campaign);
+      if (quantity < minQuantity) {
+        return NextResponse.json({
+          error: `Kode promo ini berlaku minimal pembelian ${minQuantity} item`,
+        }, { status: 400 });
+      }
+
+      if (campaign.max_uses !== null && Number(campaign.current_uses) >= Number(campaign.max_uses)) {
+        return NextResponse.json({ error: 'Kuota kode diskon sudah habis' }, { status: 400 });
+      }
+
+      const { data: previousCampaignOrder } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('buyer_id', buyer.id)
+        .eq('discount_campaign_id', campaign.id)
+        .in('payment_status', ['paid', 'pending_payment'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (previousCampaignOrder) {
+        if (
+          previousCampaignOrder.payment_status === 'pending_payment'
+          && previousCampaignOrder.product_id === product.id
+          && Number(previousCampaignOrder.quantity || 1) === quantity
+        ) {
+          return NextResponse.json({
+            order_id: previousCampaignOrder.id,
+            order_number: previousCampaignOrder.order_number,
+            payment_status: previousCampaignOrder.payment_status,
+            order_status: previousCampaignOrder.order_status,
+            amount: previousCampaignOrder.total_amount,
+            quantity,
+            discount_amount: previousCampaignOrder.discount_amount,
+            reused: true,
+            is_newcomer: isNewcomer,
+          });
+        }
+
+        const message = previousCampaignOrder.payment_status === 'pending_payment'
+          ? `Kode ini sedang dipakai pada pesanan ${previousCampaignOrder.order_number}`
+          : 'Kamu sudah pernah menggunakan kode diskon ini';
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
+
+      const calculation = calculateCampaignDiscount(campaign, totalBasePrice, quantity);
+      discountAmount = calculation.discountAmount;
+      discountCampaignId = campaign.id;
+      campaignToClaim = { id: campaign.id, currentUses: Number(campaign.current_uses) };
     }
 
     const finalPrice = totalBasePrice - discountAmount;
+
+    // Reuse only an order with exactly the same price and discount. This keeps
+    // an older full-price pending order from overriding a newly applied promo.
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    let existingOrderQuery = supabase
+      .from('orders')
+      .select('*')
+      .eq('buyer_id', buyer.id)
+      .eq('product_id', product.id)
+      .eq('quantity', quantity)
+      .eq('total_amount', finalPrice)
+      .eq('payment_status', 'pending_payment')
+      .gte('created_at', tenMinutesAgo)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    existingOrderQuery = discountCampaignId
+      ? existingOrderQuery.eq('discount_campaign_id', discountCampaignId)
+      : existingOrderQuery.is('discount_campaign_id', null);
+
+    const { data: matchingPendingOrders } = await existingOrderQuery;
+    const existingOrder = matchingPendingOrders?.[0];
+    if (existingOrder) {
+      return NextResponse.json({
+        order_id: existingOrder.id,
+        order_number: existingOrder.order_number,
+        payment_status: existingOrder.payment_status,
+        order_status: existingOrder.order_status,
+        amount: existingOrder.total_amount,
+        quantity,
+        discount_amount: existingOrder.discount_amount,
+        reused: true,
+        is_newcomer: isNewcomer,
+      });
+    }
+
+    // Conditional update prevents two simultaneous checkouts from consuming
+    // the last promo quota at the same time.
+    if (campaignToClaim) {
+      const { data: claimedCampaign, error: claimError } = await supabase
+        .from('discount_campaigns')
+        .update({
+          current_uses: campaignToClaim.currentUses + 1,
+          updated_at: now,
+        })
+        .eq('id', campaignToClaim.id)
+        .eq('current_uses', campaignToClaim.currentUses)
+        .select('id')
+        .maybeSingle();
+
+      if (claimError || !claimedCampaign) {
+        return NextResponse.json({
+          error: 'Kuota kode promo baru saja habis. Silakan coba kode lain.',
+        }, { status: 409 });
+      }
+    }
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -270,6 +321,16 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orderError) {
+      if (campaignToClaim) {
+        await supabase
+          .from('discount_campaigns')
+          .update({
+            current_uses: campaignToClaim.currentUses,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', campaignToClaim.id)
+          .eq('current_uses', campaignToClaim.currentUses + 1);
+      }
       return NextResponse.json({ error: 'Gagal membuat pesanan: ' + orderError.message }, { status: 500 });
     }
 

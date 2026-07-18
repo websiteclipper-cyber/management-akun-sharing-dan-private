@@ -32,7 +32,11 @@ interface DiscountInfo {
   discount_value: number;
   discount_amount: number;
   base_price: number;
+  total_base_price: number;
   final_price: number;
+  quantity: number;
+  min_quantity: number;
+  fixed_discount_mode: 'per_item' | 'per_order';
 }
 
 function clearBuyerLocalSession() {
@@ -184,17 +188,45 @@ export default function OrderPage() {
     setDiscountInfo(null);
 
     try {
-      const res = await fetch('/api/public/discounts/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: discountCode.trim(),
-          product_id: product.id,
-          buyer_id: buyer.id,
-        }),
-      });
+      const payload = {
+        code: discountCode.trim(),
+        product_id: product.id,
+        quantity,
+      };
+
+      async function validateDiscount(token: string) {
+        return fetch('/api/public/discounts/validate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      let buyerToken = localStorage.getItem('buyer_token') || '';
+      if (!isBuyerTokenFresh(buyerToken)) {
+        const refreshed = await refreshBuyerAppSession();
+        if (!refreshed) {
+          redirectToBuyerLogin();
+          return;
+        }
+        buyerToken = refreshed.token;
+      }
+
+      let res = await validateDiscount(buyerToken);
+      if (res.status === 401) {
+        const refreshed = await refreshBuyerAppSession();
+        if (refreshed) res = await validateDiscount(refreshed.token);
+      }
+
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 401) {
+          redirectToBuyerLogin();
+          return;
+        }
         setDiscountError(data.error || t('order_promo_invalid'));
       } else {
         setDiscountInfo(data);
@@ -210,6 +242,17 @@ export default function OrderPage() {
     setDiscountInfo(null);
     setDiscountCode('');
     setDiscountError('');
+  }
+
+  function handleQuantityChange(nextQuantity: number) {
+    const normalized = Math.min(10, Math.max(1, nextQuantity));
+    if (normalized === quantity) return;
+
+    setQuantity(normalized);
+    if (discountInfo) {
+      setDiscountInfo(null);
+      setDiscountError('Jumlah berubah. Terapkan kembali kode promo untuk menghitung total baru.');
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -309,17 +352,11 @@ export default function OrderPage() {
     totalBasePrice = product.newcomer_price! + (normalPrice * (quantity - 1));
   }
 
-  let totalDiscountAmount = 0;
-  if (discountInfo) {
-    if (discountInfo.discount_type === 'percentage') {
-      totalDiscountAmount = Math.round(totalBasePrice * discountInfo.discount_value / 100);
-    } else {
-      totalDiscountAmount = discountInfo.discount_value * quantity;
-    }
-    totalDiscountAmount = Math.min(totalDiscountAmount, totalBasePrice);
-  }
-
-  const finalDisplayPrice = totalBasePrice - totalDiscountAmount;
+  if (discountInfo) totalBasePrice = Number(discountInfo.total_base_price ?? discountInfo.base_price);
+  const totalDiscountAmount = discountInfo ? Number(discountInfo.discount_amount) : 0;
+  const finalDisplayPrice = discountInfo
+    ? Number(discountInfo.final_price)
+    : totalBasePrice;
 
   return (
     <div className="public-layout">
@@ -527,7 +564,7 @@ export default function OrderPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button
                   type="button"
-                  onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                  onClick={() => handleQuantityChange(quantity - 1)}
                   disabled={quantity <= 1}
                   style={{
                     width: '40px', height: '40px', borderRadius: '12px',
@@ -547,7 +584,7 @@ export default function OrderPage() {
                 }}>{quantity}</div>
                 <button
                   type="button"
-                  onClick={() => setQuantity(q => Math.min(10, q + 1))}
+                  onClick={() => handleQuantityChange(quantity + 1)}
                   disabled={quantity >= 10}
                   style={{
                     width: '40px', height: '40px', borderRadius: '12px',
@@ -605,7 +642,7 @@ export default function OrderPage() {
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                         {discountInfo.discount_type === 'percentage'
                           ? `Diskon ${discountInfo.discount_value}%`
-                          : `Potongan ${formatPrice(discountInfo.discount_value)}`}
+                          : `Potongan ${formatPrice(discountInfo.discount_value)} ${discountInfo.fixed_discount_mode === 'per_item' ? 'per item' : 'per pesanan'}`}
                         {' '}&mdash; Hemat <strong style={{ color: 'var(--brand-success)' }}>{formatPrice(discountInfo.discount_amount)}</strong>
                       </div>
                     </div>

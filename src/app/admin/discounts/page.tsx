@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { adminInsert, adminUpdate, adminDelete } from '@/lib/adminApi';
+import { adminInsert, adminUpdate, adminDelete, adminSelect } from '@/lib/adminApi';
 
 interface Product {
   id: number;
@@ -16,6 +16,8 @@ interface DiscountCampaign {
   code: string;
   discount_type: 'fixed' | 'percentage';
   discount_value: number;
+  min_quantity: number;
+  fixed_discount_mode: 'per_item' | 'per_order';
   product_id: number | null;
   max_uses: number | null;
   current_uses: number;
@@ -39,6 +41,8 @@ export default function AdminDiscountsPage() {
     code: '',
     discount_type: 'fixed' as 'fixed' | 'percentage',
     discount_value: 0,
+    min_quantity: 1,
+    fixed_discount_mode: 'per_item' as 'per_item' | 'per_order',
     product_id: null as number | null,
     max_uses: null as number | null,
     valid_from: '',
@@ -46,35 +50,45 @@ export default function AdminDiscountsPage() {
     is_active: true,
   });
 
-  useEffect(() => {
-    loadCampaigns();
-    loadProducts();
-  }, []);
-
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     const { data } = await supabase
       .from('products')
       .select('id, name, price, platform_name')
       .eq('status', 'active')
       .order('name');
     if (data) setProducts(data);
-  }
+  }, []);
 
-  async function loadCampaigns() {
+  const loadCampaigns = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('discount_campaigns')
-      .select('*, product:products(id, name, price, platform_name)')
-      .order('created_at', { ascending: false });
-    if (data) setCampaigns(data as unknown as DiscountCampaign[]);
+    const result = await adminSelect(
+      'discount_campaigns',
+      '*, product:products(id, name, price, platform_name)',
+    );
+    if (result.data) {
+      const sorted = [...result.data].sort((a, b) =>
+        new Date(String(b.created_at)).getTime() - new Date(String(a.created_at)).getTime());
+      setCampaigns(sorted as unknown as DiscountCampaign[]);
+    }
     setLoading(false);
-  }
+  }, []);
+
+  useEffect(() => {
+    const initialLoad = setTimeout(() => {
+      void loadCampaigns();
+      void loadProducts();
+    }, 0);
+
+    return () => clearTimeout(initialLoad);
+  }, [loadCampaigns, loadProducts]);
 
   function resetForm() {
     setForm({
       code: '',
       discount_type: 'fixed',
       discount_value: 0,
+      min_quantity: 1,
+      fixed_discount_mode: 'per_item',
       product_id: null,
       max_uses: null,
       valid_from: new Date().toISOString().slice(0, 16),
@@ -96,11 +110,14 @@ export default function AdminDiscountsPage() {
     if (!form.code.trim()) { alert('Kode diskon wajib diisi'); return; }
     if (form.discount_value <= 0) { alert('Nilai diskon harus lebih dari 0'); return; }
     if (form.discount_type === 'percentage' && form.discount_value > 100) { alert('Persentase diskon maksimal 100%'); return; }
+    if (form.min_quantity < 1 || form.min_quantity > 10) { alert('Minimal pembelian harus antara 1 sampai 10 item'); return; }
 
     const payload = {
       code: form.code.toUpperCase().trim(),
       discount_type: form.discount_type,
       discount_value: form.discount_value,
+      min_quantity: form.min_quantity,
+      fixed_discount_mode: form.fixed_discount_mode,
       product_id: form.product_id || null,
       max_uses: form.max_uses || null,
       valid_from: new Date(form.valid_from).toISOString(),
@@ -132,6 +149,8 @@ export default function AdminDiscountsPage() {
       code: campaign.code,
       discount_type: campaign.discount_type,
       discount_value: campaign.discount_value,
+      min_quantity: campaign.min_quantity || 1,
+      fixed_discount_mode: campaign.fixed_discount_mode || 'per_item',
       product_id: campaign.product_id,
       max_uses: campaign.max_uses,
       valid_from: campaign.valid_from.slice(0, 16),
@@ -286,7 +305,29 @@ export default function AdminDiscountsPage() {
               </div>
             </div>
 
-            {/* Row 2: Product & Quota */}
+            {form.discount_type === 'fixed' && (
+              <div className="form-row">
+                <div className="form-group" style={{ flex: 1 }}>
+                  <label className="form-label">Cara Menghitung Potongan Nominal</label>
+                  <select
+                    className="form-input"
+                    value={form.fixed_discount_mode}
+                    onChange={e => setForm({
+                      ...form,
+                      fixed_discount_mode: e.target.value as 'per_item' | 'per_order',
+                    })}
+                  >
+                    <option value="per_item">Per item — potongan dikali jumlah beli</option>
+                    <option value="per_order">Per pesanan — potongan hanya sekali</option>
+                  </select>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Contoh Rp5.000 per item × 5 item = total diskon Rp25.000.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Row 2: Product, minimum quantity & quota */}
             <div className="form-row">
               <div className="form-group" style={{ flex: 2 }}>
                 <label className="form-label">Berlaku Untuk Produk</label>
@@ -302,6 +343,21 @@ export default function AdminDiscountsPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label className="form-label">Minimal Pembelian</label>
+                <input
+                  required
+                  type="number"
+                  className="form-input"
+                  min={1}
+                  max={10}
+                  value={form.min_quantity}
+                  onChange={e => setForm({ ...form, min_quantity: parseInt(e.target.value) || 1 })}
+                />
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Isi 5 untuk promo minimal beli 5 item.
+                </p>
               </div>
               <div className="form-group" style={{ flex: 1 }}>
                 <label className="form-label">Kuota Penggunaan</label>
@@ -451,6 +507,22 @@ export default function AdminDiscountsPage() {
                         fontSize: '0.7rem', fontWeight: 600,
                       }}>
                         Semua Produk
+                      </span>
+                    )}
+                    <span style={{
+                      background: 'rgba(251,191,36,0.1)', color: '#fbbf24',
+                      padding: '3px 10px', borderRadius: '999px',
+                      fontSize: '0.7rem', fontWeight: 600,
+                    }}>
+                      Min. {campaign.min_quantity || 1} item
+                    </span>
+                    {campaign.discount_type === 'fixed' && (
+                      <span style={{
+                        background: 'rgba(167,139,250,0.1)', color: '#a78bfa',
+                        padding: '3px 10px', borderRadius: '999px',
+                        fontSize: '0.7rem', fontWeight: 600,
+                      }}>
+                        {campaign.fixed_discount_mode === 'per_order' ? 'Potongan per pesanan' : 'Potongan per item'}
                       </span>
                     )}
                   </div>
