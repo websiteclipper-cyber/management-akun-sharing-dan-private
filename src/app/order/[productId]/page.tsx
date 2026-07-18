@@ -360,11 +360,11 @@ export default function OrderPage() {
 
   return (
     <div className="public-layout">
-      <header className="public-header" style={{ justifyContent: 'space-between' }}>
-        <Link href="/" className="brand">✦ pastipremium.my.id</Link>
+      <header className="public-header order-header" style={{ justifyContent: 'space-between' }}>
+        <Link href="/" className="brand order-brand">✦ pastipremium.my.id</Link>
         {buyer && (
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>👤 {buyer.name}</span>
+          <div className="order-buyer-header" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <span className="order-buyer-name" style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>👤 {buyer.name}</span>
             <button className="btn btn-secondary btn-sm" onClick={() => void handleBuyerLogout()}>Logout</button>
           </div>
         )}
@@ -467,7 +467,7 @@ export default function OrderPage() {
           </div>
         ) : (
           <div className="order-form-card">
-            <Link href="/" style={{
+            <Link href="/" className="order-back-link" style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
@@ -488,8 +488,8 @@ export default function OrderPage() {
               <div className="platform" style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--brand-accent)' }}>
                 {product.platform_name}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <h4 style={{ margin: 0, fontSize: '1.1rem' }}>{product.name}</h4>
+              <div className="order-product-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <h4 className="order-product-name" style={{ margin: 0, fontSize: '1.1rem' }}>{product.name}</h4>
                 {hasNewcomerPrice ? (
                   <span className="badge" style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6', fontWeight: 700, animation: 'pulse 2s infinite' }}>
                     🆕 BUYER BARU
@@ -500,7 +500,7 @@ export default function OrderPage() {
                   </span>
                 ) : null}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+              <div className="order-price-meta" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
                 {hasNewcomerPrice ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -531,23 +531,23 @@ export default function OrderPage() {
             </div>
 
             {/* Buyer Info */}
-            <div style={{ background: 'var(--accent-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,122,255,0.2)', padding: '16px', marginBottom: '20px' }}>
+            <div className="buyer-info-card" style={{ background: 'var(--accent-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,122,255,0.2)', padding: '16px', marginBottom: '20px' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '12px' }}>
                 {t('order_buyer_data')}
               </div>
               <div style={{ display: 'grid', gap: '8px', fontSize: '0.9rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div className="buyer-info-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>{t('order_name')}</span>
                   <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{buyer?.name}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div className="buyer-info-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>{t('order_whatsapp')}</span>
                   <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{buyer?.phone}</span>
                 </div>
               </div>
             </div>
 
-            <div style={{
+            <div className="quantity-card" style={{
               background: 'rgba(255,255,255,0.03)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)',
@@ -561,7 +561,7 @@ export default function OrderPage() {
               }}>
                 <span>📦</span> {t('order_quantity')}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="quantity-control" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button
                   type="button"
                   onClick={() => handleQuantityChange(quantity - 1)}
@@ -606,7 +606,7 @@ export default function OrderPage() {
             </div>
 
             {/* ===== DISCOUNT CODE SECTION ===== */}
-            <div style={{
+            <div className="discount-card" style={{
               background: 'rgba(255,255,255,0.03)',
               borderRadius: 'var(--radius-lg)',
               border: `1px solid ${discountInfo ? 'rgba(52,199,89,0.4)' : 'var(--border-secondary)'}`,
@@ -624,13 +624,13 @@ export default function OrderPage() {
 
               {discountInfo ? (
                 /* === Successfully applied discount === */
-                <div style={{
+                <div className="discount-applied" style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   background: 'rgba(52,199,89,0.08)',
                   borderRadius: 'var(--radius-md)', padding: '12px 16px',
                   border: '1px solid rgba(52,199,89,0.2)',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="discount-applied-content" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{
                       fontSize: '1.4rem', lineHeight: 1,
                       filter: 'drop-shadow(0 0 4px rgba(52,199,89,0.4))',
@@ -649,6 +649,7 @@ export default function OrderPage() {
                   </div>
                   <button
                     type="button"
+                    className="discount-remove-button"
                     onClick={handleRemoveDiscount}
                     style={{
                       background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)',
@@ -705,7 +706,7 @@ export default function OrderPage() {
             </div>
 
             {/* ===== PRICE SUMMARY ===== */}
-            <div style={{
+            <div className="price-summary-card" style={{
               background: 'rgba(255,255,255,0.03)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)',
@@ -719,12 +720,12 @@ export default function OrderPage() {
                 {t('order_price_summary')}
               </div>
               <div style={{ display: 'grid', gap: '8px', fontSize: '0.9rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>{t('order_price')} {hasNewcomerPrice ? t('order_newcomer_label') : promo ? t('order_promo_label') : ''}</span>
                   <span style={{ color: hasNewcomerPrice ? '#3b82f6' : 'var(--text-primary)', fontWeight: 600 }}>{formatPrice(totalBasePrice)}</span>
                 </div>
                 {hasNewcomerPrice && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div className="summary-row summary-row-special" style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
                       <span>🎉</span> {t('order_first_purchase_special')}
                     </span>
@@ -732,7 +733,7 @@ export default function OrderPage() {
                   </div>
                 )}
                 {discountInfo && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div className="summary-row summary-row-discount" style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <span style={{ fontSize: '0.75rem' }}>🎟️</span> {t('order_discount')} [{discountInfo.code}]
                     </span>
@@ -740,18 +741,18 @@ export default function OrderPage() {
                   </div>
                 )}
                 {quantity > 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)' }}>{t('order_quantity')}</span>
                     <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>×{quantity}</span>
                   </div>
                 )}
                 {quantity > 1 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Rata-rata per item</span>
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{formatPrice(finalDisplayPrice / quantity)} / item</span>
                   </div>
                 )}
-                <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                <div className="summary-total" style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{t('order_total')}{quantity > 1 ? ` (${quantity} item)` : ''}</span>
                   <span style={{
                     color: discountInfo ? '#4ade80' : 'var(--brand-success)',
@@ -865,6 +866,189 @@ export default function OrderPage() {
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-4px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+
+        .order-product-summary {
+          padding: 4px 0 2px;
+        }
+
+        .order-product-heading {
+          gap: 12px;
+        }
+
+        .order-product-name {
+          flex: 1;
+          min-width: 0;
+          line-height: 1.4;
+        }
+
+        .order-product-heading :global(.badge) {
+          flex-shrink: 0;
+        }
+
+        .order-price-meta {
+          flex-wrap: wrap;
+          row-gap: 6px;
+        }
+
+        .buyer-info-row {
+          gap: 16px;
+          align-items: flex-start;
+        }
+
+        .buyer-info-row > span:last-child {
+          min-width: 0;
+          text-align: right;
+          overflow-wrap: anywhere;
+        }
+
+        .discount-applied {
+          gap: 12px;
+        }
+
+        .discount-applied-content {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .discount-applied-content > div {
+          min-width: 0;
+        }
+
+        .discount-applied-content > div > div {
+          overflow-wrap: anywhere;
+        }
+
+        .discount-remove-button {
+          flex-shrink: 0;
+        }
+
+        .summary-row {
+          gap: 16px;
+          align-items: flex-start;
+        }
+
+        .summary-row > span:first-child {
+          min-width: 0;
+        }
+
+        .summary-row > span:last-child {
+          flex-shrink: 0;
+          text-align: right;
+        }
+
+        @media (max-width: 560px) {
+          .order-header {
+            height: auto;
+            min-height: 60px;
+            padding: 10px 14px;
+            gap: 10px;
+          }
+
+          .order-brand {
+            min-width: 0;
+            white-space: nowrap;
+            font-size: 1rem;
+          }
+
+          .order-buyer-header {
+            min-width: 0;
+            gap: 8px !important;
+          }
+
+          .order-buyer-name {
+            display: block;
+            max-width: 92px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .order-buyer-header :global(.btn) {
+            padding: 8px 10px;
+            white-space: nowrap;
+          }
+
+          .order-form-container {
+            align-items: flex-start;
+            padding: 20px 12px 36px;
+          }
+
+          .order-form-card {
+            padding: 22px 16px;
+            border-radius: 18px;
+          }
+
+          .order-back-link {
+            margin-bottom: 14px !important;
+          }
+
+          .order-product-heading {
+            align-items: center !important;
+          }
+
+          .order-product-name {
+            font-size: 1.05rem !important;
+          }
+
+          .order-price-meta {
+            gap: 6px !important;
+          }
+
+          .order-price-meta > span {
+            white-space: nowrap;
+          }
+
+          .buyer-info-card,
+          .quantity-card,
+          .discount-card,
+          .price-summary-card {
+            padding: 14px !important;
+            margin-bottom: 16px !important;
+          }
+
+          .buyer-info-row {
+            gap: 12px;
+          }
+
+          .quantity-control {
+            gap: 10px !important;
+            flex-wrap: wrap;
+          }
+
+          .discount-applied {
+            align-items: flex-start !important;
+            padding: 12px !important;
+          }
+
+          .discount-applied-content {
+            align-items: flex-start !important;
+          }
+
+          .discount-applied-content > div > div:last-child {
+            line-height: 1.55;
+          }
+
+          .discount-remove-button {
+            padding: 6px 10px !important;
+          }
+
+          .summary-row-discount,
+          .summary-row-special {
+            flex-direction: column;
+            gap: 4px;
+          }
+
+          .summary-row-discount > span:last-child,
+          .summary-row-special > span:last-child {
+            padding-left: 20px;
+            text-align: left;
+          }
+
+          .summary-total {
+            gap: 12px;
+            align-items: center;
+          }
         }
       `}</style>
     </div>
