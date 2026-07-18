@@ -45,6 +45,11 @@ interface AdminSession {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const isPublicAuthPath = [
+    '/admin/login',
+    '/admin/forgot-password',
+    '/admin/reset-password',
+  ].includes(pathname);
   const [admin] = useState<AdminSession | null>(() => {
     if (typeof window === 'undefined') return null;
     const session = localStorage.getItem('admin_session');
@@ -70,7 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const session = localStorage.getItem('admin_session');
     const token = localStorage.getItem('admin_token');
 
-    if (!session && pathname !== '/admin/login') {
+    if (!session && !isPublicAuthPath) {
       router.push('/admin/login');
       return;
     }
@@ -93,7 +98,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         });
       }
     }
-  }, [pathname, router]);
+  }, [isPublicAuthPath, pathname, router]);
 
   const playNotifSound = useCallback(() => {
     try {
@@ -178,7 +183,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
   }, [admin, pathname, loadPendingCounts, playNotifSound]);
 
-  if (pathname === '/admin/login') {
+  if (isPublicAuthPath) {
     return <>{children}</>;
   }
 
