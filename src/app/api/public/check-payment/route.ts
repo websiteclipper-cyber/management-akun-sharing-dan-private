@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { getPakasirTransaction } from '@/lib/pakasir';
+import { sendTelegramNotification } from '@/lib/telegram';
 
 // Public endpoint for buyer-facing pages to check and sync a single order
 // This is a fallback when the webhook from Pakasir fails
@@ -165,6 +166,24 @@ export async function POST(request: NextRequest) {
             console.error('Commission error during check-payment:', commErr);
           }
         }
+
+        // This route is used when the buyer page detects a completed payment
+        // before the gateway webhook arrives. Notify from here as well so a
+        // successfully synced payment is never silent.
+        const { data: product } = await supabase
+          .from('products')
+          .select('name')
+          .eq('id', order.product_id)
+          .single();
+
+        await sendTelegramNotification(
+          `💰 <b>PEMBAYARAN MASUK (AUTO CHECK)!</b>\n\n` +
+          `<b>Order:</b> <code>${order.order_number}</code>\n` +
+          `<b>Produk:</b> ${product?.name || '-'}\n` +
+          `<b>Nominal:</b> Rp ${Number(order.total_amount).toLocaleString('id-ID')}\n` +
+          `<b>Metode:</b> ${paymentMethod}\n` +
+          `<b>Waktu Bayar:</b> ${completedAt}`
+        );
 
         return NextResponse.json({ success: true, status: 'paid', synced: true });
       }
