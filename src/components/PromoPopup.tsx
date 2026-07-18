@@ -161,13 +161,20 @@ export default function PromoPopup() {
             }}>
               {t('promo_exclusive')}
             </div>
-            <div style={{
-              fontSize: '2.2rem',
+            <div
+              className="promo-code-display"
+              title={campaign.code}
+              style={{
+              fontSize: 'clamp(1rem, 5.5vw, 2.2rem)',
               fontWeight: 900,
               color: '#fff',
-              letterSpacing: '4px',
+              letterSpacing: 'clamp(0.25px, 0.2vw, 3px)',
               fontFamily: 'monospace',
               textShadow: '0 2px 20px rgba(255,255,255,0.15)',
+              maxWidth: '100%',
+              lineHeight: 1.25,
+              overflowWrap: 'anywhere',
+              wordBreak: 'break-word',
             }}>
               {campaign.code}
             </div>
@@ -395,6 +402,18 @@ export default function PromoPopup() {
           to {
             opacity: 0;
             transform: translate(-50%, -60%) scale(0.85);
+          }
+        }
+
+        .promo-code-display {
+          width: 100%;
+          white-space: normal;
+        }
+
+        @media (max-width: 420px) {
+          .promo-code-display {
+            font-size: clamp(0.9rem, 5.2vw, 1.35rem) !important;
+            letter-spacing: 0.25px !important;
           }
         }
       `}</style>
