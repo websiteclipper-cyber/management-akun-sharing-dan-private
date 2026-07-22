@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { ADMIN_SESSION_UPDATED_EVENT } from '@/lib/adminSession';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -13,16 +14,24 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    router.prefetch('/admin');
+  }, [router]);
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15_000);
 
     try {
       const res = await fetch('/api/admin/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        signal: controller.signal,
       });
       const data = await res.json();
 
@@ -37,10 +46,17 @@ export default function AdminLoginPage() {
         localStorage.setItem('admin_token', data.token);
       }
       localStorage.setItem('admin_session', JSON.stringify(data.admin));
-      router.push('/admin');
-    } catch {
-      setError('Terjadi kesalahan koneksi');
+      window.dispatchEvent(new CustomEvent(ADMIN_SESSION_UPDATED_EVENT, { detail: data.admin }));
+      router.replace('/admin');
+    } catch (loginError) {
+      setError(
+        loginError instanceof DOMException && loginError.name === 'AbortError'
+          ? 'Login terlalu lama merespons. Silakan coba lagi.'
+          : 'Terjadi kesalahan koneksi',
+      );
       setLoading(false);
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   }
 

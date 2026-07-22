@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
 import { signToken } from '@/lib/auth';
@@ -6,6 +6,7 @@ import {
   checkAdminAuthRateLimit,
   cleanupAdminAuthEvents,
   clearAdminLoginFailures,
+  createAdminAuthAbortSignal,
   DUMMY_ADMIN_PASSWORD_HASH,
   getAdminAuthFingerprint,
   normalizeAdminEmail,
@@ -22,12 +23,27 @@ export async function POST(request: NextRequest) {
     }
 
     const fingerprint = getAdminAuthFingerprint(request, normalizedEmail);
-    const rateLimit = await checkAdminAuthRateLimit(fingerprint, {
+    const rateLimitPromise = checkAdminAuthRateLimit(fingerprint, {
       eventType: 'login_failure',
       windowMinutes: 15,
       maxPerEmail: 5,
       maxPerIp: 20,
     });
+
+    const adminPromise = supabase
+      .from('admins')
+      .select('id, name, email, role, status, password_hash, token_version')
+      .ilike('email', normalizedEmail)
+      .eq('status', 'active')
+      .abortSignal(createAdminAuthAbortSignal())
+      .maybeSingle();
+
+    // The rate-limit checks and admin lookup are independent. Running them
+    // together removes one database round trip from the critical login path.
+    const [rateLimit, { data: admin, error }] = await Promise.all([
+      rateLimitPromise,
+      adminPromise,
+    ]);
 
     if (rateLimit.limited) {
       return NextResponse.json(
@@ -39,30 +55,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: admin, error } = await supabase
-      .from('admins')
-      .select('id, name, email, role, status, password_hash, token_version')
-      .ilike('email', normalizedEmail)
-      .eq('status', 'active')
-      .maybeSingle();
+    if (error) {
+      throw new Error('Unable to read admin account.');
+    }
 
     const validPassword = await bcrypt.compare(
       password,
       admin?.password_hash || DUMMY_ADMIN_PASSWORD_HASH,
     );
-    if (error || !admin || !validPassword) {
+    if (!admin || !validPassword) {
       await recordAdminAuthEvent(fingerprint, 'login_failure');
       return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 });
     }
-
-    await clearAdminLoginFailures(fingerprint);
-    await cleanupAdminAuthEvents();
-
-    // Update last login
-    await supabase
-      .from('admins')
-      .update({ last_login_at: new Date().toISOString() })
-      .eq('id', admin.id);
 
     // Generate JWT token
     const token = signToken({
@@ -74,6 +78,24 @@ export async function POST(request: NextRequest) {
       tokenVersion: Number(admin.token_version || 0),
     }, 12);
 
+    // These writes do not affect whether the credentials are valid. Schedule
+    // them after the response so telemetry maintenance cannot delay login.
+    after(async () => {
+      const results = await Promise.allSettled([
+        clearAdminLoginFailures(fingerprint),
+        cleanupAdminAuthEvents(),
+        supabase
+          .from('admins')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('id', admin.id)
+          .abortSignal(createAdminAuthAbortSignal()),
+      ]);
+
+      if (results.some(result => result.status === 'rejected')) {
+        console.error('Admin login maintenance did not complete.');
+      }
+    });
+
     return NextResponse.json({
       admin: {
         id: admin.id,
@@ -84,6 +106,9 @@ export async function POST(request: NextRequest) {
       token,
     });
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Layanan login sedang lambat. Silakan coba lagi beberapa saat.' },
+      { status: 503 },
+    );
   }
 }
