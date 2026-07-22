@@ -4,6 +4,7 @@ export type AdminStatus = 'active' | 'inactive';
 export type BuyerStatus = 'active' | 'blocked';
 export type AccountType = 'sharing' | 'private';
 export type ProductStatus = 'active' | 'inactive';
+export type CatalogCategory = 'ai_productivity' | 'editing_design' | 'music_audio' | 'streaming_entertainment' | 'other';
 export type StockStatus = 'active' | 'full' | 'inactive' | 'suspended' | 'broken' | 'expired';
 export type PaymentStatus = 'pending_payment' | 'paid' | 'failed' | 'refunded' | 'cancelled';
 export type OrderStatus = 'pending' | 'paid' | 'assigned' | 'delivered' | 'completed' | 'cancelled' | 'refunded';
@@ -43,6 +44,7 @@ export interface Product {
   code: string;
   name: string;
   platform_name: string;
+  catalog_category?: CatalogCategory | null;
   account_type: AccountType;
   price: number;
   newcomer_price: number | null;

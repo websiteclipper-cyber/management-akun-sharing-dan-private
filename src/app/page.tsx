@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
+import { CATALOG_CATEGORIES, getProductCatalogCategory } from '@/lib/catalog-categories';
 import Link from 'next/link';
 import PromoPopup from '@/components/PromoPopup';
 import GlobalPromoPopup from '@/components/GlobalPromoPopup';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLocale } from '@/lib/locale-context';
-import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiGooglegemini } from 'react-icons/si';
+import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiGooglegemini, SiNotion } from 'react-icons/si';
 import { BsDisplay, BsStars } from 'react-icons/bs';
 import { FiInfo, FiMonitor, FiX } from 'react-icons/fi';
 import { TbBrandOpenai, TbBrandDisney, TbBrandAmazon, TbRobot, TbScissors, TbPhotoVideo } from 'react-icons/tb';
@@ -52,6 +53,7 @@ const PLATFORM_ICONS: Record<string, React.ReactNode> = {
   CANVA: <SiCanva color="#fff" />,
   CHATGPT: <TbBrandOpenai color="#fff" />,
   GEMINI: <SiGooglegemini color="#fff" />,
+  NOTION: <SiNotion color="#fff" />,
   GROK: <TbRobot color="#fff" />,
   CAPCUT: <TbScissors color="#fff" />,
   WINK: <TbPhotoVideo color="#fff" />,
@@ -71,6 +73,7 @@ const PLATFORM_GRADIENTS: Record<string, string> = {
   CANVA: 'linear-gradient(135deg, #00C4CC 0%, #00969C 100%)',
   CHATGPT: 'linear-gradient(135deg, #10A37F 0%, #0D7A5F 100%)',
   GEMINI: 'linear-gradient(135deg, #8E75B2 0%, #6B5899 100%)',
+  NOTION: 'linear-gradient(135deg, #252525 0%, #000000 100%)',
   GROK: 'linear-gradient(135deg, #1d1d1f 0%, #333333 100%)',
   CAPCUT: 'linear-gradient(135deg, #1d1d1f 0%, #333333 100%)',
   WINK: 'linear-gradient(135deg, #FF0055 0%, #AA003A 100%)',
@@ -219,6 +222,7 @@ export default function HomePage() {
     CANVA: 'rgba(0, 196, 204, 0.15)',
     CHATGPT: 'rgba(16, 163, 127, 0.15)',
     GEMINI: 'rgba(142, 117, 178, 0.15)',
+    NOTION: 'rgba(15, 23, 42, 0.12)',
     GROK: 'rgba(15, 23, 42, 0.08)',
     CAPCUT: 'rgba(15, 23, 42, 0.08)',
     WINK: 'rgba(255, 0, 85, 0.15)',
@@ -664,30 +668,17 @@ export default function HomePage() {
                 </div>
                 
                 {(() => {
-                  const GROUPS = [
-                    { id: 'ai', title: '🤖 AI & Produktivitas', items: ['CHATGPT', 'CLAUDE', 'GEMINI', 'GROK', 'LEONARDO'] },
-                    { id: 'editing', title: '🎨 Editing & Desain', items: ['CANVA', 'CAPCUT', 'WINK'] },
-                    { id: 'music', title: '🎵 Musik & Audio', items: ['SPOTIFY', 'APPLE'] },
-                    { id: 'streaming', title: '🍿 Streaming & Hiburan', items: ['NETFLIX', 'YOUTUBE', 'DISNEY', 'VIDIO', 'VIU', 'PRIME'] }
-                  ];
-
-                  const groupedCategories: { title: string, platforms: string[] }[] = [];
-                  const unassigned = [...categories];
-
-                  GROUPS.forEach(g => {
-                    const matched = unassigned.filter(c => g.items.some(item => c.includes(item)));
-                    if (matched.length > 0) {
-                      groupedCategories.push({ title: g.title, platforms: matched });
-                      matched.forEach(m => {
-                        const idx = unassigned.indexOf(m);
-                        if (idx > -1) unassigned.splice(idx, 1);
-                      });
-                    }
-                  });
-
-                  if (unassigned.length > 0) {
-                    groupedCategories.push({ title: '📦 Kategori Lainnya', platforms: unassigned });
-                  }
+                  const groupedCategories = CATALOG_CATEGORIES
+                    .map(group => ({
+                      title: group.title,
+                      platforms: categories.filter(platform => {
+                        const product = products.find(item =>
+                          item.status === 'active' && item.platform_name.toUpperCase() === platform,
+                        );
+                        return getProductCatalogCategory(product) === group.id;
+                      }),
+                    }))
+                    .filter(group => group.platforms.length > 0);
 
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
