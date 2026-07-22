@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { adminUpdate, adminInsert, adminDelete, adminSelect } from '@/lib/adminApi';
 import { Product } from '@/lib/types';
-import Link from 'next/link';
+import {
+  CATALOG_CATEGORIES,
+  CatalogCategoryId,
+  getCatalogCategoryLabel,
+  getProductCatalogCategory,
+} from '@/lib/catalog-categories';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -13,8 +18,6 @@ export default function ProductsPage() {
   const [isCopy, setIsCopy] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
 
-  useEffect(() => { loadProducts(); }, []);
-
   async function loadProducts() {
     const { data } = await adminSelect('products');
     setProducts(((data || []) as Product[]).sort((a, b) =>
@@ -22,6 +25,13 @@ export default function ProductsPage() {
     ));
     setLoading(false);
   }
+
+  useEffect(() => {
+    const initProducts = async () => {
+      await loadProducts();
+    };
+    void initProducts();
+  }, []);
 
   function formatPrice(price: number) {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
@@ -71,6 +81,7 @@ export default function ProductsPage() {
                   <th>Code</th>
                   <th>Nama</th>
                   <th>Platform</th>
+                  <th>Kategori Katalog</th>
                   <th>Tipe</th>
                   <th>Harga</th>
                   <th>Harga Buyer Baru</th>
@@ -87,6 +98,7 @@ export default function ProductsPage() {
                     <td style={{ fontFamily: 'monospace', color: 'var(--brand-primary-light)' }}>{p.code}</td>
                     <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{p.name}</td>
                     <td>{p.platform_name}</td>
+                    <td>{getCatalogCategoryLabel(getProductCatalogCategory(p))}</td>
                     <td>
                       <span className={`badge ${p.account_type === 'sharing' ? 'badge-info' : 'badge-primary'}`}>
                         {p.account_type}
@@ -145,7 +157,7 @@ export default function ProductsPage() {
                   </tr>
                 ))}
                 {products.filter(p => p.status === activeTab).length === 0 && (
-                  <tr><td colSpan={10} className="empty-state"><div className="icon">📦</div><h3>Belum ada produk di kategori ini</h3></td></tr>
+                  <tr><td colSpan={12} className="empty-state"><div className="icon">📦</div><h3>Belum ada produk di kategori ini</h3></td></tr>
                 )}
               </tbody>
             </table>
@@ -167,10 +179,12 @@ export default function ProductsPage() {
 }
 
 function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | null; isCopy?: boolean; onClose: () => void; onSave: () => void }) {
+  const initialCatalogCategory = product ? getProductCatalogCategory(product) : '';
   const [form, setForm] = useState({
     code: product?.code ? (isCopy ? product.code + '-COPY' : product.code) : '',
     name: product?.name || '',
     platform_name: product?.platform_name || '',
+    catalog_category: initialCatalogCategory as CatalogCategoryId | '',
     account_type: product?.account_type || 'sharing',
     price: product?.price?.toString() || '',
     newcomer_price: product?.newcomer_price?.toString() || '',
@@ -193,6 +207,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
       code: form.code,
       name: form.name,
       platform_name: form.platform_name,
+      catalog_category: form.catalog_category,
       account_type: form.account_type,
       price: parseFloat(form.price),
       newcomer_price: form.newcomer_price ? parseFloat(form.newcomer_price) : null,
@@ -235,6 +250,25 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
               <label className="form-label">Platform</label>
               <input className="form-input" value={form.platform_name} onChange={e => setForm({...form, platform_name: e.target.value})} placeholder="Netflix" required />
             </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Kategori Katalog</label>
+            <select
+              className="form-select"
+              value={form.catalog_category}
+              onChange={e => setForm({ ...form, catalog_category: e.target.value as CatalogCategoryId })}
+              required
+            >
+              <option value="" disabled>-- Pilih penempatan kategori --</option>
+              {CATALOG_CATEGORIES.map(category => (
+                <option key={category.id} value={category.id}>{category.title}</option>
+              ))}
+            </select>
+            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+              {form.catalog_category
+                ? CATALOG_CATEGORIES.find(category => category.id === form.catalog_category)?.description
+                : 'Wajib dipilih. Kategori ini menentukan bagian tempat platform tampil di halaman katalog.'}
+            </small>
           </div>
           <div className="form-group">
             <label className="form-label">Nama Produk</label>
