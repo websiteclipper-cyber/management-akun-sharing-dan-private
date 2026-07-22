@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { signToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { findBuyerByVerifiedEmail } from '@/lib/buyerProfile';
-
-function normalizePhone(value: unknown): string | null {
-  let phone = typeof value === 'string' ? value.replace(/\D/g, '') : '';
-  if (phone.startsWith('0')) phone = `62${phone.slice(1)}`;
-  else if (phone.startsWith('8')) phone = `62${phone}`;
-  return /^62\d{8,13}$/.test(phone) ? phone : null;
-}
+import { normalizeWhatsAppPhone } from '@/lib/phone';
 
 export async function POST(request: NextRequest) {
   const authorization = request.headers.get('authorization');
@@ -21,12 +15,14 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const name = typeof body.name === 'string' ? body.name.trim().replace(/\s+/g, ' ') : '';
-  const phone = normalizePhone(body.phone);
+  const phone = normalizeWhatsAppPhone(body.phone);
   if (name.length < 2 || name.length > 100) {
     return NextResponse.json({ error: 'Nama harus terdiri dari 2–100 karakter.' }, { status: 400 });
   }
   if (!phone) {
-    return NextResponse.json({ error: 'Nomor WhatsApp tidak valid.' }, { status: 400 });
+    return NextResponse.json({
+      error: 'Nomor WhatsApp tidak valid. Untuk nomor luar Indonesia, sertakan kode negara (contoh +60123456789).',
+    }, { status: 400 });
   }
 
   let existingBuyer;

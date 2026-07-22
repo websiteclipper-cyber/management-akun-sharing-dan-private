@@ -189,13 +189,14 @@ function BuyerLoginPage() {
                   className="form-input"
                   type="tel"
                   inputMode="tel"
+                  autoComplete="tel"
                   value={profilePhone}
                   onChange={e => setProfilePhone(e.target.value)}
-                  placeholder="08xxxxxxxxxx"
+                  placeholder="Contoh: 0812... atau +6012..."
                   required
                 />
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  Nomor ini digunakan admin untuk mengidentifikasi dan menghubungi Anda terkait pesanan.
+                  Nomor luar Indonesia wajib memakai kode negara. Nomor ini digunakan admin untuk menghubungi Anda terkait pesanan.
                 </p>
               </div>
               <button
