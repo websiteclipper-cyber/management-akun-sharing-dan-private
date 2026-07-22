@@ -1,61 +1,75 @@
-import { NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { signToken } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
+import {
+  checkResellerRequestRateLimit,
+  cleanupResellerLoginFailures,
+  clearResellerLoginFailures,
+  createResellerAuthAbortSignal,
+  getResellerClientIp,
+  normalizeResellerRefCode,
+  recordResellerLoginFailure,
+} from '@/lib/resellerAuthSecurity';
 
-// Helper to calculate rate limit
-async function checkRateLimit(supabase: any, ref_code: string, ip: string) {
-  // Try to create the table if it doesn't exist
-  await supabase.rpc('create_login_attempts_table_if_not_exists');
-  
-  // Clean up old attempts (> 15 mins)
-  const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-  await supabase
-    .from('reseller_login_attempts')
-    .delete()
-    .lt('attempted_at', fifteenMinsAgo);
+export const maxDuration = 15;
 
-  const { count } = await supabase
-    .from('reseller_login_attempts')
-    .select('*', { count: 'exact', head: true })
-    .ilike('ref_code', ref_code)
-    .gt('attempted_at', fifteenMinsAgo);
-
-  return count || 0;
-}
-
-async function recordFailedAttempt(supabase: any, ref_code: string, ip: string) {
-  await supabase.from('reseller_login_attempts').insert({ ref_code, ip_address: ip });
-}
-
-async function clearFailedAttempts(supabase: any, ref_code: string) {
-  await supabase.from('reseller_login_attempts').delete().ilike('ref_code', ref_code);
-}
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { ref_code, pin } = await request.json();
+    const refCode = normalizeResellerRefCode(ref_code);
 
-    if (!ref_code || !pin) {
+    if (!refCode || typeof pin !== 'string' || !pin || pin.length > 32) {
       return NextResponse.json({ error: 'Kode referral dan PIN wajib diisi' }, { status: 400 });
     }
 
-    const ip = request.headers.get('x-forwarded-for') || 'unknown';
-    const attempts = await checkRateLimit(supabase, ref_code.trim(), ip);
-    
-    if (attempts >= 5) {
-      return NextResponse.json({ error: 'Terlalu banyak percobaan gagal. Silakan coba lagi dalam 15 menit.' }, { status: 429 });
+    const ip = getResellerClientIp(request);
+    const requestRateLimit = checkResellerRequestRateLimit(ip);
+    if (requestRateLimit.limited) {
+      return NextResponse.json(
+        { error: 'Terlalu banyak permintaan. Silakan coba lagi sebentar.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(requestRateLimit.retryAfterSeconds) },
+        },
+      );
     }
 
-    // Find reseller by ref_code (case insensitive)
-    const { data: reseller, error } = await supabase
-      .from('resellers')
-      .select('*')
-      .ilike('ref_code', ref_code.trim())
-      .single();
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const attemptsPromise = supabase
+      .from('reseller_login_attempts')
+      .select('id', { count: 'exact', head: true })
+      .eq('ref_code', refCode)
+      .gte('attempted_at', fifteenMinsAgo)
+      .abortSignal(createResellerAuthAbortSignal());
 
-    if (error || !reseller) {
-      await recordFailedAttempt(supabase, ref_code.trim(), ip);
+    const resellerPromise = supabase
+      .from('resellers')
+      .select('id, name, ref_code, phone, status, pin')
+      .eq('ref_code', refCode)
+      .abortSignal(createResellerAuthAbortSignal())
+      .maybeSingle();
+
+    const [attemptResult, resellerResult] = await Promise.all([
+      attemptsPromise,
+      resellerPromise,
+    ]);
+
+    if (attemptResult.error || resellerResult.error) {
+      throw new Error('Unable to read reseller authentication data.');
+    }
+
+    const attempts = attemptResult.count || 0;
+    if (attempts >= 5) {
+      return NextResponse.json(
+        { error: 'Terlalu banyak percobaan gagal. Silakan coba lagi dalam 15 menit.' },
+        { status: 429, headers: { 'Retry-After': '900' } },
+      );
+    }
+
+    const reseller = resellerResult.data;
+    if (!reseller) {
+      await recordResellerLoginFailure(refCode, ip);
       return NextResponse.json({ error: 'Kode referral tidak ditemukan' }, { status: 404 });
     }
 
@@ -78,43 +92,14 @@ export async function POST(request: Request) {
     }
 
     if (!isPinValid) {
-      await recordFailedAttempt(supabase, ref_code.trim(), ip);
+      await recordResellerLoginFailure(refCode, ip);
       const remainingAttempts = 4 - attempts;
       return NextResponse.json({ error: `PIN tidak valid. Sisa ${remainingAttempts} percobaan.` }, { status: 401 });
     }
 
-    // Auto-migrate plaintext PIN to bcrypt hash
-    if (needsMigration) {
-      try {
-        const hashedPin = await bcrypt.hash(inputPin, 10);
-        await supabase
-          .from('resellers')
-          .update({ pin: hashedPin })
-          .eq('id', reseller.id);
-      } catch (err) {
-        console.error('Failed to auto-migrate PIN for reseller:', reseller.id, err);
-      }
-    }
-
-    // Clear failed attempts on successful login
-    await clearFailedAttempts(supabase, ref_code.trim());
-
     // Check if reseller is active
     if (reseller.status !== 'active') {
       return NextResponse.json({ error: 'Akun reseller Anda tidak aktif. Hubungi admin.' }, { status: 403 });
-    }
-
-    // Update last login IP
-    const { error: updateIpError } = await supabase
-      .from('resellers')
-      .update({
-        last_login_ip: ip,
-        last_login_at: new Date().toISOString()
-      })
-      .eq('id', reseller.id);
-    
-    if (updateIpError) {
-      console.warn('Failed to update last_login_ip (column might not exist yet):', updateIpError);
     }
 
     // Sign JWT token
@@ -125,7 +110,40 @@ export async function POST(request: Request) {
       email: '', // resellers don't have email
       ref_code: reseller.ref_code,
       phone: reseller.phone,
-    } as any, 168); // 7 days
+    }, 168); // 7 days
+
+    after(async () => {
+      const maintenanceTasks: PromiseLike<unknown>[] = [
+        clearResellerLoginFailures(refCode, ip),
+        cleanupResellerLoginFailures(),
+        supabase
+          .from('resellers')
+          .update({
+            last_login_ip: ip,
+            last_login_at: new Date().toISOString(),
+          })
+          .eq('id', reseller.id)
+          .abortSignal(createResellerAuthAbortSignal()),
+      ];
+
+      if (needsMigration) {
+        maintenanceTasks.push((async () => {
+          const hashedPin = await bcrypt.hash(inputPin, 10);
+          const { error } = await supabase
+            .from('resellers')
+            .update({ pin: hashedPin })
+            .eq('id', reseller.id)
+            .abortSignal(createResellerAuthAbortSignal());
+
+          if (error) throw new Error('Unable to migrate reseller PIN.');
+        })());
+      }
+
+      const results = await Promise.allSettled(maintenanceTasks);
+      if (results.some(result => result.status === 'rejected')) {
+        console.error('Reseller login maintenance did not complete.');
+      }
+    });
 
     return NextResponse.json({
       success: true,
@@ -138,7 +156,10 @@ export async function POST(request: Request) {
         status: reseller.status,
       },
     });
-  } catch (err) {
-    return NextResponse.json({ error: 'Server error: ' + (err as Error).message }, { status: 500 });
+  } catch {
+    return NextResponse.json(
+      { error: 'Layanan login sedang sibuk. Silakan coba lagi beberapa saat.' },
+      { status: 503 },
+    );
   }
 }

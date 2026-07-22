@@ -15,11 +15,15 @@ export default function ResellerLoginPage() {
     setLoading(true);
     setError('');
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15_000);
+
     try {
       const res = await fetch('/api/reseller/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ref_code: form.ref_code.trim(), pin: form.pin.trim() }),
+        signal: controller.signal,
       });
       const data = await res.json();
 
@@ -32,9 +36,15 @@ export default function ResellerLoginPage() {
       localStorage.setItem('reseller_token', data.token);
       localStorage.setItem('reseller_session', JSON.stringify(data.reseller));
       router.push('/reseller/dashboard');
-    } catch {
-      setError('Terjadi kesalahan. Silakan coba lagi.');
+    } catch (loginError) {
+      setError(
+        loginError instanceof DOMException && loginError.name === 'AbortError'
+          ? 'Login terlalu lama merespons. Silakan coba lagi.'
+          : 'Terjadi kesalahan. Silakan coba lagi.',
+      );
       setLoading(false);
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   }
 

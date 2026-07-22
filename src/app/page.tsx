@@ -123,6 +123,7 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState(false);
   const [buyer, setBuyer] = useState<BuyerSession | null>(() => {
     if (typeof window === 'undefined') return null;
     const session = localStorage.getItem('buyer_session');
@@ -141,14 +142,41 @@ export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
 
   async function loadProducts() {
+    setLoading(true);
+    setCatalogError(false);
     const now = new Date().toISOString();
-    const [{ data: pData }, { data: promoData }] = await Promise.all([
-      supabase.from('products').select('*').in('status', ['active', 'inactive']).order('platform_name', { ascending: true }),
-      supabase.from('promos').select('*').eq('is_active', true).lte('start_date', now).gte('end_date', now),
-    ]);
-    setProducts(pData || []);
-    setPromos(promoData || []);
-    setLoading(false);
+    const signal = AbortSignal.timeout(12_000);
+
+    try {
+      const [productResult, promoResult] = await Promise.all([
+        supabase
+          .from('products')
+          .select('*')
+          .in('status', ['active', 'inactive'])
+          .order('platform_name', { ascending: true })
+          .abortSignal(signal),
+        supabase
+          .from('promos')
+          .select('*')
+          .eq('is_active', true)
+          .lte('start_date', now)
+          .gte('end_date', now)
+          .abortSignal(signal),
+      ]);
+
+      if (productResult.error || promoResult.error) {
+        throw new Error('Unable to load catalog.');
+      }
+
+      setProducts(productResult.data || []);
+      setPromos(promoResult.data || []);
+    } catch {
+      setProducts([]);
+      setPromos([]);
+      setCatalogError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -642,6 +670,21 @@ export default function HomePage() {
             height: '240px', flexDirection: 'column', gap: '16px',
           }}>
             <div style={{ width: '28px', height: '28px', border: '3px solid var(--border-secondary)', borderTopColor: C_BLUE, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          </div>
+
+        ) : catalogError ? (
+          <div style={{ textAlign: 'center', padding: '80px 20px', color: C_TEXT_MUTED }}>
+            <h3 style={{ fontWeight: 700, fontSize: '1.3rem', marginBottom: '8px', color: C_TEXT }}>
+              {t('catalog_error_title')}
+            </h3>
+            <p style={{ marginBottom: '20px' }}>{t('catalog_error_desc')}</p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => void loadProducts()}
+            >
+              {t('catalog_retry')}
+            </button>
           </div>
 
         ) : products.length === 0 ? (
