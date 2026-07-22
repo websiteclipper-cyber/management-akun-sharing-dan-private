@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { adminSelect } from '@/lib/adminApi';
 import { FiLogOut } from 'react-icons/fi';
+import { ADMIN_SESSION_UPDATED_EVENT, AdminSession } from '@/lib/adminSession';
 
 const navItems = [
   { label: 'Dashboard', href: '/admin', icon: '📊' },
@@ -37,11 +38,6 @@ interface RealtimeNotification {
   read: boolean;
 }
 
-interface AdminSession {
-  name: string;
-  role: string;
-}
-
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -50,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     '/admin/forgot-password',
     '/admin/reset-password',
   ].includes(pathname);
-  const [admin] = useState<AdminSession | null>(() => {
+  const [admin, setAdmin] = useState<AdminSession | null>(() => {
     if (typeof window === 'undefined') return null;
     const session = localStorage.getItem('admin_session');
     if (!session) return null;
@@ -64,6 +60,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+
+  useEffect(() => {
+    const handleSessionUpdated = (event: Event) => {
+      setAdmin((event as CustomEvent<AdminSession>).detail);
+    };
+
+    window.addEventListener(ADMIN_SESSION_UPDATED_EVENT, handleSessionUpdated);
+    return () => window.removeEventListener(ADMIN_SESSION_UPDATED_EVENT, handleSessionUpdated);
+  }, []);
 
   // Load initial pending counts
   const loadPendingCounts = useCallback(async () => {
@@ -93,6 +98,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         if (!res.ok) {
           localStorage.removeItem('admin_session');
           localStorage.removeItem('admin_token');
+          setAdmin(null);
           router.push('/admin/login');
         }
       }).catch(() => {
@@ -196,6 +202,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   async function handleLogout() {
     localStorage.removeItem('admin_session');
     localStorage.removeItem('admin_token');
+    setAdmin(null);
     await supabase.auth.signOut();
     router.push('/admin/login');
   }

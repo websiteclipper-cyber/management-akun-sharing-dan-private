@@ -18,6 +18,12 @@ interface RateLimitOptions {
 export const DUMMY_ADMIN_PASSWORD_HASH =
   '$2b$12$ZdiNFAKzeHFACnOHpWQ3MuyCOf6ca6UGMdJ71zTbQqAoH/CULvRzi';
 
+const ADMIN_AUTH_QUERY_TIMEOUT_MS = 10_000;
+
+export function createAdminAuthAbortSignal(): AbortSignal {
+  return AbortSignal.timeout(ADMIN_AUTH_QUERY_TIMEOUT_MS);
+}
+
 export function normalizeAdminEmail(email: unknown): string {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
@@ -66,19 +72,22 @@ export async function checkAdminAuthRateLimit(
     Date.now() - options.windowMinutes * 60 * 1000,
   ).toISOString();
 
+  const signal = createAdminAuthAbortSignal();
   const [emailResult, ipResult] = await Promise.all([
     supabaseAdmin
       .from('admin_auth_events')
       .select('id', { count: 'exact', head: true })
       .eq('event_type', options.eventType)
       .eq('email_hash', fingerprint.emailHash)
-      .gte('attempted_at', cutoff),
+      .gte('attempted_at', cutoff)
+      .abortSignal(signal),
     supabaseAdmin
       .from('admin_auth_events')
       .select('id', { count: 'exact', head: true })
       .eq('event_type', options.eventType)
       .eq('ip_hash', fingerprint.ipHash)
-      .gte('attempted_at', cutoff),
+      .gte('attempted_at', cutoff)
+      .abortSignal(signal),
   ]);
 
   if (emailResult.error || ipResult.error) {
@@ -101,7 +110,7 @@ export async function recordAdminAuthEvent(
     event_type: eventType,
     email_hash: fingerprint.emailHash,
     ip_hash: fingerprint.ipHash,
-  });
+  }).abortSignal(createAdminAuthAbortSignal());
 
   if (error) {
     throw new Error('Unable to record admin authentication event.');
@@ -115,7 +124,8 @@ export async function clearAdminLoginFailures(
     .from('admin_auth_events')
     .delete()
     .eq('event_type', 'login_failure')
-    .eq('email_hash', fingerprint.emailHash);
+    .eq('email_hash', fingerprint.emailHash)
+    .abortSignal(createAdminAuthAbortSignal());
 
   if (error) {
     throw new Error('Unable to clear admin authentication events.');
@@ -127,5 +137,6 @@ export async function cleanupAdminAuthEvents(): Promise<void> {
   await supabaseAdmin
     .from('admin_auth_events')
     .delete()
-    .lt('attempted_at', cutoff);
+    .lt('attempted_at', cutoff)
+    .abortSignal(createAdminAuthAbortSignal());
 }
