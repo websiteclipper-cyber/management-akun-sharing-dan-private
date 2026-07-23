@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { adminUpdate, adminInsert, adminDelete, adminSelect } from '@/lib/adminApi';
 import { Product } from '@/lib/types';
 import {
@@ -16,7 +16,9 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Product | null>(null);
   const [isCopy, setIsCopy] = useState(false);
-  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [catalogFilter, setCatalogFilter] = useState<CatalogCategoryId | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   async function loadProducts() {
     const { data } = await adminSelect('products');
@@ -37,6 +39,35 @@ export default function ProductsPage() {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
   }
 
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase('id-ID');
+
+    return products.filter(product => {
+      if (statusFilter !== 'all' && product.status !== statusFilter) return false;
+
+      const productCategory = getProductCatalogCategory(product);
+      if (catalogFilter !== 'all' && productCategory !== catalogFilter) return false;
+      if (!query) return true;
+
+      return [
+        product.code,
+        product.name,
+        product.platform_name,
+        product.account_type,
+        getCatalogCategoryLabel(productCategory),
+        product.status,
+      ].some(value => String(value || '').toLocaleLowerCase('id-ID').includes(query));
+    });
+  }, [products, statusFilter, catalogFilter, searchQuery]);
+
+  const hasActiveFilters = statusFilter !== 'all' || catalogFilter !== 'all' || searchQuery.trim() !== '';
+
+  function resetFilters() {
+    setStatusFilter('all');
+    setCatalogFilter('all');
+    setSearchQuery('');
+  }
+
   return (
     <div className="admin-content">
       <div className="admin-topbar">
@@ -48,31 +79,118 @@ export default function ProductsPage() {
           <div className="loading-page"><div className="loading-spinner" /></div>
         ) : (
           <>
-            <div style={{ display: 'flex', gap: '24px', marginBottom: '24px', borderBottom: '1px solid var(--border-color)', paddingBottom: '0' }}>
-              <button 
-                onClick={() => setActiveTab('active')} 
-                style={{ 
-                  background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', 
-                  fontWeight: activeTab === 'active' ? 600 : 400, 
-                  color: activeTab === 'active' ? 'var(--brand-primary)' : 'var(--text-muted)',
-                  borderBottom: activeTab === 'active' ? '2px solid var(--brand-primary)' : '2px solid transparent',
-                  paddingBottom: '12px', marginBottom: '-1px'
-                }}
+            <div style={{ display: 'flex', gap: '24px', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '0', overflowX: 'auto' }}>
+              {([
+                { value: 'all', label: 'Semua Produk', count: products.length },
+                { value: 'active', label: 'Produk Aktif', count: products.filter(product => product.status === 'active').length },
+                { value: 'inactive', label: 'Diarsipkan / Nonaktif', count: products.filter(product => product.status === 'inactive').length },
+              ] as const).map(tab => (
+                <button
+                  key={tab.value}
+                  onClick={() => setStatusFilter(tab.value)}
+                  aria-pressed={statusFilter === tab.value}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: statusFilter === tab.value ? 600 : 400,
+                    color: statusFilter === tab.value ? 'var(--brand-primary)' : 'var(--text-muted)',
+                    borderBottom: statusFilter === tab.value ? '2px solid var(--brand-primary)' : '2px solid transparent',
+                    padding: '0 0 12px',
+                    marginBottom: '-1px',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {tab.label} ({tab.count})
+                </button>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                flexWrap: 'wrap',
+                marginBottom: '20px',
+                padding: '16px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-lg)',
+              }}
+            >
+              <div style={{ position: 'relative', flex: '1 1 320px', minWidth: '240px' }}>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    left: '14px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-muted)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  🔍
+                </span>
+                <input
+                  type="search"
+                  className="form-input"
+                  value={searchQuery}
+                  onChange={event => setSearchQuery(event.target.value)}
+                  placeholder="Cari kode, nama produk, platform, kategori, atau tipe akun..."
+                  aria-label="Cari produk"
+                  style={{ paddingLeft: '42px', paddingRight: searchQuery ? '42px' : '14px' }}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="Hapus pencarian"
+                    title="Hapus pencarian"
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '28px',
+                      height: '28px',
+                      border: 'none',
+                      borderRadius: '50%',
+                      background: 'transparent',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      fontSize: '1.1rem',
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              <select
+                className="form-select"
+                value={catalogFilter}
+                onChange={event => setCatalogFilter(event.target.value as CatalogCategoryId | 'all')}
+                aria-label="Filter kategori katalog"
+                style={{ flex: '0 1 240px', minWidth: '210px' }}
               >
-                Produk Aktif ({products.filter(p => p.status === 'active').length})
-              </button>
-              <button 
-                onClick={() => setActiveTab('inactive')} 
-                style={{ 
-                  background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', 
-                  fontWeight: activeTab === 'inactive' ? 600 : 400, 
-                  color: activeTab === 'inactive' ? 'var(--text-primary)' : 'var(--text-muted)',
-                  borderBottom: activeTab === 'inactive' ? '2px solid var(--text-primary)' : '2px solid transparent',
-                  paddingBottom: '12px', marginBottom: '-1px'
-                }}
-              >
-                Diarsipkan / Nonaktif ({products.filter(p => p.status === 'inactive').length})
-              </button>
+                <option value="all">Semua kategori katalog</option>
+                {CATALOG_CATEGORIES.map(category => (
+                  <option key={category.id} value={category.id}>{category.title}</option>
+                ))}
+              </select>
+
+              {hasActiveFilters && (
+                <button type="button" className="btn btn-secondary" onClick={resetFilters}>
+                  Reset Filter
+                </button>
+              )}
+
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+                Menampilkan <strong style={{ color: 'var(--text-primary)' }}>{filteredProducts.length}</strong> produk
+              </div>
             </div>
             <div className="table-container">
             <table className="table">
@@ -93,7 +211,7 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {products.filter(p => p.status === activeTab).map(p => (
+                {filteredProducts.map(p => (
                   <tr key={p.id}>
                     <td style={{ fontFamily: 'monospace', color: 'var(--brand-primary-light)' }}>{p.code}</td>
                     <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{p.name}</td>
@@ -156,8 +274,18 @@ export default function ProductsPage() {
                     </td>
                   </tr>
                 ))}
-                {products.filter(p => p.status === activeTab).length === 0 && (
-                  <tr><td colSpan={12} className="empty-state"><div className="icon">📦</div><h3>Belum ada produk di kategori ini</h3></td></tr>
+                {filteredProducts.length === 0 && (
+                  <tr>
+                    <td colSpan={12} className="empty-state">
+                      <div className="icon">📦</div>
+                      <h3>{hasActiveFilters ? 'Produk tidak ditemukan' : 'Belum ada produk'}</h3>
+                      {hasActiveFilters && (
+                        <p style={{ color: 'var(--text-muted)', marginTop: '6px' }}>
+                          Coba ubah kata kunci, status, atau kategori katalog.
+                        </p>
+                      )}
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
