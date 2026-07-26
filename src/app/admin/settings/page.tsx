@@ -67,17 +67,17 @@ export default function SettingsPage() {
       { key: 'global_promo_price', value: '100000', label: 'Harga Diskon Global Promo' },
       { key: 'global_promo_btn_text', value: 'AMBIL PROMO SEKARANG', label: 'Teks Tombol Global Promo' },
       { key: 'global_promo_btn_link', value: '#katalog', label: 'Link Tombol Global Promo' },
-      { key: 'warranty_auto_replace', value: 'false', label: 'Aktifkan Auto-Replace Garansi (Tanpa Persetujuan Admin)' },
     ];
   }
 
   function ensureDefaults(existing: Setting[]): Setting[] {
     const defaults = getDefaults();
-    const keys = existing.map(s => s.key);
-    const merged = [...existing];
-    for (const d of defaults) {
-      if (!keys.includes(d.key)) {
-        merged.push(d);
+    const supportedSettings = existing.filter(setting => setting.key !== 'warranty_auto_replace');
+    const keys = supportedSettings.map(setting => setting.key);
+    const merged = [...supportedSettings];
+    for (const defaultSetting of defaults) {
+      if (!keys.includes(defaultSetting.key)) {
+        merged.push(defaultSetting);
       }
     }
     return merged;
@@ -315,20 +315,19 @@ export default function SettingsPage() {
                   fontSize: '1.4rem',
                 }}>🛡️</div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px' }}>Auto-Replace Garansi</h3>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px' }}>Peninjauan Garansi Manual</h3>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                    Tentukan apakah sistem otomatis mengganti akun ketika buyer mengajukan klaim garansi valid.
+                    Semua klaim garansi wajib diperiksa dan diputuskan oleh admin.
                   </p>
                 </div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
-                  <input
-                    type="checkbox"
-                    checked={settings.find(s => s.key === 'warranty_auto_replace')?.value === 'true'}
-                    onChange={e => updateSetting('warranty_auto_replace', e.target.checked ? 'true' : 'false')}
-                    style={{ width: '20px', height: '20px', accentColor: 'var(--brand-success)' }}
-                  />
-                  Aktifkan Auto-Replace
-                </label>
+                <span style={{
+                  padding: '6px 12px', borderRadius: '999px',
+                  background: 'rgba(34,197,94,0.12)', color: '#22c55e',
+                  border: '1px solid rgba(34,197,94,0.22)',
+                  fontSize: '0.78rem', fontWeight: 700,
+                }}>
+                  Aktif
+                </span>
               </div>
 
               <div style={{
@@ -338,18 +337,10 @@ export default function SettingsPage() {
                 padding: '16px',
               }}>
                 <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                  ⚙️ Status Saat Ini
+                  Alur Keputusan
                 </div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                  {settings.find(s => s.key === 'warranty_auto_replace')?.value === 'true' ? (
-                    <div>
-                      🟢 <strong style={{ color: '#22c55e' }}>Auto-Replace Aktif:</strong> Ketika buyer mengajukan klaim garansi dengan kredensial yang cocok, sistem akan langsung memberikan akun pengganti otomatis (jika ada backup).
-                    </div>
-                  ) : (
-                    <div>
-                      🔴 <strong style={{ color: '#ef4444' }}>Auto-Replace Nonaktif (Rekomendasi):</strong> Semua klaim garansi baru akan masuk ke antrean <strong>Pending</strong>. Penggantian akun memerlukan persetujuan admin secara manual dari dashboard Garansi.
-                    </div>
-                  )}
+                  Setiap klaim baru masuk dengan status <strong>Menunggu Peninjauan</strong>. Admin memeriksa ID pesanan dan ketentuan garansi, lalu memilih <strong style={{ color: '#22c55e' }}>Diterima</strong> atau <strong style={{ color: '#ef4444' }}>Ditolak</strong>. Sistem tidak lagi mengganti atau menolak klaim secara otomatis.
                 </div>
               </div>
             </div>

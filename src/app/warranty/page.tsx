@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertCircle, FiCheckCircle, FiCopy, FiArrowLeft, FiShield } from 'react-icons/fi';
+import { FiAlertCircle, FiCheckCircle, FiCopy, FiArrowLeft, FiEye, FiEyeOff, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -73,6 +73,7 @@ function WarrantyForm() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     order_number: searchParams.get('order') || searchParams.get('order_number') || '',
@@ -171,7 +172,7 @@ function WarrantyForm() {
             Klaim Garansi
           </h1>
           <p style={{ fontSize: '0.9rem', color: '#888', margin: 0, lineHeight: 1.5 }}>
-            Form pengajuan klaim garansi. Masukkan detail pesanan untuk verifikasi.
+            Masukkan ID pesanan dan detail kendala untuk meminta peninjauan admin.
           </p>
         </div>
 
@@ -220,8 +221,11 @@ function WarrantyForm() {
               ) : ['pending', 'manual_review', 'no_backup'].includes(result.status) ? (
                 <div style={{ marginBottom: '24px', textAlign: 'center' }}>
                   <FiAlertCircle style={{ color: '#eab308', fontSize: '32px', margin: '0 auto 16px' }} />
-                  <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 8px' }}>Menunggu Admin</h3>
-                  <p style={{ fontSize: '0.9rem', color: '#888', margin: '0 0 16px', lineHeight: 1.5 }}>{result.resolution_notes}</p>
+                  <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 8px' }}>Menunggu Peninjauan Admin</h3>
+                  <p style={{ fontSize: '0.9rem', color: '#888', margin: '0 0 10px', lineHeight: 1.5 }}>{result.resolution_notes}</p>
+                  <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 16px', lineHeight: 1.5 }}>
+                    Pengajuan belum otomatis diterima. Admin akan memeriksa ID pesanan dan memutuskan klaim diterima atau ditolak.
+                  </p>
                   <div style={{ background: '#0a0a0a', border: '1px solid #222', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: '#aaa' }}>
                     ID Klaim: <strong style={{ color: '#fff' }}>{result.claim_code}</strong>
                   </div>
@@ -237,7 +241,11 @@ function WarrantyForm() {
               )}
 
               <button 
-                onClick={() => { setResult(null); setFormData({ ...formData, reported_password: '' }); }} 
+                onClick={() => {
+                  setResult(null);
+                  setShowPassword(false);
+                  setFormData({ ...formData, reported_password: '' });
+                }}
                 style={{ 
                   width: '100%', padding: '12px', borderRadius: '8px',
                   background: '#111', color: '#ededed',
@@ -271,11 +279,31 @@ function WarrantyForm() {
                 </div>
               )}
 
+              <div style={{
+                background: 'rgba(234,179,8,0.08)',
+                border: '1px solid rgba(234,179,8,0.22)',
+                borderRadius: '8px',
+                padding: '14px 16px',
+                marginBottom: '24px',
+                display: 'flex',
+                gap: '10px'
+              }}>
+                <FiAlertCircle style={{ color: '#eab308', marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <strong style={{ display: 'block', color: '#f5f5f5', fontSize: '0.86rem', marginBottom: '4px' }}>
+                    Klaim akan ditinjau secara manual
+                  </strong>
+                  <span style={{ color: '#999', fontSize: '0.8rem', lineHeight: 1.5 }}>
+                    Admin akan memeriksa ID pesanan dan data pengajuan sesuai ketentuan yang berlaku, lalu memutuskan klaim diterima atau ditolak.
+                  </span>
+                </div>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
-                  <label style={labelStyle}>No. Pesanan</label>
+                  <label style={labelStyle}>ID Pesanan</label>
                   <input
-                    type="text" required placeholder="ORD-XXXXX"
+                    type="text" required placeholder="Contoh: ORD-XXXXX"
                     style={inputStyle} value={formData.order_number}
                     onChange={e => setFormData({...formData, order_number: e.target.value})}
                     onFocus={focusStyle} onBlur={blurStyle}
@@ -294,12 +322,44 @@ function WarrantyForm() {
 
                 <div>
                   <label style={labelStyle}>Password Asli</label>
-                  <input
-                    type="password" required placeholder="••••••••"
-                    style={inputStyle} value={formData.reported_password}
-                    onChange={e => setFormData({...formData, reported_password: e.target.value})}
-                    onFocus={focusStyle} onBlur={blurStyle}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="Masukkan password akun"
+                      style={{ ...inputStyle, paddingRight: '48px' }}
+                      value={formData.reported_password}
+                      onChange={e => setFormData({ ...formData, reported_password: e.target.value })}
+                      onFocus={focusStyle}
+                      onBlur={blurStyle}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(value => !value)}
+                      aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                      title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        right: '12px',
+                        transform: 'translateY(-50%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '28px',
+                        height: '28px',
+                        padding: 0,
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#888',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}
+                    >
+                      {showPassword ? <FiEyeOff /> : <FiEye />}
+                    </button>
+                  </div>
                 </div>
 
                 <div>
@@ -342,7 +402,7 @@ function WarrantyForm() {
                 onMouseEnter={(e) => { if(!loading) e.currentTarget.style.background = '#fff'; }}
                 onMouseLeave={(e) => { if(!loading) e.currentTarget.style.background = '#ededed'; }}
               >
-                {loading ? 'Memproses...' : 'Klaim Garansi'}
+                {loading ? 'Mengirim Pengajuan...' : 'Kirim untuk Peninjauan Admin'}
               </button>
             </motion.form>
           )}
