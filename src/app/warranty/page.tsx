@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertCircle, FiCheckCircle, FiCopy, FiArrowLeft, FiEye, FiEyeOff, FiShield } from 'react-icons/fi';
+import { FiAlertCircle, FiCheckCircle, FiCopy, FiArrowLeft, FiEye, FiEyeOff, FiShield, FiFileText } from 'react-icons/fi';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -278,6 +278,44 @@ function WarrantyForm() {
                   <span>{error}</span>
                 </div>
               )}
+
+              <div style={{
+                background: 'rgba(59,130,246,0.08)',
+                border: '1px solid rgba(59,130,246,0.25)',
+                borderRadius: '8px',
+                padding: '14px 16px',
+                marginBottom: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <FiFileText style={{ color: '#60a5fa', marginTop: '2px', flexShrink: 0 }} />
+                  <div>
+                    <strong style={{ display: 'block', color: '#f5f5f5', fontSize: '0.86rem', marginBottom: '4px' }}>
+                      Harap baca ketentuan sebelum mengajukan klaim
+                    </strong>
+                    <span style={{ color: '#999', fontSize: '0.8rem', lineHeight: 1.5 }}>
+                      Ketentuan garansi sama seperti yang berlaku sebelum membeli. Pastikan kendala Anda memenuhi syarat sebelum mengirim pengajuan.
+                    </span>
+                  </div>
+                </div>
+                <Link
+                  href="/ketentuan"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    alignSelf: 'flex-start',
+                    padding: '9px 16px', borderRadius: '8px',
+                    background: '#111', color: '#ededed',
+                    border: '1px solid #333', fontSize: '0.85rem', fontWeight: 600,
+                    textDecoration: 'none', transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#222'; e.currentTarget.style.borderColor = '#555'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#111'; e.currentTarget.style.borderColor = '#333'; }}
+                >
+                  <FiFileText /> Baca Ketentuan
+                </Link>
+              </div>
 
               <div style={{
                 background: 'rgba(234,179,8,0.08)',
