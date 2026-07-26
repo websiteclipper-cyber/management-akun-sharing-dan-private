@@ -239,7 +239,7 @@ function WarrantyForm() {
               )}
 
               <button 
-                onClick={() => setResult(null)} 
+                onClick={() => setResult(null)}
                 style={{ 
                   width: '100%', padding: '12px', borderRadius: '8px',
                   background: '#111', color: '#ededed',
