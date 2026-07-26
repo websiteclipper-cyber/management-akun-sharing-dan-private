@@ -33,10 +33,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Klaim tidak ditemukan' }, { status: 404 });
     }
 
-    if (claim.status === 'auto_replaced') {
+    if (claim.status !== 'approved') {
       return NextResponse.json(
-        { error: 'Klaim ini sudah di-replace secara otomatis' },
-        { status: 400 }
+        { error: 'Klaim harus diterima terlebih dahulu sebelum akun pengganti diberikan.' },
+        { status: 409 }
       );
     }
 
@@ -86,11 +86,11 @@ export async function POST(request: NextRequest) {
     const { data: updated, error: updateErr } = await supabase
       .from('warranty_claims')
       .update({
-        status: 'auto_replaced', // same status as auto — means resolved
+        status: 'approved',
         replacement_backup_id: backup_account_id,
         new_email: backup.account_identifier,
         new_password_encrypted: backup.account_secret_encrypted,
-        resolution_notes: 'Admin manual replacement — akun cadangan telah diberikan.',
+        resolution_notes: 'Klaim diterima. Admin telah memberikan akun pengganti secara manual.',
         admin_notes: admin_notes || 'Manual replace oleh admin.',
         resolved_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       ...updated,
       new_email: backup.account_identifier,
       new_password: newPasswordDecrypted,
-      message: 'Akun berhasil diganti secara manual',
+      message: 'Klaim diterima dan akun berhasil diganti secara manual',
     });
   } catch (error: unknown) {
     console.error('Manual replace error:', error);
