@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { sendTelegramNotification } from '@/lib/telegram';
 import { getBuyerFromRequest, verifyToken } from '@/lib/auth';
@@ -74,10 +75,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generate order number
+    // Generate order number. A cryptographically random 8-hex suffix (4 billion
+    // values per day) replaces the old Math.random()*10000 (only 10k/day), whose
+    // same-day collisions could make a valid order code fail to look up.
     const date = new Date();
     const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
-    const rand = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const rand = crypto.randomBytes(4).toString('hex').toUpperCase();
     const orderNumber = `ORD-${dateStr}-${rand}`;
 
     // Look up reseller by ref_code
