@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertCircle, FiCheckCircle, FiCopy, FiArrowLeft, FiShield } from 'react-icons/fi';
+import { FiAlertCircle, FiCheckCircle, FiCopy, FiArrowLeft, FiEye, FiEyeOff, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -73,10 +73,12 @@ function WarrantyForm() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     order_number: searchParams.get('order') || searchParams.get('order_number') || '',
     reported_email: '',
+    reported_password: '',
     issue_type: 'password_changed',
     issue_description: ''
   });
@@ -239,7 +241,11 @@ function WarrantyForm() {
               )}
 
               <button 
-                onClick={() => setResult(null)}
+                onClick={() => {
+                  setResult(null);
+                  setShowPassword(false);
+                  setFormData({ ...formData, reported_password: '' });
+                }}
                 style={{ 
                   width: '100%', padding: '12px', borderRadius: '8px',
                   background: '#111', color: '#ededed',
@@ -314,6 +320,47 @@ function WarrantyForm() {
                   />
                 </div>
 
+                <div>
+                  <label style={labelStyle}>Password Asli</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="Masukkan password akun"
+                      style={{ ...inputStyle, paddingRight: '48px' }}
+                      value={formData.reported_password}
+                      onChange={e => setFormData({ ...formData, reported_password: e.target.value })}
+                      onFocus={focusStyle}
+                      onBlur={blurStyle}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(value => !value)}
+                      aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                      title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        right: '12px',
+                        transform: 'translateY(-50%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '28px',
+                        height: '28px',
+                        padding: 0,
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#888',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}
+                    >
+                      {showPassword ? <FiEyeOff /> : <FiEye />}
+                    </button>
+                  </div>
+                </div>
 
                 <div>
                   <label style={labelStyle}>Jenis Kendala</label>
