@@ -7,6 +7,18 @@ function normalizeText(value: unknown, maxLength: number) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
 }
 
+// Buyers often retype or paste the order code with different casing, stray
+// spaces, or a copied "Order #" / "#" label. Order numbers are always stored
+// uppercase (e.g. ORD-20260726-A1B2C3D4), so normalizing here lets a correct
+// code match regardless of how the buyer entered it.
+function normalizeOrderNumber(value: unknown) {
+  return normalizeText(value, 100)
+    .toUpperCase()
+    .replace(/\s+/g, '')       // drop all whitespace, including internal
+    .replace(/^ORDER#?/, '')   // drop a copied "ORDER" / "ORDER#" label
+    .replace(/^#+/, '');       // drop a leading '#'
+}
+
 function escapeTelegramHtml(value: string) {
   return value
     .replaceAll('&', '&amp;')
@@ -17,7 +29,7 @@ function escapeTelegramHtml(value: string) {
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.json();
-    const orderNumber = normalizeText(payload.order_number, 100);
+    const orderNumber = normalizeOrderNumber(payload.order_number);
     const reportedEmail = normalizeText(payload.reported_email, 320);
     const issueType = normalizeText(payload.issue_type, 100);
     const issueDescription = normalizeText(payload.issue_description, 2000);
@@ -28,12 +40,17 @@ export async function POST(request: NextRequest) {
 
     // The order must exist so the claim can be linked to the correct buyer and product.
     // Warranty eligibility is deliberately decided by an admin, not by this endpoint.
-    const { data: order, error: orderError } = await supabase
+    // Take the most recent match instead of .single(): a legacy weak order-number
+    // generator could produce duplicates, and .single() would then error out and
+    // report a valid code as "not found".
+    const { data: orders, error: orderError } = await supabase
       .from('orders')
       .select('id, buyer_id, product_id, order_status')
       .eq('order_number', orderNumber)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1);
 
+    const order = orders?.[0];
     if (orderError || !order) {
       return NextResponse.json({ error: 'Pesanan tidak ditemukan. Pastikan kode pesanan benar.' }, { status: 404 });
     }
