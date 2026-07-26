@@ -11,7 +11,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useLocale } from '@/lib/locale-context';
 import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiGooglegemini, SiNotion } from 'react-icons/si';
 import { BsDisplay, BsStars } from 'react-icons/bs';
-import { FiInfo, FiMonitor, FiX } from 'react-icons/fi';
+import { FiInfo, FiMonitor, FiX, FiFileText } from 'react-icons/fi';
 import { TbBrandOpenai, TbBrandDisney, TbBrandAmazon, TbRobot, TbScissors, TbPhotoVideo } from 'react-icons/tb';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
@@ -549,6 +549,30 @@ export default function HomePage() {
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >{t('view_catalog')}</button>
+          <Link
+            href="/ketentuan"
+            style={{
+              background: C_CARD, color: C_TEXT,
+              border: `1px solid ${C_BORDER}`,
+              padding: '15px 30px', borderRadius: '12px',
+              fontSize: '1rem', fontWeight: 600,
+              textDecoration: 'none', transition: 'all 0.25s ease',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--bg-card-hover)';
+              e.currentTarget.style.borderColor = 'var(--border-hover)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = C_CARD;
+              e.currentTarget.style.borderColor = 'var(--border-primary)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <FiFileText /> {t('terms_all_products')}
+          </Link>
           {waUrl && (
             <a
               href={waUrl} target="_blank" rel="noopener noreferrer"

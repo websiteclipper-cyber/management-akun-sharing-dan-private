@@ -17,6 +17,7 @@ export const translations: Record<string, Record<string, string>> = {
     hero_subtitle: 'Solusi akun premium murah, aman, dan instan untuk menemani keseharian Anda.',
     view_catalog: 'Lihat Katalog',
     help: 'Bantuan',
+    terms_all_products: 'Ketentuan Semua Produk',
 
     // Catalog
     choose_platform: 'Pilih Platform.',
@@ -199,6 +200,7 @@ export const translations: Record<string, Record<string, string>> = {
     hero_subtitle: 'Affordable, safe, and instant premium accounts for your daily needs.',
     view_catalog: 'View Catalog',
     help: 'Help',
+    terms_all_products: 'All Product Terms',
     choose_platform: 'Choose Platform.',
     categories_available: '{count} exclusive categories available.',
     variants_available: '{count} variants available',
