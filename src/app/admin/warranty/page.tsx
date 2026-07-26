@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 
+const WARRANTY_TERMS_URL = 'https://pastipremium.my.id/ketentuan';
+
 export default function AdminWarrantyClaims() {
   const [claims, setClaims] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -334,7 +336,7 @@ export default function AdminWarrantyClaims() {
                               {selectedClaim.orders.buyer_email.phone}
                             </a>
                             <a 
-                              href={`https://wa.me/${selectedClaim.orders.buyer_email.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Halo ${selectedClaim.orders.buyer_email.name || ''}, terkait klaim garansi Anda untuk produk ${selectedClaim.products?.name || ''} (Order ${selectedClaim.orders?.order_number || selectedClaim.order_id}). \n\n${updateData.new_email || selectedClaim.new_email ? `Berikut akun penggantinya:\n${updateData.new_email || selectedClaim.new_email}\n\n` : ''}${updateData.resolution_notes || selectedClaim.resolution_notes ? `Catatan: ${updateData.resolution_notes || selectedClaim.resolution_notes}` : ''}`)}`} 
+                              href={`https://wa.me/${selectedClaim.orders.buyer_email.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Halo ${selectedClaim.orders.buyer_email.name || ''}, terkait klaim garansi Anda untuk produk ${selectedClaim.products?.name || ''} (Order ${selectedClaim.orders?.order_number || selectedClaim.order_id}). \n\n${updateData.new_email || selectedClaim.new_email ? `Berikut akun penggantinya:\n${updateData.new_email || selectedClaim.new_email}\n\n` : ''}${updateData.resolution_notes || selectedClaim.resolution_notes ? `Catatan: ${updateData.resolution_notes || selectedClaim.resolution_notes}` : ''}${(updateData.status || selectedClaim.status) === 'rejected' ? `\n\nPengajuan tidak memenuhi ketentuan garansi yang berlaku. Silakan baca ketentuan lengkap di:\n${WARRANTY_TERMS_URL}` : ''}`)}`}
                               target="_blank" 
                               rel="noopener noreferrer" 
                               className="btn btn-sm" 
