@@ -341,9 +341,9 @@ function WarrantyForm() {
                 <div>
                   <label style={labelStyle}>ID Pesanan</label>
                   <input
-                    type="text" required placeholder="Contoh: ORD-XXXXX"
+                    type="text" required placeholder="Contoh: ORD-20260726-A1B2C3D4"
                     style={inputStyle} value={formData.order_number}
-                    onChange={e => setFormData({...formData, order_number: e.target.value})}
+                    onChange={e => setFormData({...formData, order_number: e.target.value.toUpperCase().replace(/\s+/g, '')})}
                     onFocus={focusStyle} onBlur={blurStyle}
                   />
                 </div>
