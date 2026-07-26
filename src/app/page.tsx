@@ -449,8 +449,9 @@ export default function HomePage() {
             transition={{ duration: 0.2 }}
             style={{
               position: 'fixed', top: '68px', left: 0, right: 0,
-              background: 'rgba(255, 255, 255, 0.96)',
-              backdropFilter: 'blur(18px)',
+              background: 'var(--glass-bg)',
+              backdropFilter: 'var(--glass-blur)',
+              WebkitBackdropFilter: 'var(--glass-blur)',
               borderBottom: '1px solid var(--border-primary)',
               padding: '20px 24px',
               zIndex: 99,
@@ -490,7 +491,7 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           style={{
-            fontSize: '3.3rem',
+            fontSize: 'clamp(2.1rem, 7vw, 3.3rem)',
             fontWeight: 800,
             letterSpacing: 0,
             lineHeight: 1.1,
@@ -626,7 +627,7 @@ export default function HomePage() {
                     style={{
                       display: 'flex', alignItems: 'center', gap: '16px',
                       padding: '16px 20px', borderRadius: '14px',
-                      background: isTopThree ? C_SURFACE : '#fff',
+                      background: isTopThree ? C_SURFACE : 'var(--bg-card)',
                       border: `1px solid ${C_BORDER}`,
                       transition: 'all 0.2s ease',
                     }}
@@ -1161,7 +1162,7 @@ export default function HomePage() {
           target="_blank"
           rel="noopener noreferrer"
           style={{
-            position: 'fixed', bottom: '20px', right: '16px', zIndex: 200,
+            position: 'fixed', bottom: 'calc(20px + env(safe-area-inset-bottom))', right: '16px', zIndex: 200,
             display: 'flex', alignItems: 'center', gap: '8px',
             background: '#25D366', color: '#fff',
             padding: '12px 16px', borderRadius: '30px',
@@ -1184,7 +1185,7 @@ export default function HomePage() {
       <footer style={{
         padding: '48px 20px',
         borderTop: `1px solid ${C_BORDER}`,
-        textAlign: 'center', background: '#ffffff',
+        textAlign: 'center', background: 'var(--bg-card)',
         position: 'relative', zIndex: 1
       }}>
         <div style={{

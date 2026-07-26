@@ -141,7 +141,7 @@ function PaymentSuccessPage() {
 
             {/* Order info */}
             <div style={{
-              background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)',
+              background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)', padding: '16px', marginBottom: '20px',
             }}>
               <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '4px' }}>
@@ -175,8 +175,8 @@ function PaymentSuccessPage() {
             </p>
 
             {showManualCheck && (
-              <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 'var(--radius-md)' }}>
-                <p style={{ fontSize: '0.85rem', color: '#eab308', marginBottom: '12px' }}>
+              <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: 'var(--radius-md)' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--brand-warning)', marginBottom: '12px' }}>
                   {t('success_payment_timeout')}
                 </p>
                 <Link href={`/buyer/lookup?order=${orderNumber}`} className="btn btn-secondary btn-sm">
@@ -222,7 +222,7 @@ function PaymentSuccessPage() {
 
             {/* Order Summary */}
             <div style={{
-              background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)',
+              background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)', padding: '14px 16px', marginBottom: '20px',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             }}>
@@ -291,7 +291,7 @@ function PaymentSuccessPage() {
                       )}
 
                       {/* Expiry */}
-                      <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.15)', borderRadius: '8px', fontSize: '0.8rem', color: '#eab308' }}>
+                      <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--brand-warning)' }}>
                         {t('success_valid_until')} <strong>{new Date(a.expired_at as string).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
                       </div>
                     </div>
@@ -311,9 +311,9 @@ function PaymentSuccessPage() {
                 background: 'rgba(255, 59, 48, 0.05)', border: '1px solid rgba(255, 59, 48, 0.2)',
                 borderRadius: 'var(--radius-lg)', padding: '14px 16px', marginTop: '16px', marginBottom: '20px',
               }}>
-                <div style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600, marginBottom: '4px' }}>{t('success_sharing_warning_title')}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--brand-danger)', fontWeight: 600, marginBottom: '4px' }}>{t('success_sharing_warning_title')}</div>
                 <ul style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, paddingLeft: '16px', lineHeight: 1.6 }}>
-                  <li><strong style={{ color: '#ef4444' }}>{t('success_sharing_rule_1').split(' ')[0]}</strong> {t('success_sharing_rule_1').substring(t('success_sharing_rule_1').indexOf(' ') + 1)}</li>
+                  <li><strong style={{ color: 'var(--brand-danger)' }}>{t('success_sharing_rule_1').split(' ')[0]}</strong> {t('success_sharing_rule_1').substring(t('success_sharing_rule_1').indexOf(' ') + 1)}</li>
                   <li>{t('success_sharing_rule_2')}</li>
                   <li>{t('success_sharing_rule_3')}</li>
                   <li>{t('success_sharing_rule_4')}</li>
@@ -324,7 +324,7 @@ function PaymentSuccessPage() {
                 background: 'rgba(255, 204, 0, 0.05)', border: '1px solid rgba(255, 204, 0, 0.2)',
                 borderRadius: 'var(--radius-lg)', padding: '14px 16px', marginTop: '16px', marginBottom: '20px',
               }}>
-                <div style={{ fontSize: '0.8rem', color: '#eab308', fontWeight: 600, marginBottom: '4px' }}>{t('success_private_warning_title')}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--brand-warning)', fontWeight: 600, marginBottom: '4px' }}>{t('success_private_warning_title')}</div>
                 <ul style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, paddingLeft: '16px', lineHeight: 1.6 }}>
                   <li>{t('success_private_rule_1')}</li>
                   <li>{t('success_private_rule_2')}</li>
@@ -383,10 +383,10 @@ function CredentialField({ label, value, copyLabel, copiedLabel }: { label: stri
       <button
         onClick={copy}
         style={{
-          background: copied ? 'rgba(16,185,129,0.15)' : 'var(--bg-secondary)',
-          border: `1px solid ${copied ? 'rgba(16,185,129,0.3)' : 'var(--border-primary)'}`,
+          background: copied ? 'rgba(22,163,74,0.12)' : 'var(--bg-secondary)',
+          border: `1px solid ${copied ? 'rgba(22,163,74,0.35)' : 'var(--border-primary)'}`,
           borderRadius: '6px', padding: '6px 12px', fontSize: '0.75rem',
-          cursor: 'pointer', color: copied ? '#10b981' : 'var(--text-primary)',
+          cursor: 'pointer', color: copied ? 'var(--brand-success)' : 'var(--text-primary)',
           fontWeight: 600, transition: 'all 0.2s', whiteSpace: 'nowrap',
         }}
       >
@@ -457,10 +457,10 @@ function CredentialFieldDecrypt({ label, encrypted, revealLabel, copyLabel, copi
           <button
             onClick={copy}
             style={{
-              background: copied ? 'rgba(16,185,129,0.15)' : 'var(--bg-secondary)',
-              border: `1px solid ${copied ? 'rgba(16,185,129,0.3)' : 'var(--border-primary)'}`,
+              background: copied ? 'rgba(22,163,74,0.12)' : 'var(--bg-secondary)',
+              border: `1px solid ${copied ? 'rgba(22,163,74,0.35)' : 'var(--border-primary)'}`,
               borderRadius: '6px', padding: '6px 12px', fontSize: '0.75rem',
-              cursor: 'pointer', color: copied ? '#10b981' : 'var(--text-primary)',
+              cursor: 'pointer', color: copied ? 'var(--brand-success)' : 'var(--text-primary)',
               fontWeight: 600, whiteSpace: 'nowrap',
             }}
           >

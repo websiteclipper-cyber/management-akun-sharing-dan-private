@@ -384,7 +384,7 @@ export default function OrderPage() {
 
             {/* Order Summary */}
             <div style={{
-              background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)',
+              background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)', padding: '16px', marginBottom: '24px',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: result.discount_amount ? '12px' : '0' }}>
@@ -404,10 +404,10 @@ export default function OrderPage() {
                   display: 'flex', alignItems: 'center', gap: '8px',
                 }}>
                   <span style={{
-                    background: 'rgba(74,222,128,0.12)', color: '#4ade80', fontSize: '0.7rem',
+                    background: 'rgba(22,163,74,0.12)', color: 'var(--brand-success)', fontSize: '0.7rem',
                     fontWeight: 700, padding: '3px 8px', borderRadius: '6px',
                   }}>DISKON</span>
-                  <span style={{ fontSize: '0.8rem', color: '#4ade80', fontWeight: 600 }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--brand-success)', fontWeight: 600 }}>
                     Hemat {formatPrice(result.discount_amount)}
                   </span>
                 </div>
@@ -485,13 +485,13 @@ export default function OrderPage() {
             </Link>
             <h2>{t('order_confirm')}</h2>
             <div className="order-product-summary">
-              <div className="platform" style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--brand-accent)' }}>
+              <div className="platform" style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--accent)' }}>
                 {product.platform_name}
               </div>
               <div className="order-product-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <h4 className="order-product-name" style={{ margin: 0, fontSize: '1.1rem' }}>{product.name}</h4>
                 {hasNewcomerPrice ? (
-                  <span className="badge" style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6', fontWeight: 700, animation: 'pulse 2s infinite' }}>
+                  <span className="badge" style={{ background: 'rgba(37,99,235,0.12)', color: 'var(--accent)', fontWeight: 700, animation: 'pulse 2s infinite' }}>
                     🆕 BUYER BARU
                   </span>
                 ) : promo ? (
@@ -507,7 +507,7 @@ export default function OrderPage() {
                       <span className="price" style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
                         {formatPrice(product.price)}
                       </span>
-                      <span className="price" style={{ color: '#3b82f6' }}>{formatPrice(product.newcomer_price!)}</span>
+                      <span className="price" style={{ color: 'var(--accent)' }}>{formatPrice(product.newcomer_price!)}</span>
                     </div>
                     {quantity > 1 && (
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -548,7 +548,7 @@ export default function OrderPage() {
             </div>
 
             <div className="quantity-card" style={{
-              background: 'rgba(255,255,255,0.03)',
+              background: 'var(--bg-secondary)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)',
               padding: '16px',
@@ -607,7 +607,7 @@ export default function OrderPage() {
 
             {/* ===== DISCOUNT CODE SECTION ===== */}
             <div className="discount-card" style={{
-              background: 'rgba(255,255,255,0.03)',
+              background: 'var(--bg-secondary)',
               borderRadius: 'var(--radius-lg)',
               border: `1px solid ${discountInfo ? 'rgba(52,199,89,0.4)' : 'var(--border-secondary)'}`,
               padding: '16px',
@@ -652,13 +652,13 @@ export default function OrderPage() {
                     className="discount-remove-button"
                     onClick={handleRemoveDiscount}
                     style={{
-                      background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)',
-                      color: '#f87171', borderRadius: '8px', padding: '4px 12px',
+                      background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.3)',
+                      color: 'var(--brand-danger)', borderRadius: '8px', padding: '4px 12px',
                       fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
                       transition: 'all 0.2s',
                     }}
-                    onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(248,113,113,0.2)')}
-                    onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(248,113,113,0.1)')}
+                    onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(220,38,38,0.16)')}
+                    onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(220,38,38,0.08)')}
                   >
                     {t('order_remove')}
                   </button>
@@ -694,7 +694,7 @@ export default function OrderPage() {
                   </div>
                   {discountError && (
                     <div style={{
-                      marginTop: '8px', fontSize: '0.78rem', color: '#f87171',
+                      marginTop: '8px', fontSize: '0.78rem', color: 'var(--brand-danger)',
                       display: 'flex', alignItems: 'center', gap: '6px',
                       animation: 'fadeIn 0.2s ease',
                     }}>
@@ -707,7 +707,7 @@ export default function OrderPage() {
 
             {/* ===== PRICE SUMMARY ===== */}
             <div className="price-summary-card" style={{
-              background: 'rgba(255,255,255,0.03)',
+              background: 'var(--bg-secondary)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)',
               padding: '16px',
@@ -722,22 +722,22 @@ export default function OrderPage() {
               <div style={{ display: 'grid', gap: '8px', fontSize: '0.9rem' }}>
                 <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-muted)' }}>{t('order_price')} {hasNewcomerPrice ? t('order_newcomer_label') : promo ? t('order_promo_label') : ''}</span>
-                  <span style={{ color: hasNewcomerPrice ? '#3b82f6' : 'var(--text-primary)', fontWeight: 600 }}>{formatPrice(totalBasePrice)}</span>
+                  <span style={{ color: hasNewcomerPrice ? 'var(--accent)' : 'var(--text-primary)', fontWeight: 600 }}>{formatPrice(totalBasePrice)}</span>
                 </div>
                 {hasNewcomerPrice && (
                   <div className="summary-row summary-row-special" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#3b82f6', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
+                    <span style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem' }}>
                       <span>🎉</span> {t('order_first_purchase_special')}
                     </span>
-                    <span style={{ color: '#3b82f6', fontWeight: 700, fontSize: '0.78rem' }}>{t('order_save')} {formatPrice(product.price - product.newcomer_price!)}</span>
+                    <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '0.78rem' }}>{t('order_save')} {formatPrice(product.price - product.newcomer_price!)}</span>
                   </div>
                 )}
                 {discountInfo && (
                   <div className="summary-row summary-row-discount" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ color: 'var(--brand-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <span style={{ fontSize: '0.75rem' }}>🎟️</span> {t('order_discount')} [{discountInfo.code}]
                     </span>
-                    <span style={{ color: '#4ade80', fontWeight: 700 }}>-{formatPrice(totalDiscountAmount)}</span>
+                    <span style={{ color: 'var(--brand-success)', fontWeight: 700 }}>-{formatPrice(totalDiscountAmount)}</span>
                   </div>
                 )}
                 {quantity > 1 && (
@@ -755,7 +755,7 @@ export default function OrderPage() {
                 <div className="summary-total" style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{t('order_total')}{quantity > 1 ? ` (${quantity} item)` : ''}</span>
                   <span style={{
-                    color: discountInfo ? '#4ade80' : 'var(--brand-success)',
+                    color: 'var(--brand-success)',
                     fontWeight: 800, fontSize: '1.1rem',
                   }}>
                     {formatPrice(finalDisplayPrice)}
