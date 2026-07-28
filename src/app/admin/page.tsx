@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 
 interface RecentOrder {
   id: number;
@@ -44,6 +45,7 @@ interface SalesData {
   pendingPayment: number;
   needsAssignment: number;
   openTickets: number;
+  pendingWarrantyClaims: number;
   // Products
   totalActiveProducts: number;
   sharingAvailable: number;
@@ -367,6 +369,28 @@ export default function AdminDashboardPage() {
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{data?.ordersToday} order hari ini</div>
           </div>
         </div>
+
+        {(data?.pendingWarrantyClaims || 0) > 0 && (
+          <Link
+            href="/admin/warranty"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px',
+              padding: '16px 18px',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid rgba(234, 179, 8, 0.35)',
+              background: 'rgba(234, 179, 8, 0.08)',
+              color: 'var(--text-primary)',
+              textDecoration: 'none',
+              fontWeight: 700,
+            }}
+          >
+            <span>{data?.pendingWarrantyClaims} klaim garansi menunggu peninjauan admin</span>
+            <span style={{ color: '#b45309', whiteSpace: 'nowrap' }}>Periksa dan putuskan →</span>
+          </Link>
+        )}
 
         {/* ===== ROW 2: Quick Stats ===== */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '12px' }}>
