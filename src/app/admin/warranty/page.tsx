@@ -2,9 +2,18 @@
 
 import { useState, useEffect, useMemo } from 'react';
 
+function getAdminAuthHeaders(includeJson = false): HeadersInit {
+  const token = typeof window === 'undefined' ? '' : localStorage.getItem('admin_token') || '';
+  return {
+    ...(includeJson ? { 'Content-Type': 'application/json' } : {}),
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 export default function AdminWarrantyClaims() {
   const [claims, setClaims] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -26,10 +35,23 @@ export default function AdminWarrantyClaims() {
 
   const fetchClaims = async () => {
     setLoading(true);
+    setLoadError('');
     try {
-      const res = await fetch('/api/admin/warranty');
+      const res = await fetch('/api/admin/warranty', {
+        headers: getAdminAuthHeaders(),
+      });
       const data = await res.json();
+
+      if (!res.ok) {
+        setClaims([]);
+        setLoadError(data.error || 'Gagal memuat klaim garansi.');
+        return;
+      }
+
       setClaims(Array.isArray(data) ? data : []);
+    } catch {
+      setClaims([]);
+      setLoadError('Gagal menghubungi server.');
     } finally {
       setLoading(false);
     }
@@ -48,7 +70,7 @@ export default function AdminWarrantyClaims() {
         : undefined;
       const res = await fetch('/api/admin/warranty', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(true),
         body: JSON.stringify({
           id: selectedClaim.id,
           status: decisionStatus,
@@ -75,12 +97,26 @@ export default function AdminWarrantyClaims() {
 
   const fetchAvailableBackups = async (productId: string) => {
     setLoadingBackups(true);
+    setReplaceResult(null);
     try {
-      const res = await fetch(`/api/admin/warranty/manual-replace?product_id=${productId}`);
+      const res = await fetch(`/api/admin/warranty/manual-replace?product_id=${productId}`, {
+        headers: getAdminAuthHeaders(),
+      });
       const data = await res.json();
+
+      if (!res.ok) {
+        setAvailableBackups([]);
+        setReplaceResult({ error: data.error || 'Gagal memuat akun backup.' });
+        return;
+      }
+
       setAvailableBackups(Array.isArray(data) ? data : []);
-    } catch { setAvailableBackups([]); }
-    setLoadingBackups(false);
+    } catch {
+      setAvailableBackups([]);
+      setReplaceResult({ error: 'Gagal menghubungi server.' });
+    } finally {
+      setLoadingBackups(false);
+    }
   };
 
   const handleManualReplace = async () => {
@@ -90,7 +126,7 @@ export default function AdminWarrantyClaims() {
     try {
       const res = await fetch('/api/admin/warranty/manual-replace', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(true),
         body: JSON.stringify({
           claim_id: selectedClaim.id,
           backup_account_id: selectedBackupId,
@@ -232,6 +268,16 @@ export default function AdminWarrantyClaims() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={8} className="empty-state"><div className="loading-spinner" /></td></tr>
+              ) : loadError ? (
+                <tr>
+                  <td colSpan={8} className="empty-state">
+                    <h3>Gagal memuat klaim garansi</h3>
+                    <p>{loadError}</p>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={fetchClaims}>
+                      Coba Lagi
+                    </button>
+                  </td>
+                </tr>
               ) : filteredClaims.length === 0 ? (
                 <tr><td colSpan={8} className="empty-state"><div className="icon">🛡️</div><h3>Belum ada klaim garansi</h3></td></tr>
               ) : (
