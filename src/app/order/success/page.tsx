@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
+import PurchaseInvoice from '@/components/PurchaseInvoice';
 
 export default function PaymentSuccessWrapper() {
   return (
@@ -195,6 +196,12 @@ function PaymentSuccessPage() {
             <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.9rem' }}>
               {t('success_preparing')}
             </p>
+            {order && (
+              <PurchaseInvoice
+                order={order}
+                productName={(product?.name as string) || '-'}
+              />
+            )}
             <div className="loading-spinner" style={{ margin: '0 auto 20px' }} />
             <Link href={`/buyer/lookup?order=${orderNumber}`} className="btn btn-primary">
               {t('success_view_orders')}
@@ -236,6 +243,13 @@ function PaymentSuccessPage() {
               </div>
               <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>{t('success_paid_label')}</span>
             </div>
+
+            {order && (
+              <PurchaseInvoice
+                order={order}
+                productName={(product?.name as string) || '-'}
+              />
+            )}
 
             {/* Account Credentials */}
             {assignments.length > 0 ? (
