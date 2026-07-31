@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import PurchaseInvoice from '@/components/PurchaseInvoice';
 
 interface BuyerSession {
   id: number;
@@ -187,6 +188,14 @@ function BuyerLookupPage() {
               <div><span className="form-label">{t('lookup_col_total')}:</span> <span style={{ color: 'var(--brand-success)', fontWeight: 700 }}>{formatPrice(selectedOrder.total_amount as number)}</span></div>
               <div><span className="form-label">Payment:</span> <span className={`badge ${getStatusBadge(selectedOrder.payment_status as string)}`}>{selectedOrder.payment_status as string}</span></div>
             </div>
+
+            {(selectedOrder.payment_status === 'paid' || ['paid', 'assigned', 'delivered', 'completed'].includes(selectedOrder.order_status as string)) && (
+              <PurchaseInvoice
+                order={selectedOrder}
+                productName={((selectedOrder.product as Record<string, unknown>)?.name as string) || '-'}
+                buyerName={buyer?.name || '-'}
+              />
+            )}
 
             {/* Pay now CTA for pending orders */}
             {(selectedOrder.payment_status === 'pending_payment' || selectedOrder.payment_status === 'pending') && (
