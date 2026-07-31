@@ -9,6 +9,8 @@ interface PurchaseInvoiceProps {
   buyerName?: string;
 }
 
+const BUYER_ACKNOWLEDGEMENT = 'Dengan membeli produk ini, saya menyatakan telah membaca dan menyetujui seluruh ketentuan. Saya memahami bahwa produk premium ini diperoleh melalui jalur non-resmi dan saya menerima konsekuensi serta risiko yang mungkin terjadi pada akun yang saya gunakan.';
+
 function normalizeWhatsAppNumber(value: string) {
   const digits = value.replace(/\D/g, '');
   if (digits.startsWith('0')) return `62${digits.slice(1)}`;
@@ -89,6 +91,8 @@ export default function PurchaseInvoice({ order, productName, buyerName: buyerNa
     `Metode Pembayaran: ${paymentMethod}\n` +
     `Total: ${formatPriceIDR(total)}\n` +
     `Status: LUNAS\n\n` +
+    `*PERNYATAAN BUYER*\n` +
+    `${BUYER_ACKNOWLEDGEMENT}\n\n` +
     `Mohon verifikasi pesanan ini. Terima kasih.`
   ), [buyerName, formatPriceIDR, invoiceNumber, orderNumber, paidAt, paymentMethod, productName, quantity, total]);
 
@@ -141,6 +145,7 @@ export default function PurchaseInvoice({ order, productName, buyerName: buyerNa
             th { width: 38%; color: #637083; font-weight: 600; }
             td { font-weight: 700; }
             .paid { color: #07883f; }
+            .terms { margin-top: 24px; padding: 16px; color: #7c2d12; background: #fff7ed; border: 1px solid #fdba74; border-radius: 10px; line-height: 1.6; }
             footer { padding: 18px 32px; color: #637083; background: #f7f9fc; font-size: 12px; line-height: 1.5; }
             @media print { body { padding: 0; } .invoice { border: 0; } }
           </style>
@@ -148,7 +153,10 @@ export default function PurchaseInvoice({ order, productName, buyerName: buyerNa
         <body>
           <section class="invoice">
             <header><h1>Invoice Pembelian</h1><p>pastipremium.my.id</p></header>
-            <main><table>${rowHtml}</table></main>
+            <main>
+              <table>${rowHtml}</table>
+              <div class="terms"><strong>PERNYATAAN BUYER</strong><br />${escapeHtml(BUYER_ACKNOWLEDGEMENT)}</div>
+            </main>
             <footer>Invoice ini dibuat otomatis setelah pembayaran terkonfirmasi. Invoice tidak memuat data login atau password akun.</footer>
           </section>
         </body>
@@ -187,6 +195,20 @@ export default function PurchaseInvoice({ order, productName, buyerName: buyerNa
         <InvoiceRow label="Jumlah" value={`${quantity}x`} />
         <InvoiceRow label="Pembayaran" value={paymentMethod} />
         <InvoiceRow label="Total" value={formatPriceIDR(total)} highlight />
+      </div>
+
+      <div style={{
+        marginTop: '18px',
+        padding: '14px 16px',
+        color: 'var(--brand-warning)',
+        background: 'rgba(217, 119, 6, 0.08)',
+        border: '1px solid rgba(217, 119, 6, 0.35)',
+        borderRadius: 'var(--radius-md)',
+        fontSize: '0.78rem',
+        lineHeight: 1.6,
+      }}>
+        <strong style={{ display: 'block', marginBottom: '4px' }}>PERNYATAAN BUYER</strong>
+        {BUYER_ACKNOWLEDGEMENT}
       </div>
 
       <p style={{ margin: '16px 0 12px', color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: 1.5 }}>
