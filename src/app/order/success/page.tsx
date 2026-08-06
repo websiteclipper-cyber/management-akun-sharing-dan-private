@@ -284,6 +284,17 @@ function PaymentSuccessPage() {
                         copiedLabel={t('cred_copied')}
                       />
 
+                      {Boolean(stock?.two_factor_secret_encrypted) && (
+                        <CredentialFieldDecrypt
+                          label="KODE 2FA.LIVE"
+                          encrypted={stock?.two_factor_secret_encrypted as string}
+                          credentialType="two_factor"
+                          revealLabel={t('cred_reveal')}
+                          copyLabel={t('cred_copy')}
+                          copiedLabel={t('cred_copied')}
+                        />
+                      )}
+
                       {/* Profile Info */}
                       {Boolean(stock?.profile_info) && (
                         <CredentialField
@@ -410,7 +421,7 @@ function CredentialField({ label, value, copyLabel, copiedLabel }: { label: stri
   );
 }
 
-function CredentialFieldDecrypt({ label, encrypted, revealLabel, copyLabel, copiedLabel }: { label: string; encrypted: string; revealLabel?: string; copyLabel?: string; copiedLabel?: string }) {
+function CredentialFieldDecrypt({ label, encrypted, credentialType = 'password', revealLabel, copyLabel, copiedLabel }: { label: string; encrypted: string; credentialType?: 'password' | 'two_factor'; revealLabel?: string; copyLabel?: string; copiedLabel?: string }) {
   const [revealed, setRevealed] = useState(false);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -425,7 +436,7 @@ function CredentialFieldDecrypt({ label, encrypted, revealLabel, copyLabel, copi
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
         },
-        body: JSON.stringify({ encrypted }),
+        body: JSON.stringify({ encrypted, credentialType }),
       });
       const data = await res.json();
       setPassword(data.decrypted || '••••••••');
