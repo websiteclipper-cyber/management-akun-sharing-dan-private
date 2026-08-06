@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       product_id, account_identifier, account_secret,
-      profile_info, pin_info, notes_internal,
+      profile_info, pin_info, notes_internal, two_factor_secret,
       account_type, max_slot, purchase_cost,
     } = body;
 
@@ -21,12 +21,14 @@ export async function POST(request: NextRequest) {
     }
 
     const encrypted = encrypt(account_secret);
+    const encryptedTwoFactor = two_factor_secret ? encrypt(two_factor_secret) : null;
     const now = new Date().toISOString();
 
     const { data, error } = await supabase.from('stock_accounts').insert({
       product_id,
       account_identifier,
       account_secret_encrypted: encrypted,
+      two_factor_secret_encrypted: encryptedTwoFactor,
       profile_info,
       pin_info,
       notes_internal,
@@ -54,7 +56,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { id, product_id, account_identifier, account_secret, profile_info, pin_info, notes_internal, purchase_cost, account_type, max_slot, current_used_slot } = body;
+    const { id, product_id, account_identifier, account_secret, profile_info, pin_info, notes_internal, two_factor_secret, purchase_cost, account_type, max_slot, current_used_slot } = body;
 
     if (!id) return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 });
 
@@ -76,6 +78,10 @@ export async function PUT(request: NextRequest) {
 
     if (account_secret) {
       updateData.account_secret_encrypted = encrypt(account_secret);
+    }
+
+    if (two_factor_secret) {
+      updateData.two_factor_secret_encrypted = encrypt(two_factor_secret);
     }
 
     const { data, error } = await supabase.from('stock_accounts').update(updateData).eq('id', id).select().single();
