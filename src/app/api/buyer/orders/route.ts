@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
         id,
         account_identifier,
         account_secret_encrypted,
+        two_factor_secret_encrypted,
         account_type,
         profile_info,
         pin_info

@@ -267,6 +267,14 @@ function BuyerLookupPage() {
                           <PasswordReveal encrypted={stock?.account_secret_encrypted as string} />
                         </div>
                       </div>
+                      {Boolean(stock?.two_factor_secret_encrypted) && (
+                        <div className="credential-field">
+                          <div>
+                            <div className="credential-label">KODE 2FA.LIVE</div>
+                            <PasswordReveal encrypted={stock?.two_factor_secret_encrypted as string} credentialType="two_factor" />
+                          </div>
+                        </div>
+                      )}
                       {Boolean(stock?.profile_info) && (
                         <div className="credential-field">
                           <div>
@@ -353,7 +361,7 @@ function BuyerLookupPage() {
   );
 }
 
-function PasswordReveal({ encrypted }: { encrypted: string }) {
+function PasswordReveal({ encrypted, credentialType = 'password' }: { encrypted: string; credentialType?: 'password' | 'two_factor' }) {
   const { t } = useLocale();
   const [revealed, setRevealed] = useState(false);
   const [password, setPassword] = useState('');
@@ -368,7 +376,7 @@ function PasswordReveal({ encrypted }: { encrypted: string }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
         },
-        body: JSON.stringify({ encrypted }),
+        body: JSON.stringify({ encrypted, credentialType }),
       });
       const data = await res.json();
       setPassword(data.decrypted || '••••••••');
