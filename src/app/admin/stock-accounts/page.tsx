@@ -6,6 +6,11 @@ import { StockAccount, Product } from '@/lib/types';
 
 const ITEMS_PER_PAGE = 15;
 
+function supportsTwoFactorLive(product?: Product) {
+  if (!product) return false;
+  return /(?:chat\s*gpt|openai|gpt)/i.test(`${product.code} ${product.name} ${product.platform_name}`);
+}
+
 interface BackupSummary {
   id: number;
   stock_account_id: number | null;
@@ -520,6 +525,7 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
     product_id: account?.product_id?.toString() || '',
     account_identifier: isCopy ? '' : (account?.account_identifier || ''),
     account_secret: '',
+    two_factor_secret: '',
     profile_info: account?.profile_info || '',
     pin_info: account?.pin_info || '',
     notes_internal: account?.notes_internal || '',
@@ -568,6 +574,7 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
           product_id: parseInt(form.product_id),
           account_identifier: form.account_identifier,
           account_secret: form.account_secret || undefined,
+          two_factor_secret: form.two_factor_secret || undefined,
           profile_info: form.profile_info || null,
           pin_info: form.pin_info || null,
           notes_internal: form.notes_internal || null,
@@ -638,6 +645,13 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
               </p>
             )}
           </div>
+          {supportsTwoFactorLive(selectedProduct) && (
+            <div className="form-group">
+              <label className="form-label">Kode 2FA.live <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(opsional)</span></label>
+              <input className="form-input" value={form.two_factor_secret} onChange={e => setForm({ ...form, two_factor_secret: e.target.value })} placeholder="Contoh: 2KNEXO3CKMAWFJ4XNMOGMQD6WASDE3ED" />
+              <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: '4px', display: 'block' }}>Kode disimpan terenkripsi dan dibagikan ke pembeli bersama email serta sandi.</small>
+            </div>
+          )}
           <div style={{ padding: '12px 16px', background: 'rgba(108,92,231,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-primary)', marginBottom: '16px' }}>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>💡 Kolom profil & PIN bersifat <strong style={{ color: 'var(--text-secondary)' }}>opsional</strong>.</p>
           </div>
@@ -727,13 +741,15 @@ function BulkImportModal({ products, onClose, onDone }: {
       let secret = '';
       let profile: string | null = null;
       let pin: string | null = null;
+      let twoFactorSecret: string | null = null;
 
       if (isUrlLine(rawLine)) {
         // URL/invite link format
         identifier = cleanLine(rawLine);
         secret = '-'; // placeholder for invite links
       } else {
-        // Standard pipe-delimited format: email|password|profil|pin
+        // ChatGPT format: email|password|kode 2FA.live|profil|pin.
+        // Other products retain the existing format: email|password|profil|pin.
         const parts = rawLine.split('|').map(p => p.trim());
 
         if (parts.length < 2) {
@@ -744,8 +760,14 @@ function BulkImportModal({ products, onClose, onDone }: {
 
         identifier = parts[0];
         secret = parts[1];
-        profile = parts[2] || null;
-        pin = parts[3] || null;
+        if (supportsTwoFactorLive(selectedProduct)) {
+          twoFactorSecret = parts[2] || null;
+          profile = parts[3] || null;
+          pin = parts[4] || null;
+        } else {
+          profile = parts[2] || null;
+          pin = parts[3] || null;
+        }
       }
 
       try {
@@ -756,6 +778,7 @@ function BulkImportModal({ products, onClose, onDone }: {
             product_id: parseInt(productId),
             account_identifier: identifier,
             account_secret: secret,
+            two_factor_secret: twoFactorSecret,
             profile_info: profile,
             pin_info: pin,
             account_type: selectedProduct?.account_type || 'sharing',
@@ -833,10 +856,11 @@ function BulkImportModal({ products, onClose, onDone }: {
               <p style={{ fontSize: '0.8rem', color: 'var(--accent)', margin: '0 0 8px', fontWeight: 700 }}>📌 Format yang didukung:</p>
               {/* Format 1: pipe-delimited */}
               <div style={{ marginBottom: '8px' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Format 1 — Email & Password:</span>
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Format 1 — ChatGPT dengan Kode 2FA.live:</span>
                 <code style={{ fontSize: '0.78rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '6px 10px', borderRadius: '6px', display: 'block', marginTop: '4px' }}>
-                  email|password|profil(opsional)|pin(opsional)
+                  email|password|kode-2fa.live|profil(opsional)|pin(opsional)
                 </code>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>Pada produk selain ChatGPT, format tetap: email|password|profil(opsional)|pin(opsional).</span>
               </div>
               {/* Format 2: invite link */}
               <div>
@@ -866,7 +890,7 @@ function BulkImportModal({ products, onClose, onDone }: {
                 className="form-textarea"
                 style={{ minHeight: '180px', fontFamily: 'monospace', fontSize: '0.82rem' }}
                 required
-                placeholder={'email1@gmail.com|password123|Profile 1|1234\nemail2@gmail.com|password456\nhttps://www.canva.com/brand/join?token=abc123\n1. https://www.canva.com/brand/join?token=def456\n2. https://www.canva.com/brand/join?token=ghi789'}
+                placeholder={'gpt@example.com|password123|2KNEXO3CKMAWFJ4XNMOGMQD6WASDE3ED\nemail2@gmail.com|password456|Profile 1|1234\nhttps://www.canva.com/brand/join?token=abc123\n1. https://www.canva.com/brand/join?token=def456\n2. https://www.canva.com/brand/join?token=ghi789'}
                 value={bulkText}
                 onChange={e => setBulkText(e.target.value)}
               />
