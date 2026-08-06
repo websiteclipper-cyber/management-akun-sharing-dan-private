@@ -63,6 +63,7 @@ export interface StockAccount {
   product_id: number;
   account_identifier: string;
   account_secret_encrypted: string;
+  two_factor_secret_encrypted?: string | null;
   profile_info: string | null;
   pin_info: string | null;
   notes_internal: string | null;
