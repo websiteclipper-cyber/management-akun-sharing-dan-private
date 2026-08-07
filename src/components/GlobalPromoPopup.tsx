@@ -24,32 +24,27 @@ function getPlatformIcon(name: string) {
 }
 
 interface GlobalPromoPopupProps {
+  initialSettings: Record<string, string>;
   onSelectPlatform?: (platform: string) => void;
 }
 
-export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupProps) {
+export default function GlobalPromoPopup({ initialSettings, onSelectPlatform }: GlobalPromoPopupProps) {
   const { formatPrice } = useLocale();
-  const [settings, setSettings] = useState<Record<string, string>>({});
+  const settings = initialSettings;
   const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
 
   useEffect(() => {
-    // Check if user has already closed it in this session
-    if (sessionStorage.getItem('global_promo_closed') === 'true') {
+    if (
+      sessionStorage.getItem('global_promo_closed') === 'true' ||
+      settings.global_promo_active !== 'true'
+    ) {
       return;
     }
 
-    fetch('/api/public/settings')
-      .then(r => r.json())
-      .then(d => {
-        setSettings(d);
-        if (d.global_promo_active === 'true') {
-          // Delay to make it feel natural
-          setTimeout(() => setVisible(true), 1500);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    const timer = window.setTimeout(() => setVisible(true), 1500);
+    return () => window.clearTimeout(timer);
+  }, [settings.global_promo_active]);
 
   function handleClose() {
     setClosing(true);
@@ -129,6 +124,8 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
         }}>
           {/* Close button */}
           <button
+            type="button"
+            aria-label="Tutup promo"
             onClick={handleClose}
             style={{
               position: 'absolute',
@@ -154,7 +151,7 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
           </button>
 
           {/* Icon */}
-          <div style={{
+          <div aria-hidden="true" style={{
             width: '64px',
             height: '64px',
             borderRadius: '20px',
@@ -182,7 +179,7 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
           <h3 style={{
             fontSize: '1.4rem',
             fontWeight: 800,
-            color: '#10A37F',
+            color: '#06705a',
             marginBottom: '16px',
           }}>
             {subtitle}
@@ -194,7 +191,7 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
             gap: '6px',
             background: 'rgba(22, 163, 74, 0.10)',
             border: '1px solid rgba(22, 163, 74, 0.18)',
-            color: '#10A37F',
+            color: '#06705a',
             padding: '6px 14px',
             borderRadius: '999px',
             fontSize: '0.75rem',
@@ -242,7 +239,7 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
             onClick={handleAction}
             style={{
               width: '100%',
-              background: '#10A37F',
+              background: '#06705a',
               color: '#fff',
               border: 'none',
               padding: '16px',
@@ -254,11 +251,11 @@ export default function GlobalPromoPopup({ onSelectPlatform }: GlobalPromoPopupP
               boxShadow: '0 14px 28px rgba(16, 163, 127, 0.20)',
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.background = '#0d8f6f';
+              e.currentTarget.style.background = '#055c4a';
               e.currentTarget.style.transform = 'translateY(-2px)';
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.background = '#10A37F';
+              e.currentTarget.style.background = '#06705a';
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
