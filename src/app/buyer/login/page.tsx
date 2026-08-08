@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import type { Session } from '@supabase/supabase-js';
 import { FcGoogle } from 'react-icons/fc';
+
+const BUYER_LOGIN_REDIRECT_KEY = 'buyer_login_redirect';
 
 function safeInternalRedirect(value: string | null): string {
   return value?.startsWith('/') && !value.startsWith('//') ? value : '/';
@@ -31,39 +34,88 @@ function BuyerLoginPage() {
   const [verifiedAccessToken, setVerifiedAccessToken] = useState('');
   const [profileName, setProfileName] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
+  const exchangedAccessTokenRef = useRef('');
 
   useEffect(() => {
-    async function exchangeVerifiedSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
+    let cancelled = false;
+    const pendingTimers = new Set<number>();
+
+    function getRedirectAfterLogin() {
+      const storedRedirect = sessionStorage.getItem(BUYER_LOGIN_REDIRECT_KEY);
+      return safeInternalRedirect(searchParams.get('redirect') || storedRedirect);
+    }
+
+    async function exchangeVerifiedSession(session: Session) {
+      if (cancelled || !session.access_token) return;
+      if (exchangedAccessTokenRef.current === session.access_token) return;
+      exchangedAccessTokenRef.current = session.access_token;
 
       setLoading(true);
-      const response = await fetch('/api/buyer/auth/exchange', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-      const data = await response.json();
-      if (response.ok && data.needs_profile) {
-        setVerifiedAccessToken(session.access_token);
-        setEmail(data.email || session.user.email || '');
-        setProfileName(data.profile?.name || '');
-        setProfilePhone(data.profile?.phone || '');
-        setProfileRequired(true);
-        setError('');
+      try {
+        const response = await fetch('/api/buyer/auth/exchange', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+        const data = await response.json();
+        if (cancelled) return;
+
+        if (response.ok && data.needs_profile) {
+          setVerifiedAccessToken(session.access_token);
+          setEmail(data.email || session.user.email || '');
+          setProfileName(data.profile?.name || '');
+          setProfilePhone(data.profile?.phone || '');
+          setProfileRequired(true);
+          setError('');
+          setLoading(false);
+          return;
+        }
+        if (!response.ok || !data.token) {
+          exchangedAccessTokenRef.current = '';
+          setError(data.error || 'Gagal memverifikasi akun buyer.');
+          setLoading(false);
+          return;
+        }
+
+        localStorage.setItem('buyer_token', data.token);
+        localStorage.setItem('buyer_session', JSON.stringify(data.buyer));
+        const destination = getRedirectAfterLogin();
+        sessionStorage.removeItem(BUYER_LOGIN_REDIRECT_KEY);
+        router.replace(destination);
+      } catch {
+        if (cancelled) return;
+        exchangedAccessTokenRef.current = '';
+        setError('Gagal menyelesaikan login. Silakan periksa koneksi lalu coba lagi.');
         setLoading(false);
-        return;
       }
-      if (!response.ok || !data.token) {
-        setError(data.error || 'Gagal memverifikasi akun buyer.');
-        setLoading(false);
-        return;
-      }
-      localStorage.setItem('buyer_token', data.token);
-      localStorage.setItem('buyer_session', JSON.stringify(data.buyer));
-      router.replace(redirect);
     }
-    void exchangeVerifiedSession();
-  }, [redirect, router]);
+
+    // OAuth redirects are processed asynchronously by the Supabase client.
+    // Listen for the completed session so a slow callback cannot be missed.
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) return;
+      const timer = window.setTimeout(() => {
+        pendingTimers.delete(timer);
+        void exchangeVerifiedSession(session);
+      }, 0);
+      pendingTimers.add(timer);
+    });
+
+    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
+      if (cancelled) return;
+      if (sessionError) {
+        setError(`Gagal membaca sesi login: ${sessionError.message}`);
+        return;
+      }
+      if (data.session) void exchangeVerifiedSession(data.session);
+    });
+
+    return () => {
+      cancelled = true;
+      exchangedAccessTokenRef.current = '';
+      authListener.subscription.unsubscribe();
+      pendingTimers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [router, searchParams]);
 
   async function handleGoogleLogin() {
     setLoading(true);
@@ -72,6 +124,7 @@ function BuyerLoginPage() {
     try {
       const callbackUrl = new URL('/buyer/login', window.location.origin);
       callbackUrl.searchParams.set('redirect', redirect);
+      sessionStorage.setItem(BUYER_LOGIN_REDIRECT_KEY, redirect);
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -79,10 +132,12 @@ function BuyerLoginPage() {
       });
 
       if (oauthError) {
+        sessionStorage.removeItem(BUYER_LOGIN_REDIRECT_KEY);
         setError(`Login Google gagal: ${oauthError.message}`);
         setLoading(false);
       }
     } catch {
+      sessionStorage.removeItem(BUYER_LOGIN_REDIRECT_KEY);
       setError('Tidak dapat membuka login Google. Silakan coba lagi.');
       setLoading(false);
     }
@@ -139,7 +194,9 @@ function BuyerLoginPage() {
 
       localStorage.setItem('buyer_token', data.token);
       localStorage.setItem('buyer_session', JSON.stringify(data.buyer));
-      router.replace(redirect);
+      const storedRedirect = sessionStorage.getItem(BUYER_LOGIN_REDIRECT_KEY);
+      sessionStorage.removeItem(BUYER_LOGIN_REDIRECT_KEY);
+      router.replace(safeInternalRedirect(searchParams.get('redirect') || storedRedirect));
     } catch {
       setError('Terjadi kesalahan jaringan. Silakan coba lagi.');
       setLoading(false);
