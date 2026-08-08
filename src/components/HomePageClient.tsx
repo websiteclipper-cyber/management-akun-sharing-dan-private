@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Product } from '@/lib/types';
 import type { PublicLeaderboardEntry, PublicPromo } from '@/lib/public-home-data';
 import { CATALOG_CATEGORIES, getProductCatalogCategory } from '@/lib/catalog-categories';
@@ -32,6 +33,12 @@ interface BuyerSession {
   name: string;
   email: string;
   phone: string;
+}
+
+const BUYER_LOGIN_REDIRECT_KEY = 'buyer_login_redirect';
+
+function safeInternalRedirect(value: string | null): string {
+  return value?.startsWith('/') && !value.startsWith('//') ? value : '/';
 }
 
 // ── Squircle platform icons (white icon on brand gradient) ──
@@ -105,6 +112,7 @@ export default function HomePage({
   initialLeaderboard,
 }: HomePageProps) {
   const { t, formatPrice, isIDR, currency } = useLocale();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [promos, setPromos] = useState<Promo[]>(initialPromos);
   const [loading, setLoading] = useState(false);
@@ -171,6 +179,90 @@ export default function HomePage({
 
     return () => window.clearTimeout(promoTimer);
   }, []);
+
+  useEffect(() => {
+    // Supabase falls back to its configured Site URL when an OAuth redirect
+    // is not allow-listed. Complete the buyer session from the homepage too,
+    // so a www/non-www mismatch cannot strand a signed-in buyer at `/`.
+    if (buyer) return;
+
+    const storedRedirect = sessionStorage.getItem(BUYER_LOGIN_REDIRECT_KEY);
+    if (!storedRedirect) return;
+
+    let cancelled = false;
+    let exchangedAccessToken = '';
+    const pendingTimers = new Set<number>();
+
+    async function exchangeFallbackSession(accessToken: string) {
+      if (cancelled || !accessToken || exchangedAccessToken === accessToken) return;
+      exchangedAccessToken = accessToken;
+
+      try {
+        const response = await fetch('/api/buyer/auth/exchange', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${accessToken}` },
+        });
+        const data = await response.json();
+        if (cancelled) return;
+
+        const destination = safeInternalRedirect(
+          sessionStorage.getItem(BUYER_LOGIN_REDIRECT_KEY),
+        );
+
+        if (response.ok && data.needs_profile) {
+          router.replace(`/buyer/login?redirect=${encodeURIComponent(destination)}`);
+          return;
+        }
+
+        if (!response.ok || !data.token || !data.buyer) {
+          exchangedAccessToken = '';
+          router.replace(`/buyer/login?redirect=${encodeURIComponent(destination)}`);
+          return;
+        }
+
+        localStorage.setItem('buyer_token', data.token);
+        localStorage.setItem('buyer_session', JSON.stringify(data.buyer));
+        sessionStorage.removeItem(BUYER_LOGIN_REDIRECT_KEY);
+        setBuyer(data.buyer as BuyerSession);
+        router.replace(destination);
+      } catch {
+        if (cancelled) return;
+        exchangedAccessToken = '';
+        const destination = safeInternalRedirect(
+          sessionStorage.getItem(BUYER_LOGIN_REDIRECT_KEY),
+        );
+        router.replace(`/buyer/login?redirect=${encodeURIComponent(destination)}`);
+      }
+    }
+
+    let unsubscribe: (() => void) | undefined;
+
+    void import('@/lib/supabase').then(({ supabase }) => {
+      if (cancelled) return;
+
+      const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!session?.access_token) return;
+        const timer = window.setTimeout(() => {
+          pendingTimers.delete(timer);
+          void exchangeFallbackSession(session.access_token);
+        }, 0);
+        pendingTimers.add(timer);
+      });
+      unsubscribe = () => authListener.subscription.unsubscribe();
+
+      void supabase.auth.getSession().then(({ data }) => {
+        if (data.session?.access_token) {
+          void exchangeFallbackSession(data.session.access_token);
+        }
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+      pendingTimers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [buyer, router]);
 
   async function handleLogout() {
     localStorage.removeItem('buyer_session');
