@@ -21,12 +21,12 @@ export default function OrdersPage() {
 
   useEffect(() => { loadOrders(); }, []);
 
-  async function handleSyncPakasir() {
-    if (!confirm('Sync semua order pending dengan Pakasir?\n\nIni akan mengecek setiap order yang belum bayar ke Pakasir, dan mengupdate yang sudah completed.')) return;
+  async function handleSyncKlikQris() {
+    if (!confirm('Sync semua order pending dengan KlikQRIS?\n\nIni akan mengecek setiap transaksi QRIS yang masih pending.')) return;
     setSyncing(true);
     try {
       const token = localStorage.getItem('admin_token') || '';
-      const res = await fetch('/api/admin/sync-pakasir', {
+      const res = await fetch('/api/admin/sync-klikqris', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -247,11 +247,11 @@ export default function OrdersPage() {
         <h2>Pesanan</h2>
         <button
           className="btn btn-secondary btn-sm"
-          onClick={handleSyncPakasir}
+          onClick={handleSyncKlikQris}
           disabled={syncing}
           style={{ fontSize: '0.8rem', gap: '6px', display: 'flex', alignItems: 'center' }}
         >
-          {syncing ? <><span className="loading-spinner" style={{ width: '14px', height: '14px' }} /> Syncing...</> : '🔄 Sync Pakasir'}
+          {syncing ? <><span className="loading-spinner" style={{ width: '14px', height: '14px' }} /> Syncing...</> : '🔄 Sync KlikQRIS'}
         </button>
       </div>
       <div style={{ padding: '32px' }}>

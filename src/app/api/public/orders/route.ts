@@ -337,8 +337,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gagal membuat pesanan: ' + orderError.message }, { status: 500 });
     }
 
-    // NOTE: Commission is recorded in /api/webhooks/pakasir after payment is confirmed
-    // This prevents phantom commissions from unpaid/expired orders
+    // Commission is recorded only after a signed KlikQRIS payment confirmation.
+    // This prevents phantom commissions from unpaid or expired orders.
 
     // Send Telegram Notification
     const discountLabel = discountAmount > 0 ? `\n<b>Diskon:</b> -Rp ${discountAmount.toLocaleString('id-ID')}` : '';

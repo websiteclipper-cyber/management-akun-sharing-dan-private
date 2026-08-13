@@ -18,12 +18,12 @@ function normalizeWhatsAppNumber(value: string) {
 }
 
 function formatPaymentMethod(value: unknown) {
-  const method = String(value || 'pakasir')
-    .replace(/^pakasir_/i, '')
+  const method = String(value || 'klikqris')
+    .replace(/^(pakasir|klikqris)_/i, '')
     .replace(/_/g, ' ')
     .trim();
 
-  return method ? method.toUpperCase() : 'PAKASIR';
+  return method ? method.toUpperCase() : 'KLIKQRIS';
 }
 
 function escapeHtml(value: string) {

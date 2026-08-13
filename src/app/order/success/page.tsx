@@ -61,8 +61,8 @@ function PaymentSuccessPage() {
     }
   }, [orderNumber]);
 
-  // Active check: call our API which queries Pakasir directly
-  const checkPakasirDirectly = useCallback(async () => {
+  // Active fallback: query KlikQRIS directly through our server API.
+  const checkKlikQrisDirectly = useCallback(async () => {
     if (!orderNumber) return;
     try {
       const res = await fetch('/api/public/check-payment', {
@@ -88,15 +88,17 @@ function PaymentSuccessPage() {
     }
 
     // Initial check
-    checkOrderStatus();
+    const initialCheckTimeout = setTimeout(() => {
+      void checkOrderStatus();
+    }, 0);
 
     const interval = setInterval(() => {
       if (status === 'waiting' || status === 'paid') {
         setPollCount(prev => {
           const newCount = prev + 1;
-          // Every 5th poll (every ~15s), also actively check with Pakasir API
+          // Every 5th poll (every ~15s), also check the KlikQRIS API.
           if (newCount % 5 === 0 && status === 'waiting') {
-            checkPakasirDirectly();
+            checkKlikQrisDirectly();
           }
           return newCount;
         });
@@ -105,15 +107,16 @@ function PaymentSuccessPage() {
     }, 3000);
 
     // Show manual check option after 60 seconds
-    const timeout = setTimeout(() => {
+    const manualCheckTimeout = setTimeout(() => {
       setShowManualCheck(true);
     }, 60000);
 
     return () => {
+      clearTimeout(initialCheckTimeout);
       clearInterval(interval);
-      clearTimeout(timeout);
+      clearTimeout(manualCheckTimeout);
     };
-  }, [orderNumber, status, checkOrderStatus, checkPakasirDirectly, router]);
+  }, [orderNumber, status, checkOrderStatus, checkKlikQrisDirectly, router]);
 
   if (!orderNumber) return null;
 

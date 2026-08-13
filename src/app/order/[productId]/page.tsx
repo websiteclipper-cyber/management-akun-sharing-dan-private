@@ -94,11 +94,6 @@ async function refreshBuyerAppSession(): Promise<RefreshedBuyerSession | null> {
   }
 }
 
-function buildPakasirPaymentUrl(orderNumber: string, amount: number): string {
-  const redirectUrl = `${window.location.origin}/order/success?order=${orderNumber}`;
-  return `https://app.pakasir.com/pay/pastipremiumid1/${amount}?order_id=${orderNumber}&redirect=${encodeURIComponent(redirectUrl)}`;
-}
-
 export default function OrderPage() {
   const { t, formatPrice } = useLocale();
   const params = useParams();
@@ -328,16 +323,16 @@ export default function OrderPage() {
         quantity: data.quantity,
       };
       setResult(createdOrder);
-      window.location.assign(buildPakasirPaymentUrl(createdOrder.order_number, createdOrder.amount));
+      router.push(`/order/payment?order=${encodeURIComponent(createdOrder.order_number)}`);
     } catch {
       setError(t('order_connection_error'));
       setSubmitting(false);
     }
   }
 
-  function handlePayWithPakasir() {
+  function handlePayWithKlikQris() {
     if (!result) return;
-    window.location.assign(buildPakasirPaymentUrl(result.order_number, result.amount));
+    router.push(`/order/payment?order=${encodeURIComponent(result.order_number)}`);
   }
 
   if (loading) return <div className="public-layout"><div className="loading-page"><div className="loading-spinner" /></div></div>;
@@ -372,7 +367,7 @@ export default function OrderPage() {
 
       <div className="order-form-container">
         {result ? (
-          /* ===== PAYMENT VIA PAKASIR ===== */
+          /* ===== PAYMENT VIA KLIKQRIS ===== */
           <div className="order-form-card">
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>💳</div>
@@ -414,7 +409,7 @@ export default function OrderPage() {
               )}
             </div>
 
-            {/* PAKASIR Payment Button */}
+            {/* KlikQRIS Payment Button */}
             <div style={{ marginBottom: '16px' }}>
               <button
                 className="btn btn-primary btn-lg"
@@ -428,7 +423,7 @@ export default function OrderPage() {
                   position: 'relative',
                   overflow: 'hidden',
                 }}
-                onClick={handlePayWithPakasir}
+                onClick={handlePayWithKlikQris}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
                   <span style={{ fontSize: '1.3rem' }}>⚡</span>

@@ -34,3 +34,28 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Integrasi pembayaran KlikQRIS
+
+Pembayaran QRIS menggunakan API KlikQRIS dari backend Next.js. API key dan Merchant ID tidak pernah dikirim ke browser.
+
+### Konfigurasi
+
+Salin nilai pada `env.example` ke environment lokal dan hosting:
+
+```env
+KLIKQRIS_API_KEY=isi_dari_dashboard_klikqris
+KLIKQRIS_MERCHANT_ID=isi_dari_dashboard_klikqris
+KLIKQRIS_ENV=sandbox
+KLIKQRIS_CALLBACK_URL=https://pastipremium.my.id/api/webhooks/klikqris
+```
+
+Gunakan `sandbox` sampai alur create QRIS, simulasi pembayaran, webhook, dan pengiriman akun berhasil. Setelah itu ubah `KLIKQRIS_ENV` menjadi `production` dan deploy ulang.
+
+Endpoint callback yang perlu didaftarkan pada dashboard KlikQRIS:
+
+```text
+https://pastipremium.my.id/api/webhooks/klikqris
+```
+
+Dokumentasi resmi: https://klikqris.com/dokumentasi-api
