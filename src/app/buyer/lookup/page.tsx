@@ -210,9 +210,7 @@ function BuyerLookupPage() {
                   className="btn btn-primary"
                   style={{ width: '100%', justifyContent: 'center', padding: '14px' }}
                   onClick={() => {
-                    const redirectUrl = `${window.location.origin}/order/success?order=${selectedOrder.order_number}`;
-                    const pakasirUrl = `https://app.pakasir.com/pay/pastipremiumid1/${selectedOrder.total_amount}?order_id=${selectedOrder.order_number}&redirect=${encodeURIComponent(redirectUrl)}`;
-                    window.location.href = pakasirUrl;
+                    router.push(`/order/payment?order=${encodeURIComponent(String(selectedOrder.order_number))}`);
                   }}
                 >
                   {t('lookup_pay_qris')}
