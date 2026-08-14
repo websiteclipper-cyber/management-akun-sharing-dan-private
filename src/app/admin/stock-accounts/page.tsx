@@ -11,6 +11,10 @@ function supportsTwoFactorLive(product?: Product) {
   return /(?:chat\s*gpt|openai|gpt)/i.test(`${product.code} ${product.name} ${product.platform_name}`);
 }
 
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\/\S+$/i.test(value.trim());
+}
+
 interface BackupSummary {
   id: number;
   stock_account_id: number | null;
@@ -538,6 +542,7 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
   const [fetchingPassword, setFetchingPassword] = useState(false);
 
   const selectedProduct = products.find(p => p.id.toString() === form.product_id);
+  const identifierIsUrl = isHttpUrl(form.account_identifier);
 
   async function handleShowPassword() {
     if (!account?.id) return;
@@ -572,8 +577,8 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
         body: JSON.stringify({
           id: isEdit ? account?.id : undefined,
           product_id: parseInt(form.product_id),
-          account_identifier: form.account_identifier,
-          account_secret: form.account_secret || undefined,
+          account_identifier: form.account_identifier.trim(),
+          account_secret: form.account_secret || (!isEdit && identifierIsUrl ? '-' : undefined),
           two_factor_secret: form.two_factor_secret || undefined,
           profile_info: form.profile_info || null,
           pin_info: form.pin_info || null,
@@ -612,12 +617,12 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label">Email / Username Akun</label>
-            <input className="form-input" value={form.account_identifier} onChange={e => setForm({...form, account_identifier: e.target.value})} placeholder="user@email.com" required />
+            <label className="form-label">Email / Username / Link Aktivasi</label>
+            <input className="form-input" value={form.account_identifier} onChange={e => setForm({...form, account_identifier: e.target.value})} placeholder="user@email.com atau https://serviceactivation.google.com/..." required />
           </div>
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Password Akun {isEdit && '(kosongkan jika tidak diubah)'}</span>
+              <span>Password Akun {isEdit ? '(kosongkan jika tidak diubah)' : (identifierIsUrl ? '(otomatis untuk link)' : '')}</span>
               {isEdit && (
                 <button 
                   type="button" 
@@ -636,8 +641,8 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
                 if (showPasswordStr !== null) setShowPasswordStr(null);
                 setForm({...form, account_secret: e.target.value});
               }} 
-              placeholder={showPasswordStr !== null ? '' : (isEdit ? '••••••••' : 'Password Akun')} 
-              required={!isEdit} 
+              placeholder={showPasswordStr !== null ? '' : (isEdit ? '••••••••' : (identifierIsUrl ? 'Tidak perlu diisi untuk link' : 'Password Akun'))} 
+              required={!isEdit && !identifierIsUrl} 
             />
             {showPasswordStr !== null && (
               <p style={{ fontSize: '0.75rem', color: 'var(--brand-warning)', marginTop: '4px', marginBottom: 0 }}>
@@ -719,7 +724,7 @@ function BulkImportModal({ products, onClose, onDone }: {
   }
 
   // Count detected lines
-  const detectedLines = bulkText.trim().split('\n').filter(l => l.trim());
+  const detectedLines = bulkText.trim().split('\n').filter(l => l.trim() && !/^[|*_\-\s]+$/.test(l.trim()));
   const urlLineCount = detectedLines.filter(l => isUrlLine(l)).length;
   const pipeLineCount = detectedLines.filter(l => !isUrlLine(l) && l.trim()).length;
 
@@ -729,7 +734,7 @@ function BulkImportModal({ products, onClose, onDone }: {
     setImporting(true);
     setResult(null);
 
-    const lines = bulkText.trim().split('\n').filter(l => l.trim());
+    const lines = bulkText.trim().split('\n').filter(l => l.trim() && !/^[|*_\-\s]+$/.test(l.trim()));
     let success = 0;
     let failed = 0;
     const errors: string[] = [];
@@ -866,11 +871,11 @@ function BulkImportModal({ products, onClose, onDone }: {
               <div>
                 <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Format 2 — Link Invite (per baris):</span>
                 <code style={{ fontSize: '0.78rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '6px 10px', borderRadius: '6px', display: 'block', marginTop: '4px' }}>
-                  https://example.com/invite?token=xxx
+                  https://serviceactivation.google.com/subscription/new/...
                 </code>
               </div>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '8px 0 0', fontStyle: 'italic' }}>
-                💡 Bisa dicampur! Nomor urut otomatis dihapus (misal: &quot;1. https://...&quot;)
+                💡 Bisa dicampur! Baris kosong dan pemisah | diabaikan; nomor urut otomatis dihapus.
               </p>
             </div>
 
