@@ -294,8 +294,8 @@ export default function StockAccountsPage() {
           <div className="loading-page"><div className="loading-spinner" /></div>
         ) : (
           <>
-            <div className="table-container">
-              <table className="table">
+            <div className="table-container stock-accounts-table-container">
+              <table className="table stock-accounts-table">
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -317,7 +317,11 @@ export default function StockAccountsPage() {
                         {new Date(a.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
                       <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{(a.product as unknown as Product)?.name || '-'}</td>
-                      <td style={{ fontFamily: 'monospace', color: 'var(--brand-accent)' }}>{a.account_identifier}</td>
+                      <td className="stock-account-identifier-cell">
+                        <div className="stock-account-identifier" title={a.account_identifier}>
+                          {a.account_identifier}
+                        </div>
+                      </td>
                       <td>
                         <span className={`badge ${a.account_type === 'sharing' ? 'badge-info' : 'badge-primary'}`}>
                           {a.account_type}
