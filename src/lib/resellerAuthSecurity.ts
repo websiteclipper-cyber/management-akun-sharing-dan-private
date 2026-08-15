@@ -9,6 +9,7 @@ const RESELLER_AUTH_QUERY_TIMEOUT_MS = 8_000;
 const REQUEST_RATE_WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 10;
 const MAX_LOCAL_RATE_ENTRIES = 5_000;
+const MISSING_LOGIN_ATTEMPTS_ERROR_CODES = new Set(['42P01', 'PGRST205']);
 
 const globalRateLimit = globalThis as typeof globalThis & {
   resellerLoginRateLimit?: Map<string, RequestRateEntry>;
@@ -21,6 +22,12 @@ globalRateLimit.resellerLoginRateLimit = requestRateLimit;
 
 export function createResellerAuthAbortSignal(): AbortSignal {
   return AbortSignal.timeout(RESELLER_AUTH_QUERY_TIMEOUT_MS);
+}
+
+export function isResellerLoginAttemptsUnavailable(
+  error: { code?: string } | null | undefined,
+): boolean {
+  return Boolean(error?.code && MISSING_LOGIN_ATTEMPTS_ERROR_CODES.has(error.code));
 }
 
 export function normalizeResellerRefCode(value: unknown): string {
@@ -80,6 +87,7 @@ export async function recordResellerLoginFailure(
     .insert({ ref_code: refCode, ip_address: ip })
     .abortSignal(createResellerAuthAbortSignal());
 
+  if (isResellerLoginAttemptsUnavailable(error)) return;
   if (error) throw new Error('Unable to record reseller login failure.');
 }
 
@@ -94,6 +102,7 @@ export async function clearResellerLoginFailures(
     .eq('ip_address', ip)
     .abortSignal(createResellerAuthAbortSignal());
 
+  if (isResellerLoginAttemptsUnavailable(error)) return;
   if (error) throw new Error('Unable to clear reseller login failures.');
 }
 
@@ -105,5 +114,6 @@ export async function cleanupResellerLoginFailures(): Promise<void> {
     .lt('attempted_at', cutoff)
     .abortSignal(createResellerAuthAbortSignal());
 
+  if (isResellerLoginAttemptsUnavailable(error)) return;
   if (error) throw new Error('Unable to clean reseller login failures.');
 }
