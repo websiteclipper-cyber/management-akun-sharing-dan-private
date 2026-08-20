@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { adminSelect, adminUpdate } from '@/lib/adminApi';
 
 type BuyerRow = Record<string, unknown>;
@@ -9,6 +9,21 @@ export default function BuyersPage() {
   const [buyers, setBuyers] = useState<BuyerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredBuyers = useMemo(() => {
+    const nameQuery = searchQuery.trim().toLocaleLowerCase('id-ID').replace(/\s+/g, ' ');
+    const phoneQuery = searchQuery.replace(/\D/g, '');
+
+    if (!nameQuery && !phoneQuery) return buyers;
+
+    return buyers.filter((buyer) => {
+      const name = String(buyer.name || '').toLocaleLowerCase('id-ID').replace(/\s+/g, ' ');
+      const phone = String(buyer.phone || '').replace(/\D/g, '');
+
+      return name.includes(nameQuery) || (phoneQuery.length > 0 && phone.includes(phoneQuery));
+    });
+  }, [buyers, searchQuery]);
 
   useEffect(() => { void loadBuyers(); }, []);
 
@@ -113,6 +128,70 @@ export default function BuyersPage() {
           membuka data akun sampai di-unban.
         </div>
 
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '20px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ position: 'relative', flex: '1 1 320px', maxWidth: '520px' }}>
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: '14px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-muted)',
+                pointerEvents: 'none',
+              }}
+            >
+              🔎
+            </span>
+            <input
+              className="form-input"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Cari berdasarkan nama atau nomor WA..."
+              aria-label="Cari buyer berdasarkan nama atau nomor WhatsApp"
+              autoComplete="off"
+              style={{ width: '100%', paddingLeft: '44px', paddingRight: searchQuery ? '44px' : '14px' }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="Hapus pencarian"
+                title="Hapus pencarian"
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '28px',
+                  height: '28px',
+                  border: 0,
+                  borderRadius: '8px',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            {filteredBuyers.length.toLocaleString('id-ID')} dari {buyers.length.toLocaleString('id-ID')} buyer
+          </span>
+        </div>
+
         {loading ? (
           <div className="loading-page"><div className="loading-spinner" /></div>
         ) : (
@@ -122,7 +201,7 @@ export default function BuyersPage() {
                 <tr><th>ID</th><th>Nama</th><th>Phone</th><th>Status</th><th>Terdaftar</th><th>Aksi</th></tr>
               </thead>
               <tbody>
-                {buyers.map(buyer => {
+                {filteredBuyers.map(buyer => {
                   const id = Number(buyer.id);
                   const isBanned = buyer.status === 'blocked';
                   const isUpdating = updatingId === id;
@@ -152,8 +231,14 @@ export default function BuyersPage() {
                     </tr>
                   );
                 })}
-                {buyers.length === 0 && (
-                  <tr><td colSpan={6} className="empty-state"><div className="icon">👥</div><h3>Belum ada buyer</h3></td></tr>
+                {filteredBuyers.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="empty-state">
+                      <div className="icon">{buyers.length === 0 ? '👥' : '🔍'}</div>
+                      <h3>{buyers.length === 0 ? 'Belum ada buyer' : 'Buyer tidak ditemukan'}</h3>
+                      {buyers.length > 0 && <p>Coba gunakan nama atau nomor WhatsApp yang lain.</p>}
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
