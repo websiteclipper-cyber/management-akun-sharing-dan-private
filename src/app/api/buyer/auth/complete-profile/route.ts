@@ -3,6 +3,7 @@ import { signToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { findBuyerByVerifiedEmail } from '@/lib/buyerProfile';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
+import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 
 export async function POST(request: NextRequest) {
   const authorization = request.headers.get('authorization');
@@ -30,6 +31,12 @@ export async function POST(request: NextRequest) {
     existingBuyer = await findBuyerByVerifiedEmail(email);
   } catch {
     return NextResponse.json({ error: 'Gagal membaca profil buyer.' }, { status: 500 });
+  }
+  if (existingBuyer && isBuyerBannedStatus(existingBuyer.status)) {
+    return NextResponse.json(
+      { banned: true, error: BUYER_BAN_MESSAGE },
+      { status: 403 },
+    );
   }
   if (existingBuyer?.status && existingBuyer.status !== 'active') {
     return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });

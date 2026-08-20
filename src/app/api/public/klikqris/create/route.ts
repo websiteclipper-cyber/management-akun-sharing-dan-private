@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { createKlikQrisTransaction, KlikQrisTransaction } from '@/lib/klikqris';
 import { findKlikQrisPayment, getStoredCreateData } from '@/lib/klikqris-payment';
+import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 
 export const runtime = 'nodejs';
 
@@ -27,12 +28,27 @@ export async function POST(request: NextRequest) {
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, order_number, total_amount, payment_status, product:products(name)')
+      .select('id, order_number, total_amount, payment_status, buyer:buyers(status), product:products(name)')
       .eq('order_number', orderNumber)
       .single();
 
     if (orderError || !order) {
       return NextResponse.json({ error: 'Order tidak ditemukan.' }, { status: 404 });
+    }
+
+    const buyerRelation = Array.isArray(order.buyer) ? order.buyer[0] : order.buyer;
+    const buyerStatus = buyerRelation && typeof buyerRelation === 'object' && 'status' in buyerRelation
+      ? String(buyerRelation.status || '')
+      : '';
+
+    if (isBuyerBannedStatus(buyerStatus)) {
+      return NextResponse.json(
+        { banned: true, error: BUYER_BAN_MESSAGE },
+        { status: 403 },
+      );
+    }
+    if (buyerStatus !== 'active') {
+      return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
     }
 
     if (order.payment_status === 'paid') {

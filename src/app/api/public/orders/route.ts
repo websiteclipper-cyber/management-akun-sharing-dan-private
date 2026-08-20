@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { sendTelegramNotification } from '@/lib/telegram';
-import { getBuyerFromRequest, verifyToken } from '@/lib/auth';
+import { getBuyerAccessFromRequest, verifyToken } from '@/lib/auth';
+import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 import {
   calculateCampaignDiscount,
   getMinimumQuantity,
@@ -11,11 +12,21 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
-    const authenticatedBuyer = getBuyerFromRequest(request);
-    if (!authenticatedBuyer) {
+    const buyerAccess = await getBuyerAccessFromRequest(request);
+    if (!buyerAccess) {
       return NextResponse.json({ error: 'Silakan login kembali sebelum membuat pesanan.' }, { status: 401 });
     }
+    if (isBuyerBannedStatus(buyerAccess.status)) {
+      return NextResponse.json(
+        { banned: true, error: BUYER_BAN_MESSAGE },
+        { status: 403 },
+      );
+    }
+    if (buyerAccess.status !== 'active') {
+      return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
+    }
 
+    const buyer = buyerAccess.buyer;
     const { product_id, ref_code, discount_code, quantity: rawQty, reseller_token } = await request.json();
     const quantity = normalizeOrderQuantity(rawQty);
 
@@ -35,16 +46,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 });
     }
 
-    // Resolve identity from the verified application token, never from buyer
-    // fields supplied by the browser.
-    const { data: buyer, error: buyerError } = await supabase
-      .from('buyers')
-      .select('*')
-      .eq('id', authenticatedBuyer.id)
-      .eq('status', 'active')
-      .single();
-    if (buyerError || !buyer || !buyer.name || !buyer.phone || !buyer.email) {
-      return NextResponse.json({ error: 'Profil buyer belum lengkap atau tidak aktif.' }, { status: 403 });
+    if (!buyer.name || !buyer.phone || !buyer.email) {
+      return NextResponse.json({ error: 'Profil buyer belum lengkap.' }, { status: 403 });
     }
 
     // ===== CHECK IF BUYER IS A NEWCOMER (first-time buyer) =====
