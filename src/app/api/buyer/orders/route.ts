@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getBuyerFromRequest } from '@/lib/auth';
+import { getBuyerAccessFromRequest } from '@/lib/auth';
+import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 
 // Buyer data must be fetched through this route, never directly with the
 // browser's Supabase key. The token is bound to one buyer_id server-side.
 export async function GET(request: NextRequest) {
-  const buyer = getBuyerFromRequest(request);
-  if (!buyer) {
+  const access = await getBuyerAccessFromRequest(request);
+  if (!access) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (isBuyerBannedStatus(access.status)) {
+    return NextResponse.json(
+      { banned: true, error: BUYER_BAN_MESSAGE },
+      { status: 403 },
+    );
+  }
+  if (access.status !== 'active') {
+    return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
+  }
+  const buyer = access.buyer;
 
   const requestedOrder = request.nextUrl.searchParams.get('order');
   let ordersQuery = supabase

@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decrypt } from '@/lib/crypto';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { getBuyerFromRequest } from '@/lib/auth';
+import { getBuyerAccessFromRequest } from '@/lib/auth';
+import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 
 export async function POST(request: NextRequest) {
   try {
-    const buyer = getBuyerFromRequest(request);
-    if (!buyer) {
+    const access = await getBuyerAccessFromRequest(request);
+    if (!access) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (isBuyerBannedStatus(access.status)) {
+      return NextResponse.json(
+        { banned: true, error: BUYER_BAN_MESSAGE },
+        { status: 403 },
+      );
+    }
+    if (access.status !== 'active') {
+      return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
+    }
+    const buyer = access.buyer;
 
     const { encrypted, credentialType = 'password' } = await request.json();
 

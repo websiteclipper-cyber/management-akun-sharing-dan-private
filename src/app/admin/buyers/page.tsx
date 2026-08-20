@@ -1,32 +1,63 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { adminSelect, adminUpdate } from '@/lib/adminApi';
 
-export default function BuyersPage() {
-  const [buyers, setBuyers] = useState<Array<Record<string, unknown>>>([]);
-  const [loading, setLoading] = useState(true);
+type BuyerRow = Record<string, unknown>;
 
-  useEffect(() => { loadBuyers(); }, []);
+export default function BuyersPage() {
+  const [buyers, setBuyers] = useState<BuyerRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
+
+  useEffect(() => { void loadBuyers(); }, []);
 
   async function loadBuyers() {
     const { data } = await adminSelect('buyers');
-    setBuyers((data || []).sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
+    setBuyers((data || []).sort((a: BuyerRow, b: BuyerRow) =>
       String(b.created_at).localeCompare(String(a.created_at)),
     ));
     setLoading(false);
   }
 
+  async function handleBanToggle(buyer: BuyerRow) {
+    const id = Number(buyer.id);
+    const name = String(buyer.name || `Buyer #${id}`);
+    const isBanned = buyer.status === 'blocked';
+    const action = isBanned ? 'unban' : 'ban';
+    const confirmation = isBanned
+      ? `Buka kembali akses untuk ${name}?`
+      : `Ban ${name}? Buyer akan langsung kehilangan akses pembelian, pesanan, dan data akun.`;
+
+    if (!window.confirm(confirmation)) return;
+
+    setUpdatingId(id);
+    const result = await adminUpdate(
+      'buyers',
+      {
+        status: isBanned ? 'active' : 'blocked',
+        updated_at: new Date().toISOString(),
+      },
+      { id },
+    );
+    setUpdatingId(null);
+
+    if (result.error) {
+      alert(`Gagal melakukan ${action}: ${result.error.message}`);
+      return;
+    }
+
+    await loadBuyers();
+  }
+
   function handleExportWA() {
     const numbers = buyers
       .map(b => b.phone as string)
-      .filter(p => !!p && p.trim().length >= 9) // basic check for valid-ish length
+      .filter(p => !!p && p.trim().length >= 9)
       .map(phone => {
-        let cleaned = phone.replace(/\D/g, ''); // Remove non-numeric
+        let cleaned = phone.replace(/\D/g, '');
         if (cleaned.startsWith('0')) {
           cleaned = '62' + cleaned.substring(1);
-        } else if (cleaned.startsWith('+62')) {
-          cleaned = '62' + cleaned.substring(3);
         } else if (cleaned.startsWith('8')) {
           cleaned = '62' + cleaned;
         }
@@ -34,7 +65,6 @@ export default function BuyersPage() {
       });
 
     const uniqueNumbers = Array.from(new Set(numbers));
-
     if (uniqueNumbers.length === 0) {
       alert('Tidak ada nomor WA yang tersedia.');
       return;
@@ -57,8 +87,8 @@ export default function BuyersPage() {
       <div className="admin-topbar">
         <h2>Buyers</h2>
         <div className="admin-topbar-actions">
-          <button 
-            className="btn btn-success btn-sm" 
+          <button
+            className="btn btn-success btn-sm"
             onClick={handleExportWA}
             disabled={buyers.length === 0}
           >
@@ -67,6 +97,22 @@ export default function BuyersPage() {
         </div>
       </div>
       <div style={{ padding: '32px' }}>
+        <div
+          style={{
+            marginBottom: '20px',
+            padding: '16px 18px',
+            borderRadius: '12px',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            background: 'rgba(239, 68, 68, 0.08)',
+            color: 'var(--text-primary)',
+            lineHeight: 1.6,
+          }}
+        >
+          <strong>Fitur banned buyer:</strong> buyer yang diban akan melihat pemberitahuan
+          pelanggaran ketentuan dan tidak dapat membeli, membayar, melihat pesanan, atau
+          membuka data akun sampai di-unban.
+        </div>
+
         {loading ? (
           <div className="loading-page"><div className="loading-spinner" /></div>
         ) : (
@@ -76,27 +122,36 @@ export default function BuyersPage() {
                 <tr><th>ID</th><th>Nama</th><th>Phone</th><th>Status</th><th>Terdaftar</th><th>Aksi</th></tr>
               </thead>
               <tbody>
-                {buyers.map(b => (
-                  <tr key={b.id as number}>
-                    <td style={{ fontFamily: 'monospace' }}>#{b.id as number}</td>
-                    <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{b.name as string}</td>
-                    <td>{(b.phone as string) || '—'}</td>
-                    <td><span className={`badge ${(b.status as string) === 'active' ? 'badge-success' : 'badge-danger'}`}>{b.status as string}</span></td>
-                    <td style={{ fontSize: '0.8rem' }}>{new Date(b.created_at as string).toLocaleDateString('id-ID')}</td>
-                    <td>
-                      <button
-                        className={`btn btn-sm ${(b.status as string) === 'active' ? 'btn-danger' : 'btn-success'}`}
-                        onClick={async () => {
-                          const result = await adminUpdate('buyers', { status: (b.status as string) === 'active' ? 'blocked' : 'active', updated_at: new Date().toISOString() }, { id: b.id });
-                          if (result.error) { alert('Gagal: ' + result.error.message); return; }
-                          loadBuyers();
-                        }}
-                      >
-                        {(b.status as string) === 'active' ? 'Block' : 'Aktifkan'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {buyers.map(buyer => {
+                  const id = Number(buyer.id);
+                  const isBanned = buyer.status === 'blocked';
+                  const isUpdating = updatingId === id;
+
+                  return (
+                    <tr key={id}>
+                      <td style={{ fontFamily: 'monospace' }}>#{id}</td>
+                      <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{String(buyer.name || '—')}</td>
+                      <td>{String(buyer.phone || '—')}</td>
+                      <td>
+                        <span className={`badge ${isBanned ? 'badge-danger' : 'badge-success'}`}>
+                          {isBanned ? 'BANNED' : 'AKTIF'}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.8rem' }}>
+                        {new Date(String(buyer.created_at)).toLocaleDateString('id-ID')}
+                      </td>
+                      <td>
+                        <button
+                          className={`btn btn-sm ${isBanned ? 'btn-success' : 'btn-danger'}`}
+                          onClick={() => void handleBanToggle(buyer)}
+                          disabled={isUpdating}
+                        >
+                          {isUpdating ? 'Memproses...' : isBanned ? 'Unban' : 'Ban Buyer'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {buyers.length === 0 && (
                   <tr><td colSpan={6} className="empty-state"><div className="icon">👥</div><h3>Belum ada buyer</h3></td></tr>
                 )}

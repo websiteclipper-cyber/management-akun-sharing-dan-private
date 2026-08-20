@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { signToken } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/supabase';
 import { findBuyerByVerifiedEmail } from '@/lib/buyerProfile';
+import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 
 export async function POST(request: NextRequest) {
   const authorization = request.headers.get('authorization');
@@ -21,6 +22,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Gagal membaca profil buyer.' }, { status: 500 });
   }
 
+  if (buyer && isBuyerBannedStatus(buyer.status)) {
+    return NextResponse.json(
+      { banned: true, error: BUYER_BAN_MESSAGE },
+      { status: 403 },
+    );
+  }
   if (buyer && buyer.status !== 'active') {
     return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
   }

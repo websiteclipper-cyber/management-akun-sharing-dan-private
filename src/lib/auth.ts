@@ -17,7 +17,7 @@ export interface AdminPayload {
   tokenVersion: number;
 }
 
-interface BuyerPayload {
+export interface BuyerPayload {
   id: number;
   name: string;
   email: string;
@@ -160,6 +160,40 @@ export function getBuyerFromRequest(request: Request): BuyerPayload | null {
   if (!payload || payload.type !== 'buyer') return null;
 
   return payload as BuyerPayload;
+}
+
+export interface BuyerAccess {
+  buyer: BuyerPayload;
+  status: string;
+}
+
+// Re-check the database on every protected buyer request. A signed token proves
+// identity, but it must not let a buyer keep access after an admin bans them.
+export async function getBuyerAccessFromRequest(request: Request): Promise<BuyerAccess | null> {
+  const tokenBuyer = getBuyerFromRequest(request);
+  if (!tokenBuyer) return null;
+
+  const { data: buyer, error } = await supabaseAdmin
+    .from('buyers')
+    .select('id, name, email, phone, status')
+    .eq('id', tokenBuyer.id)
+    .maybeSingle();
+
+  if (
+    error ||
+    !buyer ||
+    String(buyer.email || '').trim().toLowerCase() !== tokenBuyer.email.trim().toLowerCase()
+  ) return null;
+
+  return {
+    buyer: {
+      id: Number(buyer.id),
+      name: String(buyer.name || ''),
+      email: String(buyer.email || ''),
+      phone: String(buyer.phone || ''),
+    },
+    status: String(buyer.status || ''),
+  };
 }
 
 interface ResellerPayload {
