@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { adminSelect, adminUpdate } from '@/lib/adminApi';
+import { adminSelect, adminSetBuyerBan } from '@/lib/adminApi';
 
 type BuyerRow = Record<string, unknown>;
 
@@ -42,19 +42,12 @@ export default function BuyersPage() {
     const action = isBanned ? 'unban' : 'ban';
     const confirmation = isBanned
       ? `Buka kembali akses untuk ${name}?`
-      : `Ban ${name}? Buyer akan langsung kehilangan akses pembelian, pesanan, dan data akun.`;
+      : `Ban ${name}? Akun, nomor WA, dan IP buyer dari riwayat pesanan akan langsung diblokir.`;
 
     if (!window.confirm(confirmation)) return;
 
     setUpdatingId(id);
-    const result = await adminUpdate(
-      'buyers',
-      {
-        status: isBanned ? 'active' : 'blocked',
-        updated_at: new Date().toISOString(),
-      },
-      { id },
-    );
+    const result = await adminSetBuyerBan(id, !isBanned);
     setUpdatingId(null);
 
     if (result.error) {
@@ -125,7 +118,8 @@ export default function BuyersPage() {
         >
           <strong>Fitur banned buyer:</strong> buyer yang diban akan melihat pemberitahuan
           pelanggaran ketentuan dan tidak dapat membeli, membayar, melihat pesanan, atau
-          membuka data akun sampai di-unban.
+          membuka data akun sampai di-unban. Ban juga berlaku untuk nomor WA dan IP publik
+          buyer yang pernah tercatat pada pesanan.
         </div>
 
         <div
@@ -248,3 +242,5 @@ export default function BuyersPage() {
     </div>
   );
 }
+
+
