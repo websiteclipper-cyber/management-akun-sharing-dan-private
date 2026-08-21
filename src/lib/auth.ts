@@ -1,5 +1,9 @@
 import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase';
+import {
+  isBuyerIdentityBanned,
+  recordBannedBuyerRequestIp,
+} from '@/lib/buyerBanIdentity';
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET || process.env.ENCRYPTION_KEY;
@@ -185,6 +189,20 @@ export async function getBuyerAccessFromRequest(request: Request): Promise<Buyer
     String(buyer.email || '').trim().toLowerCase() !== tokenBuyer.email.trim().toLowerCase()
   ) return null;
 
+  let status = String(buyer.status || '');
+  if (status === 'blocked') {
+    await recordBannedBuyerRequestIp(Number(buyer.id), request);
+  } else if (
+    status === 'active'
+    && await isBuyerIdentityBanned({
+      request,
+      email: buyer.email,
+      phone: buyer.phone,
+    })
+  ) {
+    status = 'blocked';
+  }
+
   return {
     buyer: {
       id: Number(buyer.id),
@@ -192,7 +210,7 @@ export async function getBuyerAccessFromRequest(request: Request): Promise<Buyer
       email: String(buyer.email || ''),
       phone: String(buyer.phone || ''),
     },
-    status: String(buyer.status || ''),
+    status,
   };
 }
 
@@ -214,3 +232,5 @@ export function getResellerFromRequest(request: Request): ResellerPayload | null
 
   return payload as unknown as ResellerPayload;
 }
+
+

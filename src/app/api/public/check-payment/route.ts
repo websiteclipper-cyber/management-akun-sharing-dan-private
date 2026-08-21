@@ -6,6 +6,11 @@ import {
   findKlikQrisPayment,
   getStoredCreateData,
 } from '@/lib/klikqris-payment';
+import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
+import {
+  isBuyerIdentityBanned,
+  recordBannedBuyerRequestIp,
+} from '@/lib/buyerBanIdentity';
 
 export const runtime = 'nodejs';
 
@@ -20,12 +25,43 @@ export async function POST(request: NextRequest) {
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, order_number, payment_status')
+      .select('id, order_number, payment_status, buyer:buyers(id, email, phone, status)')
       .eq('order_number', orderNumber)
       .single();
 
     if (orderError || !order) {
       return NextResponse.json({ error: 'Order tidak ditemukan.' }, { status: 404 });
+    }
+
+    const buyerRelation = Array.isArray(order.buyer) ? order.buyer[0] : order.buyer;
+    const buyerStatus = buyerRelation && typeof buyerRelation === 'object' && 'status' in buyerRelation
+      ? String(buyerRelation.status || '')
+      : '';
+    const buyerId = buyerRelation && typeof buyerRelation === 'object' && 'id' in buyerRelation
+      ? Number(buyerRelation.id)
+      : 0;
+    const buyerEmail = buyerRelation && typeof buyerRelation === 'object' && 'email' in buyerRelation
+      ? buyerRelation.email
+      : null;
+    const buyerPhone = buyerRelation && typeof buyerRelation === 'object' && 'phone' in buyerRelation
+      ? buyerRelation.phone
+      : null;
+
+    if (isBuyerBannedStatus(buyerStatus)) {
+      if (buyerId) await recordBannedBuyerRequestIp(buyerId, request);
+      return NextResponse.json(
+        { banned: true, error: BUYER_BAN_MESSAGE },
+        { status: 403 },
+      );
+    }
+    if (buyerStatus !== 'active') {
+      return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
+    }
+    if (await isBuyerIdentityBanned({ request, email: buyerEmail, phone: buyerPhone })) {
+      return NextResponse.json(
+        { banned: true, error: BUYER_BAN_MESSAGE },
+        { status: 403 },
+      );
     }
 
     if (order.payment_status === 'paid') {
@@ -93,3 +129,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+

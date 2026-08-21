@@ -56,3 +56,30 @@ export async function adminSelect(
 export async function adminRpc(rpc: string, rpcParams?: Record<string, unknown>) {
   return adminFetch({ rpc, rpcParams });
 }
+
+
+export async function adminSetBuyerBan(buyerId: number, banned: boolean) {
+  const token = getAdminToken();
+  try {
+    const res = await fetch('/api/admin/buyers/ban', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ buyerId, banned }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      const errMsg = typeof json.error === 'string'
+        ? json.error
+        : json.error?.message || `HTTP ${res.status}`;
+      return { error: { message: errMsg } };
+    }
+    return json;
+  } catch (err) {
+    return { error: { message: 'Gagal koneksi ke server: ' + (err as Error).message } };
+  }
+}
+
+
