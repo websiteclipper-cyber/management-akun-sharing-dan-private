@@ -5,7 +5,7 @@ import { findBuyerByVerifiedEmail } from '@/lib/buyerProfile';
 import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 import {
   isBuyerIdentityBanned,
-  recordBannedBuyerRequestIp,
+  recordBannedBuyerIdentity,
 } from '@/lib/buyerBanIdentity';
 
 export async function POST(request: NextRequest) {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (buyer && isBuyerBannedStatus(buyer.status)) {
-    await recordBannedBuyerRequestIp(buyer.id, request);
+    await recordBannedBuyerIdentity(buyer.id, request, buyer.email, buyer.phone);
     return NextResponse.json(
       { banned: true, error: BUYER_BAN_MESSAGE },
       { status: 403 },

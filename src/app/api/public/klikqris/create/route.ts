@@ -5,7 +5,7 @@ import { findKlikQrisPayment, getStoredCreateData } from '@/lib/klikqris-payment
 import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 import {
   isBuyerIdentityBanned,
-  recordBannedBuyerRequestIp,
+  recordBannedBuyerIdentity,
 } from '@/lib/buyerBanIdentity';
 
 export const runtime = 'nodejs';
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       : null;
 
     if (isBuyerBannedStatus(buyerStatus)) {
-      if (buyerId) await recordBannedBuyerRequestIp(buyerId, request);
+      if (buyerId) await recordBannedBuyerIdentity(buyerId, request, buyerEmail, buyerPhone);
       return NextResponse.json(
         { banned: true, error: BUYER_BAN_MESSAGE },
         { status: 403 },

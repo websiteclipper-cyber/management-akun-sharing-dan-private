@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase';
 import {
   isBuyerIdentityBanned,
-  recordBannedBuyerRequestIp,
+  recordBannedBuyerIdentity,
 } from '@/lib/buyerBanIdentity';
 
 function getJwtSecret(): string {
@@ -191,7 +191,7 @@ export async function getBuyerAccessFromRequest(request: Request): Promise<Buyer
 
   let status = String(buyer.status || '');
   if (status === 'blocked') {
-    await recordBannedBuyerRequestIp(Number(buyer.id), request);
+    await recordBannedBuyerIdentity(Number(buyer.id), request, buyer.email, buyer.phone);
   } else if (
     status === 'active'
     && await isBuyerIdentityBanned({
