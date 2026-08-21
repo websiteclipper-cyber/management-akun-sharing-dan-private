@@ -6,7 +6,7 @@ import { normalizeWhatsAppPhone } from '@/lib/phone';
 import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 import {
   isBuyerIdentityBanned,
-  recordBannedBuyerRequestIp,
+  recordBannedBuyerIdentity,
 } from '@/lib/buyerBanIdentity';
 
 export async function POST(request: NextRequest) {
@@ -37,7 +37,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Gagal membaca profil buyer.' }, { status: 500 });
   }
   if (existingBuyer && isBuyerBannedStatus(existingBuyer.status)) {
-    await recordBannedBuyerRequestIp(existingBuyer.id, request);
+    await recordBannedBuyerIdentity(
+      existingBuyer.id,
+      request,
+      existingBuyer.email,
+      existingBuyer.phone,
+    );
     return NextResponse.json(
       { banned: true, error: BUYER_BAN_MESSAGE },
       { status: 403 },

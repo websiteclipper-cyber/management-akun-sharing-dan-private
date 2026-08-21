@@ -90,20 +90,26 @@ export async function isBuyerIdentityBanned(input: {
   return Boolean(data?.length);
 }
 
-export async function recordBannedBuyerRequestIp(
+export async function recordBannedBuyerIdentity(
   buyerId: number,
   request: Request,
+  email?: unknown,
+  phone?: unknown,
 ): Promise<void> {
-  const identifier = buildBuyerBanIdentifiers({ ips: [getRequestIp(request)] })[0];
-  if (!identifier) return;
+  const identifiers = buildBuyerBanIdentifiers({
+    email,
+    phone,
+    ips: [getRequestIp(request)],
+  });
+  if (identifiers.length === 0) return;
 
   const { error } = await supabaseAdmin
     .from('buyer_ban_identifiers')
-    .upsert({
+    .upsert(identifiers.map((identifier) => ({
       buyer_id: buyerId,
       identifier_type: identifier.type,
       identifier_hash: identifier.hash,
-    }, {
+    })), {
       onConflict: 'buyer_id,identifier_type,identifier_hash',
       ignoreDuplicates: true,
     });
