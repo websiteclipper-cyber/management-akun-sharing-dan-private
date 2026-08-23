@@ -492,10 +492,8 @@ export default function KetentuanPage() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {[
-              { icon: <FiCheckCircle color="#10b981" />, text: 'Garansi ganti akun baru jika expired normal (trial habis)' },
               { icon: <FiXCircle color="#ef4444" />, text: 'Tidak ada garansi jika akun di-ban/blokir oleh platform' },
               { icon: <FiInfo color="#3b82f6" />, text: 'Harga murah karena memanfaatkan promo trial resmi platform' },
-              { icon: <FiRefreshCw color="#a855f7" />, text: 'Siap alihkan ke platform alternatif jika layanan tidak bisa digunakan (non-ban)' },
               { icon: <FiAlertCircle color="#f59e0b" />, text: 'Pembelian bersifat final — tidak ada refund di luar ketentuan garansi' },
             ].map(({ icon, text }, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
