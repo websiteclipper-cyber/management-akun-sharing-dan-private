@@ -97,6 +97,15 @@ function getPlatformGradient(name: string) {
   return PLATFORM_GRADIENTS.DEFAULT;
 }
 
+function getAvailableStock(product: Product): number {
+  const stock = Number(product.available_stock || 0);
+  return Number.isFinite(stock) ? Math.max(0, Math.trunc(stock)) : 0;
+}
+
+function isProductSoldOut(product: Product): boolean {
+  return product.status !== 'active' || getAvailableStock(product) === 0;
+}
+
 // ── Medal styles for leaderboard ──
 const MEDAL_STYLES: Record<number, { bg: string; shadow: string; label: string }> = {
   1: { bg: 'linear-gradient(135deg, #FFD700, #FFA500)', shadow: '0 4px 16px rgba(255,215,0,0.45)', label: '🥇' },
@@ -802,7 +811,9 @@ export default function HomePage({
                             gap: '24px',
                           }}>
                             {group.platforms.map(category => {
-                              const count = products.filter(p => p.platform_name.toUpperCase() === category && p.status === 'active').length;
+                              const count = products.filter(p =>
+                                p.platform_name.toUpperCase() === category && !isProductSoldOut(p)
+                              ).length;
                               const icon = getPlatformIcon(category);
                               const gradient = getPlatformGradient(category);
                               const glowColor = getPlatformGlow(category);
@@ -905,8 +916,10 @@ export default function HomePage({
                   {products
                     .filter(p => p.platform_name.toUpperCase() === selectedCategory)
                     .sort((a, b) => {
-                      if (a.status === 'active' && b.status === 'inactive') return -1;
-                      if (a.status === 'inactive' && b.status === 'active') return 1;
+                      const aSoldOut = isProductSoldOut(a);
+                      const bSoldOut = isProductSoldOut(b);
+                      if (!aSoldOut && bSoldOut) return -1;
+                      if (aSoldOut && !bSoldOut) return 1;
 
                       const now = new Date();
 
@@ -939,25 +952,26 @@ export default function HomePage({
                       });
 
                       const hasNewcomerPrice = product.newcomer_price !== null && product.newcomer_price !== undefined;
-                      const isInactive = product.status === 'inactive';
+                      const availableStock = getAvailableStock(product);
+                      const isSoldOut = isProductSoldOut(product);
 
                       return (
                         <div
                           key={product.id}
                           className="product-card"
-                          data-inactive={isInactive}
+                          data-inactive={isSoldOut}
                           style={{
                             background: C_CARD,
                             borderRadius: 'var(--radius-xl)',
                             padding: '32px',
-                            boxShadow: isInactive
+                            boxShadow: isSoldOut
                               ? 'none'
                               : promo
                               ? '0 14px 34px rgba(239, 68, 68, 0.08)'
                               : hasNewcomerPrice
                               ? '0 14px 34px rgba(37, 99, 235, 0.08)'
                               : C_SHADOW,
-                            border: isInactive
+                            border: isSoldOut
                               ? '1px solid var(--border-secondary)'
                               : promo
                               ? '1px solid rgba(239, 68, 68, 0.2)'
@@ -967,12 +981,12 @@ export default function HomePage({
                             display: 'flex', flexDirection: 'column',
                             position: 'relative',
                             transition: 'all var(--transition-normal)',
-                            opacity: isInactive ? 0.55 : 1,
-                            filter: isInactive ? 'grayscale(80%)' : 'none',
+                            opacity: isSoldOut ? 0.55 : 1,
+                            filter: isSoldOut ? 'grayscale(80%)' : 'none',
                           }}
                         >
                         {/* Sold Out or Promo/Newcomer Badge */}
-                        {isInactive ? (
+                        {isSoldOut ? (
                           <div style={{
                             position: 'absolute', top: '-14px', left: '32px',
                             background: '#334155',
@@ -1107,10 +1121,18 @@ export default function HomePage({
                             }}>
                               {product.account_type}
                             </div>
+                            <div style={{
+                              fontSize: '0.72rem',
+                              color: isSoldOut ? 'var(--text-muted)' : 'var(--brand-success)',
+                              fontWeight: 700,
+                              marginTop: '7px',
+                            }}>
+                              {isSoldOut ? 'Stok habis' : `Stok ${availableStock}`}
+                            </div>
                           </div>
                         </div>
 
-                        {isInactive ? (
+                        {isSoldOut ? (
                           <button
                             disabled
                             className="btn"
@@ -1178,7 +1200,7 @@ export default function HomePage({
                 >
                   Tutup
                 </button>
-                {detailProduct.status === 'active' && (
+                {!isProductSoldOut(detailProduct) ? (
                   <Link
                     href={`/order/${detailProduct.id}`}
                     className="btn btn-primary"
@@ -1186,6 +1208,10 @@ export default function HomePage({
                   >
                     {t('choose_plan')}
                   </Link>
+                ) : (
+                  <button type="button" className="btn" disabled>
+                    SOLD OUT
+                  </button>
                 )}
               </div>
             </div>

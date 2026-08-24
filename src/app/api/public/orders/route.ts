@@ -9,6 +9,7 @@ import {
   getMinimumQuantity,
   normalizeOrderQuantity,
 } from '@/lib/discount-pricing';
+import { getAvailableStock } from '@/lib/product-stock';
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,6 +45,24 @@ export async function POST(request: NextRequest) {
 
     if (prodError || !product) {
       return NextResponse.json({ error: 'Produk tidak ditemukan' }, { status: 404 });
+    }
+
+    let availableStock: number;
+    try {
+      availableStock = await getAvailableStock(product.id);
+    } catch (stockError) {
+      console.error('Failed to validate product stock:', stockError);
+      return NextResponse.json(
+        { error: 'Stok belum dapat diperiksa. Silakan coba lagi.' },
+        { status: 503 },
+      );
+    }
+
+    if (availableStock < quantity) {
+      const error = availableStock === 0
+        ? 'Stok produk habis (SOLD OUT).'
+        : `Stok produk hanya tersisa ${availableStock}. Kurangi jumlah pembelian.`;
+      return NextResponse.json({ error, available_stock: availableStock }, { status: 409 });
     }
 
     if (!buyer.name || !buyer.phone || !buyer.email) {

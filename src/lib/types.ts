@@ -56,6 +56,7 @@ export interface Product {
   status: ProductStatus;
   created_at: string;
   updated_at: string;
+  available_stock?: number;
 }
 
 export interface StockAccount {
