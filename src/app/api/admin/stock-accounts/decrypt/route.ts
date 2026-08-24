@@ -3,7 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { decrypt } from '@/lib/crypto';
 import { getAdminFromRequest } from '@/lib/auth';
 
-// Password is decrypted only after the application admin token is verified.
+// Credentials are decrypted only after the application admin token is verified.
 
 export async function GET(request: NextRequest) {
   if (!(await getAdminFromRequest(request))) {
@@ -12,14 +12,23 @@ export async function GET(request: NextRequest) {
 
   try {
     const accountId = request.nextUrl.searchParams.get('id');
+    const credential = request.nextUrl.searchParams.get('credential') || 'password';
     if (!accountId) {
       return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
     }
 
+    if (credential !== 'password' && credential !== 'two_factor') {
+      return NextResponse.json({ error: 'Credential tidak valid' }, { status: 400 });
+    }
+
+    const credentialField = credential === 'two_factor'
+      ? 'two_factor_secret_encrypted'
+      : 'account_secret_encrypted';
+
     // Ambil akun dari database
     const { data: account, error } = await supabase
       .from('stock_accounts')
-      .select('account_secret_encrypted')
+      .select('account_secret_encrypted, two_factor_secret_encrypted')
       .eq('id', accountId)
       .single();
 
@@ -27,12 +36,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Account tidak ditemukan' }, { status: 404 });
     }
 
-    if (!account.account_secret_encrypted) {
+    const encryptedSecret = account[credentialField];
+    if (!encryptedSecret) {
       return NextResponse.json({ secret: '' }, { status: 200 });
     }
 
-    // Decrypt password
-    const decryptedSecret = decrypt(account.account_secret_encrypted);
+    const decryptedSecret = decrypt(encryptedSecret);
 
     return NextResponse.json({ secret: decryptedSecret }, { status: 200 });
   } catch (error: unknown) {

@@ -544,6 +544,8 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
   const [error, setError] = useState('');
   const [showPasswordStr, setShowPasswordStr] = useState<string | null>(null);
   const [fetchingPassword, setFetchingPassword] = useState(false);
+  const [showTwoFactorStr, setShowTwoFactorStr] = useState<string | null>(null);
+  const [fetchingTwoFactor, setFetchingTwoFactor] = useState(false);
 
   const selectedProduct = products.find(p => p.id.toString() === form.product_id);
   const identifierIsUrl = isHttpUrl(form.account_identifier);
@@ -566,6 +568,27 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
       alert('Terjadi kesalahan koneksi');
     } finally {
       setFetchingPassword(false);
+    }
+  }
+
+  async function handleShowTwoFactor() {
+    if (!account?.id) return;
+    setFetchingTwoFactor(true);
+    try {
+      const res = await fetch(`/api/admin/stock-accounts/decrypt?id=${account.id}&credential=two_factor`, {
+        headers: getAdminAuthHeaders(),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setShowTwoFactorStr(data.secret);
+        setTimeout(() => setShowTwoFactorStr(null), 10000);
+      } else {
+        alert('Gagal mengambil kode 2FA: ' + data.error);
+      }
+    } catch {
+      alert('Terjadi kesalahan koneksi');
+    } finally {
+      setFetchingTwoFactor(false);
     }
   }
 
@@ -656,8 +679,33 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
           </div>
           {supportsTwoFactorLive(selectedProduct) && (
             <div className="form-group">
-              <label className="form-label">Kode 2FA.live <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(opsional)</span></label>
-              <input className="form-input" value={form.two_factor_secret} onChange={e => setForm({ ...form, two_factor_secret: e.target.value })} placeholder="Contoh: 2KNEXO3CKMAWFJ4XNMOGMQD6WASDE3ED" />
+              <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Kode 2FA.live <span style={{ color: 'var(--text-muted)', fontWeight: 400, textTransform: 'none' }}>(opsional)</span></span>
+                {isEdit && (
+                  <button
+                    type="button"
+                    onClick={handleShowTwoFactor}
+                    disabled={fetchingTwoFactor}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.8rem', padding: 0 }}
+                  >
+                    {fetchingTwoFactor ? '⏳ Mengambil...' : '👁️ Lihat Kode 2FA'}
+                  </button>
+                )}
+              </label>
+              <input
+                className="form-input"
+                value={showTwoFactorStr !== null ? showTwoFactorStr : form.two_factor_secret}
+                onChange={e => {
+                  if (showTwoFactorStr !== null) setShowTwoFactorStr(null);
+                  setForm({ ...form, two_factor_secret: e.target.value });
+                }}
+                placeholder={showTwoFactorStr !== null ? '' : (isEdit ? 'Kosongkan jika tidak diubah' : 'Contoh: 2KNEXO3CKMAWFJ4XNMOGMQD6WASDE3ED')}
+              />
+              {showTwoFactorStr !== null && (
+                <p style={{ fontSize: '0.75rem', color: 'var(--brand-warning)', marginTop: '4px', marginBottom: 0 }}>
+                  ⚠️ Kode 2FA sedang ditampilkan. Akan disembunyikan dalam 10 detik.
+                </p>
+              )}
               <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: '4px', display: 'block' }}>Kode disimpan terenkripsi dan dibagikan ke pembeli bersama email serta sandi.</small>
             </div>
           )}
