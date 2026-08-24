@@ -1,5 +1,6 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { sendTelegramNotification } from '@/lib/telegram';
+import { getAvailableStock } from '@/lib/product-stock';
 
 interface OrderRow {
   id: number;
@@ -285,19 +286,15 @@ async function ensureResellerCommission(order: OrderRow, now: string) {
 
 async function notifyLowStock(productId: number, product: { name?: string; account_type?: string } | null) {
   try {
-    const { count } = await supabase
-      .from('stock_accounts')
-      .select('*', { count: 'exact', head: true })
-      .eq('product_id', productId)
-      .eq('status', 'active');
+    const availableStock = await getAvailableStock(productId);
 
-    if (count !== null && count <= 1) {
+    if (availableStock <= 1) {
       const typeLabel = product?.account_type === 'sharing' ? 'Sharing' : 'Private';
       sendTelegramNotification(
         `⚠️ <b>PERINGATAN STOK MENIPIS!</b>\n\n` +
         `<b>Produk:</b> ${product?.name || '-'}\n` +
         `<b>Tipe:</b> ${typeLabel}\n` +
-        `<b>Sisa Stok:</b> ${count === 0 ? 'HABIS! (0)' : 'tinggal 1'}\n\n` +
+        `<b>Sisa Stok:</b> ${availableStock === 0 ? 'HABIS! (0)' : 'tinggal 1'}\n\n` +
         'Mohon segera tambahkan stok baru untuk produk ini.',
       );
     }

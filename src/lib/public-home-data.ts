@@ -1,6 +1,7 @@
 import { unstable_cache } from 'next/cache';
 import type { Product } from '@/lib/types';
 import { getServiceClient } from '@/lib/supabase';
+import { getAvailableStockByProductIds } from '@/lib/product-stock';
 
 export interface PublicPromo {
   id: string;
@@ -46,7 +47,7 @@ async function queryPublicCatalog(): Promise<PublicCatalogData> {
     const [productResult, promoResult] = await Promise.all([
       supabase
         .from('products')
-        .select('id, code, name, platform_name, catalog_category, account_type, price, newcomer_price, duration_days, warranty_days, description, status, created_at, updated_at, default_max_slot')
+        .select('id, code, name, platform_name, catalog_category, account_type, price, newcomer_price, duration_days, warranty_days, description, terms, status, created_at, updated_at, default_max_slot')
         .in('status', ['active', 'inactive'])
         .order('platform_name', { ascending: true }),
       supabase
@@ -61,8 +62,16 @@ async function queryPublicCatalog(): Promise<PublicCatalogData> {
       return { products: [], promos: [], error: true };
     }
 
+    const products = (productResult.data || []) as Product[];
+    const stockByProduct = await getAvailableStockByProductIds(
+      products.map((product) => product.id),
+    );
+
     return {
-      products: (productResult.data || []) as Product[],
+      products: products.map((product) => ({
+        ...product,
+        available_stock: stockByProduct.get(product.id) || 0,
+      })),
       promos: (promoResult.data || []) as PublicPromo[],
       error: false,
     };
@@ -71,11 +80,7 @@ async function queryPublicCatalog(): Promise<PublicCatalogData> {
   }
 }
 
-export const getPublicCatalog = unstable_cache(
-  queryPublicCatalog,
-  ['public-home-catalog'],
-  { revalidate: 60, tags: ['public-home-catalog'] },
-);
+export const getPublicCatalog = queryPublicCatalog;
 
 async function queryPublicSettings(): Promise<Record<string, string>> {
   const defaults = { support_whatsapp: '082244046330' };

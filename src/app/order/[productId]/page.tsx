@@ -39,6 +39,11 @@ interface DiscountInfo {
   fixed_discount_mode: 'per_item' | 'per_order';
 }
 
+function getAvailableStock(product: Product | null): number {
+  const stock = Number(product?.available_stock || 0);
+  return Number.isFinite(stock) ? Math.max(0, Math.trunc(stock)) : 0;
+}
+
 function clearBuyerLocalSession() {
   localStorage.removeItem('buyer_session');
   localStorage.removeItem('buyer_token');
@@ -132,18 +137,14 @@ export default function OrderPage() {
 
       setBuyer(parsedBuyer);
 
-      const { data } = await supabase.from('products').select('*').eq('id', params.productId).eq('status', 'active').single();
+      const catalogResponse = await fetch('/api/public/catalog', { cache: 'no-store' });
+      const catalog = catalogResponse.ok
+        ? await catalogResponse.json() as { products?: Product[]; promos?: Array<PromoInfo & { product_id: number }> }
+        : null;
+      const data = catalog?.products?.find((item) => String(item.id) === String(params.productId)) || null;
       setProduct(data);
       if (data) {
-        const now = new Date().toISOString();
-        const { data: promoData } = await supabase
-          .from('promos')
-          .select('*')
-          .eq('product_id', data.id)
-          .eq('is_active', true)
-          .lte('start_date', now)
-          .gte('end_date', now)
-          .maybeSingle();
+        const promoData = catalog?.promos?.find((item) => item.product_id === data.id);
         setPromo(promoData || null);
       }
 
@@ -240,7 +241,8 @@ export default function OrderPage() {
   }
 
   function handleQuantityChange(nextQuantity: number) {
-    const normalized = Math.min(10, Math.max(1, nextQuantity));
+    const maximumQuantity = Math.min(10, Math.max(1, getAvailableStock(product)));
+    const normalized = Math.min(maximumQuantity, Math.max(1, nextQuantity));
     if (normalized === quantity) return;
 
     setQuantity(normalized);
@@ -252,7 +254,11 @@ export default function OrderPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!buyer || !agreed) return;
+    if (!buyer || !agreed || !product) return;
+    if (getAvailableStock(product) < quantity) {
+      setError('Stok produk tidak mencukupi. Silakan kembali ke katalog dan pilih produk yang tersedia.');
+      return;
+    }
     setSubmitting(true);
     setError('');
 
@@ -337,6 +343,28 @@ export default function OrderPage() {
 
   if (loading) return <div className="public-layout"><div className="loading-page"><div className="loading-spinner" /></div></div>;
   if (!product) return <div className="public-layout"><div className="empty-state"><h3>{t('order_product_notfound')}</h3><Link href="/" className="btn btn-primary">{t('order_back_home')}</Link></div></div>;
+
+  const availableStock = getAvailableStock(product);
+  const isSoldOut = product.status !== 'active' || availableStock === 0;
+  if (isSoldOut) {
+    return (
+      <div className="public-layout">
+        <header className="public-header order-header">
+          <Link href="/" className="brand order-brand">✦ pastipremium.my.id</Link>
+        </header>
+        <div className="empty-state">
+          <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📦</div>
+          <h3>SOLD OUT</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
+            Stok {product.name} sedang habis dan belum dapat dibeli.
+          </p>
+          <Link href="/" className="btn btn-primary">Kembali ke katalog</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const maximumQuantity = Math.min(10, availableStock);
 
   // Newcomer price takes priority if buyer is first-time and product has newcomer_price
   const hasNewcomerPrice = isNewcomer && product.newcomer_price !== null && product.newcomer_price !== undefined;
@@ -580,16 +608,16 @@ export default function OrderPage() {
                 <button
                   type="button"
                   onClick={() => handleQuantityChange(quantity + 1)}
-                  disabled={quantity >= 10}
+                  disabled={quantity >= maximumQuantity}
                   style={{
                     width: '40px', height: '40px', borderRadius: '12px',
                     border: '1px solid var(--border-primary)',
-                    background: quantity >= 10 ? 'var(--bg-secondary)' : 'var(--bg-primary)',
-                    color: quantity >= 10 ? 'var(--text-muted)' : 'var(--text-primary)',
-                    fontSize: '1.2rem', fontWeight: 700, cursor: quantity >= 10 ? 'not-allowed' : 'pointer',
+                    background: quantity >= maximumQuantity ? 'var(--bg-secondary)' : 'var(--bg-primary)',
+                    color: quantity >= maximumQuantity ? 'var(--text-muted)' : 'var(--text-primary)',
+                    fontSize: '1.2rem', fontWeight: 700, cursor: quantity >= maximumQuantity ? 'not-allowed' : 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 0.2s',
-                    opacity: quantity >= 10 ? 0.4 : 1,
+                    opacity: quantity >= maximumQuantity ? 0.4 : 1,
                   }}
                 >+</button>
                 {quantity > 1 && (
@@ -597,6 +625,9 @@ export default function OrderPage() {
                     {t('order_qty_items', { qty: String(quantity) })}
                   </span>
                 )}
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  Stok tersedia: {availableStock}
+                </span>
               </div>
             </div>
 
