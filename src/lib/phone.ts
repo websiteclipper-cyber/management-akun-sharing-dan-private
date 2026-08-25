@@ -18,3 +18,28 @@ export function normalizeWhatsAppPhone(value: unknown): string | null {
 
   return /^[1-9]\d{7,14}$/.test(phone) ? phone : null;
 }
+
+/**
+ * Accept only canonical WhatsApp group invite links.
+ * Invalid or unrelated URLs are never rendered as maintenance CTAs.
+ */
+export function normalizeWhatsAppGroupLink(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+
+  try {
+    const url = new URL(value.trim());
+    const inviteCode = url.pathname.split('/').filter(Boolean)[0] || '';
+
+    if (
+      url.protocol !== 'https:'
+      || url.hostname.toLowerCase() !== 'chat.whatsapp.com'
+      || !/^[a-zA-Z0-9_-]+$/.test(inviteCode)
+    ) {
+      return null;
+    }
+
+    return `https://chat.whatsapp.com/${inviteCode}`;
+  } catch {
+    return null;
+  }
+}

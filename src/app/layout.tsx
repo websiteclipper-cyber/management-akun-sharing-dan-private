@@ -4,6 +4,7 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/lib/locale-context";
 import BuyerBanGuard from "@/components/BuyerBanGuard";
+import MaintenanceGate from "@/components/MaintenanceGate";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -40,8 +41,10 @@ export default async function RootLayout({
     <html lang={locale}>
       <body className={`${inter.variable} ${outfit.variable}`}>
         <LocaleProvider initialLocale={locale} initialCurrency={currency}>
-          {children}
-          <BuyerBanGuard />
+          <MaintenanceGate>
+            {children}
+            <BuyerBanGuard />
+          </MaintenanceGate>
         </LocaleProvider>
       </body>
     </html>

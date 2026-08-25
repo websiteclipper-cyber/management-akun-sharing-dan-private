@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { normalizeWhatsAppGroupLink } from '@/lib/phone';
 
 interface Setting {
   key: string;
@@ -56,6 +57,8 @@ export default function SettingsPage() {
   function getDefaults(): Setting[] {
     return [
       { key: 'support_whatsapp', value: '082244046330', label: 'Nomor WhatsApp Support' },
+      { key: 'maintenance_mode', value: 'false', label: 'Mode Maintenance Website' },
+      { key: 'maintenance_whatsapp_group', value: '', label: 'Link Grup WhatsApp Maintenance' },
       { key: 'leaderboard_min_commission', value: '50000', label: 'Leaderboard Min Komisi (Rp)' },
       { key: 'leaderboard_max_commission', value: '500000', label: 'Leaderboard Max Komisi (Rp)' },
       { key: 'global_promo_active', value: 'false', label: 'Aktifkan Global Promo Popup' },
@@ -92,6 +95,14 @@ export default function SettingsPage() {
   async function handleSave() {
     setSaving(true);
     setMessage('');
+
+    const groupLink = settings.find(s => s.key === 'maintenance_whatsapp_group')?.value || '';
+    if (groupLink && !normalizeWhatsAppGroupLink(groupLink)) {
+      setMessage('❌ Link grup harus menggunakan format https://chat.whatsapp.com/...');
+      setSaving(false);
+      return;
+    }
+
     try {
       const token = localStorage.getItem('admin_token') || '';
       const res = await fetch('/api/admin/settings', {
@@ -116,6 +127,10 @@ export default function SettingsPage() {
   }
 
   const waNumber = settings.find(s => s.key === 'support_whatsapp')?.value || '';
+  const maintenanceActive = settings.find(s => s.key === 'maintenance_mode')?.value === 'true';
+  const maintenanceGroupLink = settings.find(s => s.key === 'maintenance_whatsapp_group')?.value || '';
+  const normalizedMaintenanceGroupLink = normalizeWhatsAppGroupLink(maintenanceGroupLink);
+  const maintenanceGroupLinkValid = !maintenanceGroupLink || Boolean(normalizedMaintenanceGroupLink);
   const minCommission = settings.find(s => s.key === 'leaderboard_min_commission')?.value || '50000';
   const maxCommission = settings.find(s => s.key === 'leaderboard_max_commission')?.value || '500000';
 
@@ -149,6 +164,103 @@ export default function SettingsPage() {
           <div className="loading-page"><div className="loading-spinner" /></div>
         ) : (
           <>
+            {/* Website Maintenance Mode */}
+            <div style={{
+              background: maintenanceActive ? 'rgba(245,158,11,0.07)' : 'var(--bg-card)',
+              border: `1px solid ${maintenanceActive ? 'rgba(245,158,11,0.34)' : 'var(--border-secondary)'}`,
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              marginBottom: '24px',
+              transition: 'all 0.2s ease',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{
+                  width: '44px', height: '44px', borderRadius: '12px',
+                  background: maintenanceActive ? 'rgba(245,158,11,0.16)' : 'rgba(59,130,246,0.12)',
+                  color: maintenanceActive ? '#d97706' : '#2563eb',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.35rem',
+                }}>🛠️</div>
+                <div style={{ flex: '1 1 260px' }}>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px' }}>Mode Maintenance Website</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                    Tampilkan halaman pemeliharaan untuk seluruh pengunjung. Dashboard admin tetap dapat diakses.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{
+                    color: maintenanceActive ? '#b45309' : 'var(--text-muted)',
+                    fontSize: '0.78rem', fontWeight: 800,
+                  }}>
+                    {maintenanceActive ? 'ON' : 'OFF'}
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={maintenanceActive}
+                    aria-label={maintenanceActive ? 'Nonaktifkan mode maintenance' : 'Aktifkan mode maintenance'}
+                    onClick={() => updateSetting('maintenance_mode', maintenanceActive ? 'false' : 'true')}
+                    style={{
+                      width: '56px', height: '30px', borderRadius: '999px', padding: '3px',
+                      border: 'none', cursor: 'pointer',
+                      background: maintenanceActive ? '#f59e0b' : '#cbd5e1',
+                      display: 'flex', alignItems: 'center',
+                      justifyContent: maintenanceActive ? 'flex-end' : 'flex-start',
+                      transition: 'all 0.2s ease',
+                      boxShadow: maintenanceActive ? '0 6px 16px rgba(245,158,11,0.25)' : 'none',
+                    }}
+                  >
+                    <span style={{
+                      display: 'block', width: '24px', height: '24px', borderRadius: '50%',
+                      background: '#fff', boxShadow: '0 2px 6px rgba(15,23,42,0.2)',
+                    }} />
+                  </button>
+                </div>
+              </div>
+
+              <div role="status" style={{
+                background: maintenanceActive ? 'rgba(245,158,11,0.10)' : 'var(--bg-secondary)',
+                border: `1px solid ${maintenanceActive ? 'rgba(245,158,11,0.24)' : 'var(--border-primary)'}`,
+                borderRadius: 'var(--radius-md)', padding: '14px 16px', marginTop: '18px',
+                color: maintenanceActive ? '#92400e' : 'var(--text-secondary)',
+                fontSize: '0.8rem', lineHeight: 1.65,
+              }}>
+                {maintenanceActive
+                  ? '⚠️ Setelah disimpan, pengunjung akan melihat keterangan bahwa website sedang dalam pemeliharaan dan tombol chat ke nomor WhatsApp Support.'
+                  : 'Website berjalan normal. Aktifkan sakelar ini lalu simpan pengaturan saat Anda ingin menutup akses pengunjung sementara.'}
+              </div>
+
+              <div className="form-group" style={{ marginTop: '18px', marginBottom: 0 }}>
+                <label className="form-label" htmlFor="maintenance-whatsapp-group">
+                  Link Grup WhatsApp Saat Maintenance
+                </label>
+                <input
+                  id="maintenance-whatsapp-group"
+                  className="form-input"
+                  type="url"
+                  value={maintenanceGroupLink}
+                  onChange={e => updateSetting('maintenance_whatsapp_group', e.target.value.trim())}
+                  onBlur={() => {
+                    if (normalizedMaintenanceGroupLink) {
+                      updateSetting('maintenance_whatsapp_group', normalizedMaintenanceGroupLink);
+                    }
+                  }}
+                  placeholder="https://chat.whatsapp.com/xxxxxxxxxxxxxxxxxxxxxx"
+                  aria-invalid={!maintenanceGroupLinkValid}
+                  style={{ borderColor: maintenanceGroupLinkValid ? undefined : '#ef4444' }}
+                />
+                <p style={{
+                  fontSize: '0.75rem',
+                  color: maintenanceGroupLinkValid ? 'var(--text-muted)' : '#dc2626',
+                  margin: 0,
+                }}>
+                  {maintenanceGroupLinkValid
+                    ? 'Kosongkan jika tombol Gabung Grup WhatsApp tidak ingin ditampilkan.'
+                    : 'Link tidak valid. Gunakan link undangan resmi dari chat.whatsapp.com.'}
+                </p>
+              </div>
+            </div>
+
             {/* WhatsApp Support Section */}
             <div style={{
               background: 'var(--bg-card)',

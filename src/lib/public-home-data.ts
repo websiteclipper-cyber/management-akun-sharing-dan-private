@@ -29,6 +29,7 @@ export interface PublicCatalogData {
 
 const PUBLIC_SETTING_KEYS = [
   'support_whatsapp',
+  'maintenance_whatsapp_group',
   'global_promo_active',
   'global_promo_platform',
   'global_promo_title',
@@ -83,7 +84,10 @@ async function queryPublicCatalog(): Promise<PublicCatalogData> {
 export const getPublicCatalog = queryPublicCatalog;
 
 async function queryPublicSettings(): Promise<Record<string, string>> {
-  const defaults = { support_whatsapp: '082244046330' };
+  const defaults = {
+    support_whatsapp: '082244046330',
+    maintenance_whatsapp_group: '',
+  };
 
   try {
     const { data, error } = await getServiceClient()

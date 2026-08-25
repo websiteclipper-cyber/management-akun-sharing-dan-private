@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
+import { normalizeWhatsAppGroupLink } from '@/lib/phone';
 
 // Ensure site_settings table exists
 async function ensureTable() {
@@ -13,7 +14,9 @@ async function ensureTable() {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
       INSERT INTO site_settings (key, value, label) VALUES
-        ('support_whatsapp', '082244046330', 'Nomor WhatsApp Support')
+        ('support_whatsapp', '082244046330', 'Nomor WhatsApp Support'),
+        ('maintenance_mode', 'false', 'Mode Maintenance Website'),
+        ('maintenance_whatsapp_group', '', 'Link Grup WhatsApp Maintenance')
       ON CONFLICT (key) DO NOTHING;
     `
   });
@@ -68,17 +71,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Data settings tidak valid' }, { status: 400 });
     }
 
-    for (const s of settings) {
-      if (!s.key || s.value === undefined) continue;
-
-      await supabase
-        .from('site_settings')
-        .upsert({
+    const payload = settings
+      .filter(s => s && typeof s.key === 'string' && s.value !== undefined)
+      .map(s => ({
           key: s.key,
           value: String(s.value).trim(),
           label: s.label || s.key,
           updated_at: new Date().toISOString(),
-        }, { onConflict: 'key' });
+      }));
+
+    if (payload.length === 0) {
+      return NextResponse.json({ error: 'Tidak ada pengaturan yang dapat disimpan' }, { status: 400 });
+    }
+
+    const groupSetting = payload.find(s => s.key === 'maintenance_whatsapp_group');
+    if (groupSetting?.value) {
+      const normalizedGroupLink = normalizeWhatsAppGroupLink(groupSetting.value);
+      if (!normalizedGroupLink) {
+        return NextResponse.json({
+          error: 'Link grup WhatsApp tidak valid. Gunakan https://chat.whatsapp.com/...',
+        }, { status: 400 });
+      }
+      groupSetting.value = normalizedGroupLink;
+    }
+
+    const { error } = await supabase
+      .from('site_settings')
+      .upsert(payload, { onConflict: 'key' });
+
+    if (error) {
+      console.error('Failed to save site settings:', error.message);
+      return NextResponse.json({ error: 'Gagal menyimpan pengaturan' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, message: 'Settings berhasil disimpan!' });
