@@ -29,12 +29,14 @@ async function migrate() {
   // Seed default values (upsert — won't overwrite existing)
   const defaults = [
     { key: 'support_whatsapp', value: '082244046330', label: 'Nomor WhatsApp Support' },
+    { key: 'maintenance_mode', value: 'false', label: 'Mode Maintenance Website' },
+    { key: 'maintenance_whatsapp_group', value: '', label: 'Link Grup WhatsApp Maintenance' },
   ];
 
   for (const setting of defaults) {
     const { error } = await supabase
       .from('site_settings')
-      .upsert(setting, { onConflict: 'key' });
+      .upsert(setting, { onConflict: 'key', ignoreDuplicates: true });
 
     if (error) {
       if (error.message.includes('does not exist') || error.code === '42P01') {

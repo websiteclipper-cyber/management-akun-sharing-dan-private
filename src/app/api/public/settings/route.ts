@@ -11,6 +11,8 @@ export async function GET() {
       .select('key, value')
       .in('key', [
         'support_whatsapp',
+        'maintenance_mode',
+        'maintenance_whatsapp_group',
         'global_promo_active',
         'global_promo_platform',
         'global_promo_title',
@@ -26,6 +28,8 @@ export async function GET() {
       // Fallback defaults if table doesn't exist
       return NextResponse.json({
         support_whatsapp: '082244046330',
+        maintenance_mode: 'false',
+        maintenance_whatsapp_group: '',
       });
     }
 
@@ -33,6 +37,8 @@ export async function GET() {
     
     // Set defaults
     settings.support_whatsapp = '082244046330';
+    settings.maintenance_mode = 'false';
+    settings.maintenance_whatsapp_group = '';
     
     // Override with DB values
     if (data) {
@@ -46,6 +52,8 @@ export async function GET() {
     // Fallback
     return NextResponse.json({
       support_whatsapp: '082244046330',
+      maintenance_mode: 'false',
+      maintenance_whatsapp_group: '',
     });
   }
 }
