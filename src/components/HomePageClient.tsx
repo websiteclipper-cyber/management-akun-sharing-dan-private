@@ -104,8 +104,8 @@ function getAvailableStock(product: Product): number {
   return Number.isFinite(stock) ? Math.max(0, Math.trunc(stock)) : 0;
 }
 
-function isProductSoldOut(product: Product): boolean {
-  return product.status !== 'active' || getAvailableStock(product) === 0;
+function isProductUnavailable(product: Product): boolean {
+  return product.status !== 'active';
 }
 
 // ── Medal styles for leaderboard ──
@@ -840,7 +840,7 @@ export default function HomePage({
                           }}>
                             {group.platforms.map(category => {
                               const count = products.filter(p =>
-                                p.platform_name.toUpperCase() === category && !isProductSoldOut(p)
+                                p.platform_name.toUpperCase() === category && !isProductUnavailable(p)
                               ).length;
                               const icon = getPlatformIcon(category);
                               const gradient = getPlatformGradient(category);
@@ -944,8 +944,8 @@ export default function HomePage({
                   {products
                     .filter(p => p.platform_name.toUpperCase() === selectedCategory)
                     .sort((a, b) => {
-                      const aSoldOut = isProductSoldOut(a);
-                      const bSoldOut = isProductSoldOut(b);
+                      const aSoldOut = isProductUnavailable(a);
+                      const bSoldOut = isProductUnavailable(b);
                       if (!aSoldOut && bSoldOut) return -1;
                       if (aSoldOut && !bSoldOut) return 1;
 
@@ -981,25 +981,25 @@ export default function HomePage({
 
                       const hasNewcomerPrice = product.newcomer_price !== null && product.newcomer_price !== undefined;
                       const availableStock = getAvailableStock(product);
-                      const isSoldOut = isProductSoldOut(product);
+                      const isUnavailable = isProductUnavailable(product);
 
                       return (
                         <div
                           key={product.id}
                           className="product-card"
-                          data-inactive={isSoldOut}
+                          data-inactive={isUnavailable}
                           style={{
                             background: C_CARD,
                             borderRadius: 'var(--radius-xl)',
                             padding: '32px',
-                            boxShadow: isSoldOut
+                            boxShadow: isUnavailable
                               ? 'none'
                               : promo
                               ? '0 14px 34px rgba(239, 68, 68, 0.08)'
                               : hasNewcomerPrice
                               ? '0 14px 34px rgba(37, 99, 235, 0.08)'
                               : C_SHADOW,
-                            border: isSoldOut
+                            border: isUnavailable
                               ? '1px solid var(--border-secondary)'
                               : promo
                               ? '1px solid rgba(239, 68, 68, 0.2)'
@@ -1009,12 +1009,12 @@ export default function HomePage({
                             display: 'flex', flexDirection: 'column',
                             position: 'relative',
                             transition: 'all var(--transition-normal)',
-                            opacity: isSoldOut ? 0.55 : 1,
-                            filter: isSoldOut ? 'grayscale(80%)' : 'none',
+                            opacity: isUnavailable ? 0.55 : 1,
+                            filter: isUnavailable ? 'grayscale(80%)' : 'none',
                           }}
                         >
                         {/* Sold Out or Promo/Newcomer Badge */}
-                        {isSoldOut ? (
+                        {isUnavailable ? (
                           <div style={{
                             position: 'absolute', top: '-14px', left: '32px',
                             background: '#334155',
@@ -1151,16 +1151,16 @@ export default function HomePage({
                             </div>
                             <div style={{
                               fontSize: '0.72rem',
-                              color: isSoldOut ? 'var(--text-muted)' : 'var(--brand-success)',
+                              color: availableStock === 0 ? 'var(--text-muted)' : 'var(--brand-success)',
                               fontWeight: 700,
                               marginTop: '7px',
                             }}>
-                              {isSoldOut ? 'Stok habis' : `Stok ${availableStock}`}
+                              {isUnavailable ? 'Stok habis' : `Stok ${availableStock}`}
                             </div>
                           </div>
                         </div>
 
-                        {isSoldOut ? (
+                        {isUnavailable ? (
                           <button
                             disabled
                             className="btn"
@@ -1228,7 +1228,7 @@ export default function HomePage({
                 >
                   Tutup
                 </button>
-                {!isProductSoldOut(detailProduct) ? (
+                {!isProductUnavailable(detailProduct) ? (
                   <Link
                     href={`/order/${detailProduct.id}`}
                     className="btn btn-primary"

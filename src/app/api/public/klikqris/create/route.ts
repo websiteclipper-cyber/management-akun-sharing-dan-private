@@ -3,7 +3,6 @@ import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { createKlikQrisTransaction, KlikQrisTransaction } from '@/lib/klikqris';
 import { findKlikQrisPayment, getStoredCreateData } from '@/lib/klikqris-payment';
 import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
-import { getAvailableStock } from '@/lib/product-stock';
 import {
   isBuyerIdentityBanned,
   recordBannedBuyerIdentity,
@@ -97,25 +96,6 @@ export async function POST(request: NextRequest) {
         { error: 'Transaksi QRIS untuk order ini sudah tidak aktif. Silakan buat pesanan baru.' },
         { status: 409 },
       );
-    }
-
-    let availableStock: number;
-    try {
-      availableStock = await getAvailableStock(Number(order.product_id));
-    } catch (stockError) {
-      console.error('Failed to validate KlikQRIS order stock:', stockError);
-      return NextResponse.json(
-        { error: 'Stok belum dapat diperiksa. Silakan coba lagi.' },
-        { status: 503 },
-      );
-    }
-
-    const quantity = Math.max(1, Number(order.quantity) || 1);
-    if (availableStock < quantity) {
-      const error = availableStock === 0
-        ? 'Stok produk habis (SOLD OUT). Pembayaran tidak dapat dibuat.'
-        : `Stok produk hanya tersisa ${availableStock}. Buat pesanan baru dengan jumlah lebih sedikit.`;
-      return NextResponse.json({ error, available_stock: availableStock }, { status: 409 });
     }
 
     const productRelation = Array.isArray(order.product) ? order.product[0] : order.product;

@@ -241,8 +241,7 @@ export default function OrderPage() {
   }
 
   function handleQuantityChange(nextQuantity: number) {
-    const maximumQuantity = Math.min(10, Math.max(1, getAvailableStock(product)));
-    const normalized = Math.min(maximumQuantity, Math.max(1, nextQuantity));
+    const normalized = Math.min(10, Math.max(1, nextQuantity));
     if (normalized === quantity) return;
 
     setQuantity(normalized);
@@ -255,10 +254,6 @@ export default function OrderPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!buyer || !agreed || !product) return;
-    if (getAvailableStock(product) < quantity) {
-      setError('Stok produk tidak mencukupi. Silakan kembali ke katalog dan pilih produk yang tersedia.');
-      return;
-    }
     setSubmitting(true);
     setError('');
 
@@ -345,8 +340,8 @@ export default function OrderPage() {
   if (!product) return <div className="public-layout"><div className="empty-state"><h3>{t('order_product_notfound')}</h3><Link href="/" className="btn btn-primary">{t('order_back_home')}</Link></div></div>;
 
   const availableStock = getAvailableStock(product);
-  const isSoldOut = product.status !== 'active' || availableStock === 0;
-  if (isSoldOut) {
+  const isUnavailable = product.status !== 'active';
+  if (isUnavailable) {
     return (
       <div className="public-layout">
         <header className="public-header order-header">
@@ -364,7 +359,7 @@ export default function OrderPage() {
     );
   }
 
-  const maximumQuantity = Math.min(10, availableStock);
+  const maximumQuantity = 10;
 
   // Newcomer price takes priority if buyer is first-time and product has newcomer_price
   const hasNewcomerPrice = isNewcomer && product.newcomer_price !== null && product.newcomer_price !== undefined;
