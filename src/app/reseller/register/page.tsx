@@ -60,7 +60,7 @@ export default function ResellerRegisterPage() {
     setError('');
 
     if (form.ref_code.length < 3) {
-      setError('Kode referral minimal 3 karakter');
+      setError('Custom web referral minimal 3 karakter');
       return;
     }
     if (form.pin.length < 4) {
@@ -256,19 +256,21 @@ export default function ResellerRegisterPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Kode Referral (Pilih Sendiri)</label>
+            <label className="form-label">Custom Web Referral Kamu</label>
             <input
               className="form-input referral-input"
               value={form.ref_code}
               onChange={e => handleRefCodeChange(e.target.value)}
-              placeholder="Contoh: ANDI"
+              placeholder="Contoh: TOKOANDI"
               required
               maxLength={20}
               autoComplete="username"
               data-status={refCodeStatus}
             />
             <div className="ref-status-row">
-              <p>Huruf dan angka saja, minimal 3 karakter.</p>
+              <p>
+                Pilih nama unik untuk link web reseller kamu. Contoh: pastipremium.my.id/?ref=TOKOANDI
+              </p>
               {refCodeStatus === 'checking' && <span className="muted">Mengecek...</span>}
               {refCodeStatus === 'available' && <span className="available">Tersedia</span>}
               {refCodeStatus === 'taken' && <span className="taken">Sudah dipakai</span>}
