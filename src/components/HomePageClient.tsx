@@ -433,6 +433,13 @@ export default function HomePage({
             onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}
           >Ketentuan</Link>
           <Link
+            href="/refund"
+            className="hide-on-mobile"
+            style={{ fontSize: '0.85rem', fontWeight: 500, color: C_TEXT_MUTED, textDecoration: 'none', transition: 'color 0.2s' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT}
+            onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}
+          >Refund</Link>
+          <Link
             href="/reseller/login"
             className="hide-on-mobile"
             style={{
@@ -557,6 +564,7 @@ export default function HomePage({
             }}
           >
             <Link href="/ketentuan" onClick={() => setMenuOpen(false)} style={{ color: C_TEXT, textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>Ketentuan</Link>
+            <Link href="/refund" onClick={() => setMenuOpen(false)} style={{ color: C_TEXT, textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>Ajukan Refund</Link>
             <Link href="/reseller/login" onClick={() => setMenuOpen(false)} style={{ color: C_TEXT, textDecoration: 'none', fontSize: '1.1rem', fontWeight: 600 }}>{t('header_mitra')}</Link>
 
             <div style={{ height: '1px', background: 'var(--border-primary)' }} />
@@ -1299,6 +1307,7 @@ export default function HomePage({
         }}>
           <Link href="/ketentuan" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>Ketentuan &amp; Garansi</Link>
           <Link href="/warranty" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>Klaim Garansi</Link>
+          <Link href="/refund" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>Ajukan Refund</Link>
           <Link href="/buyer/lookup" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>Cek Pesanan</Link>
           <Link href="/reseller/login" style={{ fontSize: '0.85rem', color: C_TEXT_MUTED, textDecoration: 'none', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.color = C_TEXT} onMouseLeave={(e) => e.currentTarget.style.color = C_TEXT_MUTED}>Mitra Reseller</Link>
         </div>

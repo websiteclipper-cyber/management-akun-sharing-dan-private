@@ -14,6 +14,8 @@ export type AssignmentStatus = 'active' | 'expired' | 'replaced' | 'cancelled';
 export type DeliveryChannel = 'web' | 'email' | 'whatsapp' | 'telegram';
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 export type ActorType = 'admin' | 'system';
+export type RefundStatus = 'pending' | 'reviewing' | 'approved' | 'processing' | 'completed' | 'rejected';
+export type EwalletProvider = 'dana' | 'gopay';
 
 // ===== ENTITIES =====
 export interface Admin {
@@ -115,6 +117,24 @@ export interface Payment {
   paid_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface RefundRequest {
+  id: number;
+  request_code: string;
+  order_id: number;
+  buyer_id: number;
+  refund_amount: number;
+  ewallet_provider: EwalletProvider;
+  ewallet_number: string;
+  account_holder_name: string;
+  status: RefundStatus;
+  admin_notes: string | null;
+  processed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  order?: Order;
+  buyer?: Buyer;
 }
 
 export interface AccountAssignment {

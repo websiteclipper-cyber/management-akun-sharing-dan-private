@@ -25,6 +25,7 @@ const navItems = [
   { label: 'Buyer', href: '/admin/buyers', icon: '👥' },
   { label: 'Support Tickets', href: '/admin/support', icon: '🎫' },
   { label: 'Klaim Garansi', href: '/admin/warranty', icon: '🛡️' },
+  { label: 'Pengajuan Refund', href: '/admin/refunds', icon: '💸' },
   { section: 'Sistem' },
   { label: 'Akun Backup', href: '/admin/backup-accounts', icon: '🔄' },
   { label: 'Pengaturan Umum', href: '/admin/settings', icon: '⚙️' },
