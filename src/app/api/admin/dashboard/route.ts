@@ -19,15 +19,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const [productsResult, stockResult, ticketsResult, buyersResult, warrantyResult] = await Promise.all([
+  const [productsResult, stockResult, ticketsResult, buyersResult, warrantyResult, refundResult] = await Promise.all([
     supabase.from('products').select('id, status'),
     supabase.from('stock_accounts').select('id, status, account_type'),
     supabase.from('support_tickets').select('id, status'),
     supabase.from('buyers').select('id', { count: 'exact', head: true }),
     supabase.from('warranty_claims').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('refund_requests').select('id', { count: 'exact', head: true }).in('status', ['pending', 'reviewing']),
   ]);
 
-  if (productsResult.error || stockResult.error || ticketsResult.error || buyersResult.error || warrantyResult.error) {
+  if (productsResult.error || stockResult.error || ticketsResult.error || buyersResult.error || warrantyResult.error || refundResult.error) {
     return NextResponse.json({ error: 'Failed to load dashboard data' }, { status: 500 });
   }
 
@@ -107,6 +108,7 @@ export async function GET(request: Request) {
     needsAssignment: orders.filter((order) => order.payment_status === 'paid' && order.order_status === 'paid').length,
     openTickets: (ticketsResult.data || []).filter((ticket) => ['open', 'in_progress'].includes(ticket.status)).length,
     pendingWarrantyClaims: warrantyResult.count || 0,
+    pendingRefundRequests: refundResult.count || 0,
     totalActiveProducts: (productsResult.data || []).filter((product) => product.status === 'active').length,
     sharingAvailable: stock.filter((account) => account.status === 'active' && account.account_type === 'sharing').length,
     privateAvailable: stock.filter((account) => account.status === 'active' && account.account_type === 'private').length,

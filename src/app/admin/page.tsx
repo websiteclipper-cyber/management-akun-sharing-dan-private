@@ -46,6 +46,7 @@ interface SalesData {
   needsAssignment: number;
   openTickets: number;
   pendingWarrantyClaims: number;
+  pendingRefundRequests: number;
   // Products
   totalActiveProducts: number;
   sharingAvailable: number;
@@ -389,6 +390,21 @@ export default function AdminDashboardPage() {
           >
             <span>{data?.pendingWarrantyClaims} klaim garansi menunggu peninjauan admin</span>
             <span style={{ color: '#b45309', whiteSpace: 'nowrap' }}>Periksa dan putuskan →</span>
+          </Link>
+        )}
+
+        {(data?.pendingRefundRequests || 0) > 0 && (
+          <Link
+            href="/admin/refunds"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+              padding: '16px 18px', borderRadius: 'var(--radius-lg)',
+              border: '1px solid rgba(37, 99, 235, 0.3)', background: 'rgba(37, 99, 235, 0.07)',
+              color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 700,
+            }}
+          >
+            <span>{data?.pendingRefundRequests} pengajuan refund perlu ditinjau</span>
+            <span style={{ color: '#2563eb', whiteSpace: 'nowrap' }}>Kelola refund →</span>
           </Link>
         )}
 
