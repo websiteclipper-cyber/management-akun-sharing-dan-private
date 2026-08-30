@@ -58,6 +58,7 @@ export default function AdminRefundsPage() {
   const [status, setStatus] = useState<RefundStatus>('pending');
   const [adminNotes, setAdminNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [migrating, setMigrating] = useState(false);
   const [updateError, setUpdateError] = useState('');
 
   const loadRequests = useCallback(async () => {
@@ -96,6 +97,27 @@ export default function AdminRefundsPage() {
     setStatus(item.status);
     setAdminNotes(item.admin_notes || '');
     setUpdateError('');
+  }
+
+  async function handleSetupDatabase() {
+    setMigrating(true);
+    setLoadError('');
+    try {
+      const response = await fetch('/api/admin/refunds', {
+        method: 'POST',
+        headers: getAdminHeaders(true),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setLoadError(data.error || 'Database refund belum dapat disiapkan.');
+        return;
+      }
+      await loadRequests();
+    } catch {
+      setLoadError('Gagal menghubungi server saat menyiapkan database refund.');
+    } finally {
+      setMigrating(false);
+    }
   }
 
   async function handleUpdate(event: FormEvent<HTMLFormElement>) {
@@ -173,7 +195,7 @@ export default function AdminRefundsPage() {
               {loading ? (
                 <tr><td colSpan={8} className="empty-state"><div className="loading-spinner" /></td></tr>
               ) : loadError ? (
-                <tr><td colSpan={8} className="empty-state"><h3>Gagal memuat refund</h3><p>{loadError}</p><button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadRequests()}>Coba Lagi</button></td></tr>
+                <tr><td colSpan={8} className="empty-state"><h3>Database refund belum siap</h3><p>{loadError}</p><div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}><button type="button" className="btn btn-primary btn-sm" disabled={migrating} onClick={() => void handleSetupDatabase()}>{migrating ? 'Menyiapkan...' : 'Siapkan Database Refund'}</button><button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadRequests()}>Coba Lagi</button></div></td></tr>
               ) : filteredRequests.length === 0 ? (
                 <tr><td colSpan={8} className="empty-state"><div className="icon">💸</div><h3>Belum ada pengajuan refund</h3></td></tr>
               ) : filteredRequests.map((item) => (
