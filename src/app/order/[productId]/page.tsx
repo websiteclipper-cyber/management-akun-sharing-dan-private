@@ -119,6 +119,8 @@ export default function OrderPage() {
   const [discountError, setDiscountError] = useState('');
   const [discountLoading, setDiscountLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [preOrderNoticeOpen, setPreOrderNoticeOpen] = useState(false);
+  const [preOrderAcknowledged, setPreOrderAcknowledged] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -251,8 +253,7 @@ export default function OrderPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitOrder() {
     if (!buyer || !agreed || !product) return;
     setSubmitting(true);
     setError('');
@@ -329,6 +330,24 @@ export default function OrderPage() {
       setError(t('order_connection_error'));
       setSubmitting(false);
     }
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!buyer || !agreed || !product) return;
+
+    if (getAvailableStock(product) === 0 && !preOrderAcknowledged) {
+      setPreOrderNoticeOpen(true);
+      return;
+    }
+
+    void submitOrder();
+  }
+
+  function handleConfirmPreOrder() {
+    setPreOrderAcknowledged(true);
+    setPreOrderNoticeOpen(false);
+    void submitOrder();
   }
 
   function handlePayWithKlikQris() {
@@ -883,6 +902,59 @@ export default function OrderPage() {
         )}
       </div>
 
+      {preOrderNoticeOpen && (
+        <div
+          className="preorder-notice-overlay"
+          role="presentation"
+          onClick={() => setPreOrderNoticeOpen(false)}
+        >
+          <div
+            className="preorder-notice-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="preorder-notice-title"
+            aria-describedby="preorder-notice-description"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="preorder-notice-icon" aria-hidden="true">⏳</div>
+            <div className="preorder-notice-badge">STOK 0 • PRE-ORDER</div>
+            <h2 id="preorder-notice-title">Produk sedang menunggu restok</h2>
+            <p id="preorder-notice-description">
+              Stok <strong>{product.name}</strong> saat ini kosong. Jika kamu melanjutkan,
+              setelah pembayaran berhasil pesananmu akan otomatis masuk ke antrean pre-order.
+            </p>
+
+            <div className="preorder-notice-info">
+              <div>
+                <span aria-hidden="true">🕒</span>
+                <p><strong>Estimasi proses 1–24 jam</strong><br />Kami akan menyiapkan akunmu secepat mungkin.</p>
+              </div>
+              <div>
+                <span aria-hidden="true">📦</span>
+                <p><strong>Pantau di menu Pesanan Saya</strong><br />Detail akun akan muncul otomatis setelah akun dikirim.</p>
+              </div>
+            </div>
+
+            <div className="preorder-notice-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setPreOrderNoticeOpen(false)}
+              >
+                Kembali
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleConfirmPreOrder}
+              >
+                Lanjutkan Pre-order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-4px); }
@@ -956,6 +1028,124 @@ export default function OrderPage() {
         .summary-row > span:last-child {
           flex-shrink: 0;
           text-align: right;
+        }
+
+        .preorder-notice-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 2000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          background: rgba(15, 23, 42, 0.62);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          animation: preorderFadeIn 0.2s ease;
+        }
+
+        .preorder-notice-dialog {
+          width: min(100%, 470px);
+          padding: 30px;
+          border: 1px solid rgba(245, 158, 11, 0.26);
+          border-radius: 24px;
+          background: var(--bg-card);
+          box-shadow: 0 28px 80px rgba(15, 23, 42, 0.3);
+          text-align: center;
+          animation: preorderPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .preorder-notice-icon {
+          display: grid;
+          place-items: center;
+          width: 64px;
+          height: 64px;
+          margin: 0 auto 14px;
+          border-radius: 20px;
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(249, 115, 22, 0.1));
+          font-size: 2rem;
+        }
+
+        .preorder-notice-badge {
+          display: inline-flex;
+          margin-bottom: 10px;
+          padding: 5px 10px;
+          border: 1px solid rgba(245, 158, 11, 0.3);
+          border-radius: 999px;
+          background: rgba(245, 158, 11, 0.1);
+          color: #b45309;
+          font-size: 0.7rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+        }
+
+        .preorder-notice-dialog h2 {
+          margin: 0 0 10px;
+          color: var(--text-primary);
+          font-size: 1.35rem;
+          line-height: 1.3;
+        }
+
+        .preorder-notice-dialog > p {
+          margin: 0;
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+          line-height: 1.65;
+        }
+
+        .preorder-notice-info {
+          display: grid;
+          gap: 10px;
+          margin: 22px 0;
+          text-align: left;
+        }
+
+        .preorder-notice-info > div {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          padding: 13px 14px;
+          border: 1px solid var(--border-secondary);
+          border-radius: 14px;
+          background: var(--bg-secondary);
+        }
+
+        .preorder-notice-info span {
+          flex-shrink: 0;
+          font-size: 1.1rem;
+          line-height: 1.45;
+        }
+
+        .preorder-notice-info p {
+          margin: 0;
+          color: var(--text-muted);
+          font-size: 0.8rem;
+          line-height: 1.55;
+        }
+
+        .preorder-notice-info strong {
+          color: var(--text-primary);
+        }
+
+        .preorder-notice-actions {
+          display: grid;
+          grid-template-columns: 1fr 1.4fr;
+          gap: 10px;
+        }
+
+        .preorder-notice-actions :global(.btn) {
+          width: 100%;
+          justify-content: center;
+        }
+
+        @keyframes preorderFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes preorderPopIn {
+          from { opacity: 0; transform: translateY(12px) scale(0.97); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         @media (max-width: 560px) {
@@ -1069,6 +1259,24 @@ export default function OrderPage() {
           .summary-total {
             gap: 12px;
             align-items: center;
+          }
+
+          .preorder-notice-overlay {
+            align-items: flex-end;
+            padding: 12px;
+          }
+
+          .preorder-notice-dialog {
+            padding: 24px 18px 18px;
+            border-radius: 22px;
+          }
+
+          .preorder-notice-actions {
+            grid-template-columns: 1fr;
+          }
+
+          .preorder-notice-actions :global(.btn-primary) {
+            grid-row: 1;
           }
         }
       `}</style>
