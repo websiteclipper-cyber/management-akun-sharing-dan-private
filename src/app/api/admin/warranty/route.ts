@@ -35,13 +35,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  if (!(await getAdminFromRequest(request))) {
+  const admin = await getAdminFromRequest(request);
+  if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const body = await request.json();
-    const { id, status, admin_notes, resolution_notes, new_email } = body;
+    const { id, status, admin_notes, resolution_notes } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID diperlukan' }, { status: 400 });
@@ -49,6 +50,49 @@ export async function PUT(request: NextRequest) {
 
     if (status !== undefined && !ADMIN_DECISION_STATUSES.has(status)) {
       return NextResponse.json({ error: 'Status keputusan tidak valid' }, { status: 400 });
+    }
+
+    if (status === 'approved') {
+      const { data, error } = await supabase.rpc('approve_warranty_with_stock', {
+        p_claim_id: String(id),
+        p_admin_id: admin.id,
+        p_admin_notes: admin_notes || null,
+        p_resolution_notes: resolution_notes || null,
+      });
+
+      if (error) {
+        console.error('Automatic warranty stock delivery failed:', error);
+        const databaseMessage = [error.message || '', error.details || ''].join(' ');
+
+        if (databaseMessage.includes('STOK_PENGGANTI_TIDAK_TERSEDIA')) {
+          return NextResponse.json(
+            { error: 'Stok pengganti untuk produk ini sedang tidak tersedia. Tambahkan stok aktif terlebih dahulu; klaim tetap berstatus Menunggu Peninjauan.' },
+            { status: 409 },
+          );
+        }
+
+        if (databaseMessage.includes('ASSIGNMENT_AKUN_LAMA_TIDAK_DITEMUKAN')) {
+          return NextResponse.json(
+            { error: 'Assignment akun yang dilaporkan tidak ditemukan atau sudah tidak aktif. Klaim belum diubah.' },
+            { status: 409 },
+          );
+        }
+
+        if (databaseMessage.includes('KLAIM_TIDAK_DITEMUKAN')) {
+          return NextResponse.json({ error: 'Klaim tidak ditemukan' }, { status: 404 });
+        }
+
+        if (databaseMessage.includes('STATUS_KLAIM_TIDAK_DAPAT_DISETUJUI')) {
+          return NextResponse.json({ error: 'Status klaim ini tidak dapat diterima.' }, { status: 409 });
+        }
+
+        return NextResponse.json(
+          { error: 'Gagal mengambil dan mengirim akun dari stok. Klaim belum diubah.' },
+          { status: 400 },
+        );
+      }
+
+      return NextResponse.json(data);
     }
 
     const updateData: Record<string, unknown> = {
@@ -61,12 +105,9 @@ export async function PUT(request: NextRequest) {
     }
 
     if (admin_notes !== undefined) updateData.admin_notes = admin_notes;
-    if (new_email !== undefined) updateData.new_email = new_email;
 
     if (resolution_notes !== undefined) {
       updateData.resolution_notes = resolution_notes;
-    } else if (status === 'approved') {
-      updateData.resolution_notes = 'Klaim diterima setelah peninjauan manual admin.';
     } else if (status === 'rejected') {
       updateData.resolution_notes = 'Klaim ditolak setelah peninjauan manual karena tidak memenuhi ketentuan garansi.';
     }

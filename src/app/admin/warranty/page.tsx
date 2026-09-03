@@ -20,12 +20,6 @@ export default function AdminWarrantyClaims() {
   const [updateData, setUpdateData] = useState({
     status: '', admin_notes: '', resolution_notes: '', new_email: ''
   });
-  // Manual replace state
-  const [availableBackups, setAvailableBackups] = useState<any[]>([]);
-  const [selectedBackupId, setSelectedBackupId] = useState('');
-  const [replacing, setReplacing] = useState(false);
-  const [replaceResult, setReplaceResult] = useState<any>(null);
-  const [loadingBackups, setLoadingBackups] = useState(false);
   const [savingDecision, setSavingDecision] = useState(false);
   const [updateError, setUpdateError] = useState('');
 
@@ -76,7 +70,6 @@ export default function AdminWarrantyClaims() {
           status: decisionStatus,
           admin_notes: updateData.admin_notes,
           resolution_notes: updateData.resolution_notes,
-          new_email: updateData.new_email,
         })
       });
       const data = await res.json();
@@ -93,57 +86,6 @@ export default function AdminWarrantyClaims() {
     } finally {
       setSavingDecision(false);
     }
-  };
-
-  const fetchAvailableBackups = async (productId: string) => {
-    setLoadingBackups(true);
-    setReplaceResult(null);
-    try {
-      const res = await fetch(`/api/admin/warranty/manual-replace?product_id=${productId}`, {
-        headers: getAdminAuthHeaders(),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setAvailableBackups([]);
-        setReplaceResult({ error: data.error || 'Gagal memuat akun backup.' });
-        return;
-      }
-
-      setAvailableBackups(Array.isArray(data) ? data : []);
-    } catch {
-      setAvailableBackups([]);
-      setReplaceResult({ error: 'Gagal menghubungi server.' });
-    } finally {
-      setLoadingBackups(false);
-    }
-  };
-
-  const handleManualReplace = async () => {
-    if (!selectedClaim || !selectedBackupId) return;
-    setReplacing(true);
-    setReplaceResult(null);
-    try {
-      const res = await fetch('/api/admin/warranty/manual-replace', {
-        method: 'POST',
-        headers: getAdminAuthHeaders(true),
-        body: JSON.stringify({
-          claim_id: selectedClaim.id,
-          backup_account_id: selectedBackupId,
-          admin_notes: updateData.admin_notes || 'Manual replace oleh admin',
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setReplaceResult({ error: data.error });
-      } else {
-        setReplaceResult(data);
-        fetchClaims();
-      }
-    } catch (err: any) {
-      setReplaceResult({ error: err.message || 'Gagal mengganti akun' });
-    }
-    setReplacing(false);
   };
 
   // Stats
@@ -331,11 +273,8 @@ export default function AdminWarrantyClaims() {
                             status: ['pending', 'approved', 'rejected'].includes(c.status) ? c.status : '',
                             admin_notes: c.admin_notes || '',
                             resolution_notes: c.resolution_notes || '',
-                            new_email: c.new_email || ''
+                            new_email: c.new_email || '',
                           });
-                          setAvailableBackups([]);
-                          setSelectedBackupId('');
-                          setReplaceResult(null);
                           setUpdateError('');
                           setShowModal(true);
                         }} 
@@ -411,14 +350,18 @@ export default function AdminWarrantyClaims() {
               </div>
 
               {/* Replacement info */}
-              {(selectedClaim.status === 'auto_replaced' || selectedClaim.replacement_backup_id) && selectedClaim.backup_accounts && (
+              {(selectedClaim.status === 'auto_replaced' || selectedClaim.replacement_backup_id || selectedClaim.replacement_assignment_id) && (
                 <div style={{ background: 'rgba(34,197,94,0.06)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(34,197,94,0.15)' }}>
                   <div style={{ fontSize: '0.7rem', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: 700 }}>
-                    ✅ Akun Pengganti
+                    ✅ Akun Pengganti Terkirim
                   </div>
                   <div style={{ fontSize: '0.85rem' }}>
-                    <div><span style={{ color: 'var(--text-muted)' }}>Email Baru:</span> <strong style={{ fontFamily: 'monospace', color: '#22c55e' }}>{selectedClaim.new_email || selectedClaim.backup_accounts.account_identifier}</strong></div>
-                    <div style={{ marginTop: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>Akun pengganti diberikan setelah keputusan manual admin.</div>
+                    <div><span style={{ color: 'var(--text-muted)' }}>Identifier Baru:</span> <strong style={{ fontFamily: 'monospace', color: '#22c55e' }}>{selectedClaim.new_email || selectedClaim.backup_accounts?.account_identifier || '-'}</strong></div>
+                    <div style={{ marginTop: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      {selectedClaim.replacement_assignment_id
+                        ? 'Stok sudah dialokasikan, dicatat sebagai assignment garansi, dan dikirim ke akun buyer.'
+                        : 'Akun pengganti berasal dari proses garansi lama.'}
+                    </div>
                   </div>
                 </div>
               )}
@@ -429,67 +372,8 @@ export default function AdminWarrantyClaims() {
                 </div>
               )}
 
-              {/* Replacement is available only after the admin approves the claim. */}
-              {selectedClaim.status === 'approved' && !selectedClaim.replacement_backup_id && !replaceResult?.message && (
-                <div style={{ background: 'rgba(59,130,246,0.06)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(59,130,246,0.2)' }}>
-                  <div style={{ fontSize: '0.7rem', color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px', fontWeight: 700 }}>
-                    🔧 Berikan Akun Pengganti
-                  </div>
-                  {availableBackups.length === 0 && !loadingBackups ? (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => fetchAvailableBackups(selectedClaim.product_id)}
-                    >
-                      Cari Akun Backup Tersedia
-                    </button>
-                  ) : loadingBackups ? (
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Memuat backup...</div>
-                  ) : availableBackups.length === 0 ? (
-                    <div style={{ fontSize: '0.85rem', color: '#f97316' }}>⚠️ Tidak ada akun backup tersedia untuk produk ini.</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <select
-                        className="form-select"
-                        value={selectedBackupId}
-                        onChange={e => setSelectedBackupId(e.target.value)}
-                        style={{ fontSize: '0.85rem' }}
-                      >
-                        <option value="">-- Pilih akun backup --</option>
-                        {availableBackups.map((b: any) => (
-                          <option key={b.id} value={b.id}>{b.account_identifier} (#{b.sort_order || '-'})</option>
-                        ))}
-                      </select>
-                      <button
-                        className="btn btn-primary btn-sm"
-                        disabled={!selectedBackupId || replacing}
-                        onClick={handleManualReplace}
-                        style={{ background: '#3b82f6' }}
-                      >
-                        {replacing ? 'Mengganti...' : '✅ Ganti Sekarang'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Replace Result */}
-              {replaceResult?.message && (
-                <div style={{ background: 'rgba(34,197,94,0.08)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                  <div style={{ fontSize: '0.7rem', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: 700 }}>✅ Berhasil Diganti</div>
-                  <div style={{ fontSize: '0.85rem' }}>
-                    <div><span style={{ color: 'var(--text-muted)' }}>Email Baru:</span> <strong style={{ fontFamily: 'monospace', color: '#22c55e' }}>{replaceResult.new_email}</strong></div>
-                    <div style={{ marginTop: '4px' }}><span style={{ color: 'var(--text-muted)' }}>Password:</span> <strong style={{ fontFamily: 'monospace', color: '#22c55e' }}>{replaceResult.new_password}</strong></div>
-                  </div>
-                </div>
-              )}
-              {replaceResult?.error && (
-                <div style={{ background: 'rgba(239,68,68,0.08)', padding: '12px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(239,68,68,0.2)', fontSize: '0.85rem', color: '#ef4444' }}>
-                  ❌ {replaceResult.error}
-                </div>
-              )}
-
               {/* Resolution notes */}
-              {selectedClaim.resolution_notes && !replaceResult?.message && (
+              {selectedClaim.resolution_notes && (
                 <div style={{ background: 'var(--bg-secondary)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-secondary)' }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', fontWeight: 700 }}>
                     Catatan Resolusi
@@ -509,13 +393,13 @@ export default function AdminWarrantyClaims() {
                   onChange={e => {
                     const nextStatus = e.target.value;
                     const defaultNote = nextStatus === 'approved'
-                      ? 'Klaim diterima setelah peninjauan manual admin.'
+                      ? 'Klaim diterima. Akun pengganti otomatis dikirim dari stok yang tersedia.'
                       : nextStatus === 'rejected'
                         ? 'Klaim ditolak setelah peninjauan manual karena tidak memenuhi ketentuan garansi.'
                         : 'Pengajuan sedang menunggu peninjauan manual admin.';
                     setUpdateData({ ...updateData, status: nextStatus, resolution_notes: defaultNote });
                   }}
-                  disabled={selectedClaim.status === 'auto_replaced' || Boolean(selectedClaim.replacement_backup_id)}
+                  disabled={selectedClaim.status === 'auto_replaced' || Boolean(selectedClaim.replacement_backup_id) || Boolean(selectedClaim.replacement_assignment_id)}
                 >
                   {!['pending', 'approved', 'rejected'].includes(selectedClaim.status) && (
                     <option value="">Status lama — pilih keputusan baru</option>
@@ -525,22 +409,11 @@ export default function AdminWarrantyClaims() {
                   <option value="rejected">Ditolak</option>
                 </select>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  Keputusan hanya dapat dilakukan admin setelah memeriksa ID pesanan dan ketentuan garansi.
+                  Saat dipilih Diterima, sistem otomatis mengambil stok aktif untuk produk yang sama, membuat assignment pengganti, lalu menandainya terkirim ke buyer.
                 </p>
-                {(selectedClaim.status === 'auto_replaced' || selectedClaim.replacement_backup_id) && (
+                {(selectedClaim.status === 'auto_replaced' || selectedClaim.replacement_backup_id || selectedClaim.replacement_assignment_id) && (
                   <p style={{ fontSize: '0.75rem', color: '#eab308', marginTop: '4px' }}>Keputusan dikunci karena akun pengganti sudah diberikan.</p>
                 )}
-              </div>
-              <div className="form-group">
-                <label className="form-label">Akun Pengganti / Garansian</label>
-                <input 
-                  type="text"
-                  className="form-input"
-                  value={updateData.new_email || ''} 
-                  onChange={e => setUpdateData({...updateData, new_email: e.target.value})}
-                  placeholder="Contoh: email@gmail.com:password123 (opsional)"
-                />
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Isi jika Anda mengganti akun secara manual (di luar pool backup).</p>
               </div>
               <div className="form-group">
                 <label className="form-label">Catatan Admin (Internal)</label>
@@ -568,7 +441,9 @@ export default function AdminWarrantyClaims() {
               <div className="modal-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Tutup</button>
                 <button type="submit" className="btn btn-primary" disabled={savingDecision}>
-                  {savingDecision ? 'Menyimpan...' : 'Simpan Keputusan'}
+                  {savingDecision
+                    ? (updateData.status === 'approved' ? 'Mengambil & Mengirim Stok...' : 'Menyimpan...')
+                    : (updateData.status === 'approved' ? 'Terima & Kirim dari Stok' : 'Simpan Keputusan')}
                 </button>
               </div>
             </form>
