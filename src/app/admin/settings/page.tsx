@@ -427,9 +427,9 @@ export default function SettingsPage() {
                   fontSize: '1.4rem',
                 }}>🛡️</div>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px' }}>Peninjauan Garansi Manual</h3>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px' }}>Peninjauan Admin & Penggantian Stok Otomatis</h3>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                    Semua klaim garansi wajib diperiksa dan diputuskan oleh admin.
+                    Admin memeriksa klaim; akun pengganti dikirim otomatis dari stok setelah diterima.
                   </p>
                 </div>
                 <span style={{
@@ -452,7 +452,7 @@ export default function SettingsPage() {
                   Alur Keputusan
                 </div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                  Setiap klaim baru masuk dengan status <strong>Menunggu Peninjauan</strong>. Admin memeriksa ID pesanan dan ketentuan garansi, lalu memilih <strong style={{ color: '#22c55e' }}>Diterima</strong> atau <strong style={{ color: '#ef4444' }}>Ditolak</strong>. Sistem tidak lagi mengganti atau menolak klaim secara otomatis.
+                  Setiap klaim baru masuk dengan status <strong>Menunggu Peninjauan</strong>. Admin memeriksa ID pesanan dan ketentuan garansi, lalu memilih <strong style={{ color: '#22c55e' }}>Diterima</strong> atau <strong style={{ color: '#ef4444' }}>Ditolak</strong>. Jika diterima, sistem mengambil stok aktif untuk produk yang sama, mencatat assignment garansi, dan langsung menandainya terkirim ke buyer.
                 </div>
               </div>
             </div>

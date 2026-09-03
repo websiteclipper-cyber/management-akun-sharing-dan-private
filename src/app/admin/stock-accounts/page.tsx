@@ -35,7 +35,17 @@ export default function StockAccountsPage() {
   const [editItem, setEditItem] = useState<StockAccount | null>(null);
   const [isCopy, setIsCopy] = useState(false);
   const [showBuyers, setShowBuyers] = useState<number | null>(null);
-  const [buyers, setBuyers] = useState<Array<{ id: number; buyer_name: string; status: string; start_at: string; expired_at: string }>>([]); 
+  const [buyers, setBuyers] = useState<Array<{
+    id: number;
+    buyer_name: string;
+    order_number: string;
+    status: string;
+    assignment_type: string;
+    delivery_channel: string;
+    delivered_at: string | null;
+    start_at: string;
+    expired_at: string;
+  }>>([]);
   const [backupCounts, setBackupCounts] = useState<Record<number, { available: number; total: number }>>({});
   const [loadError, setLoadError] = useState('');
 
@@ -90,13 +100,17 @@ export default function StockAccountsPage() {
   async function loadBuyers(accountId: number) {
     const { data } = await adminSelect(
       'account_assignments',
-      'id, status, start_at, expired_at, buyer:buyers(name)',
+      'id, status, assignment_type, delivery_channel, delivered_at, start_at, expired_at, buyer:buyers(name), order:orders(order_number)',
       { stock_account_id: accountId, status: 'active' },
     );
     setBuyers((data || []).map((d: Record<string, unknown>) => ({
       id: d.id as number,
       buyer_name: (d.buyer as Record<string, unknown>)?.name as string || 'Unknown',
+      order_number: (d.order as Record<string, unknown>)?.order_number as string || '-',
       status: d.status as string,
+      assignment_type: d.assignment_type as string,
+      delivery_channel: d.delivery_channel as string,
+      delivered_at: d.delivered_at as string | null,
       start_at: d.start_at as string,
       expired_at: d.expired_at as string,
     })));
@@ -491,12 +505,27 @@ export default function StockAccountsPage() {
             ) : (
               <div className="table-container">
                 <table className="table">
-                  <thead><tr><th>Buyer</th><th>Status</th><th>Mulai</th><th>Expired</th></tr></thead>
+                  <thead><tr><th>Buyer</th><th>Order</th><th>Sumber</th><th>Delivery</th><th>Mulai</th><th>Expired</th></tr></thead>
                   <tbody>
                     {buyers.map(b => (
                       <tr key={b.id}>
                         <td style={{ color: 'var(--text-primary)' }}>{b.buyer_name}</td>
-                        <td><span className="badge badge-success">{b.status}</span></td>
+                        <td style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{b.order_number}</td>
+                        <td>
+                          <span className="badge badge-info">
+                            {b.assignment_type === 'replacement' ? 'Garansi' : b.assignment_type}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={b.delivered_at ? 'badge badge-success' : 'badge badge-warning'}>
+                            {b.delivered_at ? 'Terkirim' : 'Belum Terkirim'}
+                          </span>
+                          {b.delivered_at && (
+                            <div style={{ marginTop: '4px', fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                              {new Date(b.delivered_at).toLocaleString('id-ID')} · {b.delivery_channel}
+                            </div>
+                          )}
+                        </td>
                         <td>{new Date(b.start_at).toLocaleDateString('id-ID')}</td>
                         <td>{new Date(b.expired_at).toLocaleDateString('id-ID')}</td>
                       </tr>
