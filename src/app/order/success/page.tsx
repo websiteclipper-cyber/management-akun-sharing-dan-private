@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 import PurchaseInvoice from '@/components/PurchaseInvoice';
+import BuyerCredentialField from '@/components/BuyerCredentialField';
 
 export default function PaymentSuccessWrapper() {
   return (
@@ -13,7 +14,6 @@ export default function PaymentSuccessWrapper() {
     </Suspense>
   );
 }
-
 function PaymentSuccessPage() {
   const { t, formatPrice } = useLocale();
   const searchParams = useSearchParams();
@@ -279,22 +279,16 @@ function PaymentSuccessPage() {
                       />
 
                       {/* Password */}
-                      <CredentialFieldDecrypt
+                      <BuyerCredentialField
+                        assignmentId={Number(a.id)}
                         label={t('cred_password')}
-                        encrypted={stock?.account_secret_encrypted as string}
-                        revealLabel={t('cred_reveal')}
-                        copyLabel={t('cred_copy')}
-                        copiedLabel={t('cred_copied')}
                       />
 
                       {Boolean(stock?.two_factor_secret_encrypted) && (
-                        <CredentialFieldDecrypt
+                        <BuyerCredentialField
+                          assignmentId={Number(a.id)}
                           label="KODE 2FA.LIVE"
-                          encrypted={stock?.two_factor_secret_encrypted as string}
                           credentialType="two_factor"
-                          revealLabel={t('cred_reveal')}
-                          copyLabel={t('cred_copy')}
-                          copiedLabel={t('cred_copied')}
                         />
                       )}
 
@@ -386,7 +380,6 @@ function PaymentSuccessPage() {
     </div>
   );
 }
-
 /* ===== Credential Components ===== */
 
 function CredentialField({ label, value, copyLabel, copiedLabel }: { label: string; value: string; copyLabel?: string; copiedLabel?: string }) {
@@ -420,82 +413,6 @@ function CredentialField({ label, value, copyLabel, copiedLabel }: { label: stri
       >
         {copied ? (copiedLabel || '✅ Copied') : (copyLabel || '📋 Copy')}
       </button>
-    </div>
-  );
-}
-
-function CredentialFieldDecrypt({ label, encrypted, credentialType = 'password', revealLabel, copyLabel, copiedLabel }: { label: string; encrypted: string; credentialType?: 'password' | 'two_factor'; revealLabel?: string; copyLabel?: string; copiedLabel?: string }) {
-  const [revealed, setRevealed] = useState(false);
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  async function reveal() {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/buyer/decrypt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
-        },
-        body: JSON.stringify({ encrypted, credentialType }),
-      });
-      const data = await res.json();
-      setPassword(data.decrypted || '••••••••');
-      setRevealed(true);
-    } catch {
-      setPassword('Error');
-    }
-    setLoading(false);
-  }
-
-  function copy() {
-    navigator.clipboard.writeText(password);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  return (
-    <div style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '10px 12px', background: 'var(--bg-base)', borderRadius: 'var(--radius-md)',
-      border: '1px solid var(--border-secondary)', marginBottom: '8px',
-    }}>
-      <div>
-        <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginBottom: '2px' }}>{label}</div>
-        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
-          {revealed ? password : '••••••••••'}
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: '6px' }}>
-        {!revealed ? (
-          <button
-            onClick={reveal}
-            disabled={loading}
-            style={{
-              background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)',
-              borderRadius: '6px', padding: '6px 12px', fontSize: '0.75rem',
-              cursor: 'pointer', color: 'var(--text-primary)', fontWeight: 600, whiteSpace: 'nowrap',
-            }}
-          >
-            {loading ? '...' : (revealLabel || '👁️ Lihat')}
-          </button>
-        ) : (
-          <button
-            onClick={copy}
-            style={{
-              background: copied ? 'rgba(22,163,74,0.12)' : 'var(--bg-secondary)',
-              border: `1px solid ${copied ? 'rgba(22,163,74,0.35)' : 'var(--border-primary)'}`,
-              borderRadius: '6px', padding: '6px 12px', fontSize: '0.75rem',
-              cursor: 'pointer', color: copied ? 'var(--brand-success)' : 'var(--text-primary)',
-              fontWeight: 600, whiteSpace: 'nowrap',
-            }}
-          >
-            {copied ? (copiedLabel || '✅ Copied') : (copyLabel || '📋 Copy')}
-          </button>
-        )}
-      </div>
     </div>
   );
 }
