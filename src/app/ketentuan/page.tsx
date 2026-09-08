@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
+import ProductTermsMarkdown from '@/components/ProductTermsMarkdown';
 import { FiAlertCircle, FiShield, FiFileText, FiInfo, FiCheckCircle, FiXCircle, FiRefreshCw, FiArrowRight, FiChevronDown, FiStar } from 'react-icons/fi';
 
 export default function KetentuanPage() {
@@ -462,18 +463,7 @@ export default function KetentuanPage() {
                       Tipe: {selectedProduct.account_type}
                     </span>
                   </div>
-                  <div style={{ display: 'grid', gap: '9px' }}>
-                    {(selectedProduct.terms || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean).map((line, index) => (
-                      <div key={`${line}-${index}`} style={{
-                        display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '11px 12px',
-                        borderRadius: '10px', background: 'rgba(255,255,255,0.75)', color: '#3d3d3d',
-                        fontSize: '0.88rem', lineHeight: 1.55,
-                      }}>
-                        <span style={{ color: '#6c5ce7', fontWeight: 800, lineHeight: 1.4 }}>•</span>
-                        <span>{line.replace(/^[-•\d.\s]+/, '')}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <ProductTermsMarkdown content={selectedProduct.terms || ''} />
                 </div>
               )}
             </div>

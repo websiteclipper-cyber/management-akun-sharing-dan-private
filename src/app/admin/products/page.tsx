@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { adminUpdate, adminInsert, adminDelete, adminSelect } from '@/lib/adminApi';
 import { Product } from '@/lib/types';
+import ProductTermsMarkdown from '@/components/ProductTermsMarkdown';
 import {
   CATALOG_CATEGORIES,
   CatalogCategoryId,
@@ -442,8 +443,25 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
           </div>
           <div className="form-group">
             <label className="form-label">Ketentuan Khusus Produk</label>
-            <textarea className="form-textarea" value={form.terms} onChange={e => setForm({...form, terms: e.target.value})} placeholder="Misal: Dilarang ganti password, dilarang edit profil orang lain, dll..." style={{ minHeight: '100px' }} />
-            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>Catatan khusus ini akan ditampilkan di halaman pembelian (checkout) dan halaman ketentuan.</small>
+            <textarea className="form-textarea" value={form.terms} onChange={e => setForm({...form, terms: e.target.value})} placeholder={'Tempel teks dari ChatGPT di sini...\n\n## Judul\n**Teks tebal**\n- Poin pertama\n- Poin kedua'} style={{ minHeight: '180px', lineHeight: 1.55, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }} />
+            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '4px', display: 'block', lineHeight: 1.5 }}>
+              Mendukung format ChatGPT/Markdown: <strong>**tebal**</strong>, <strong>## judul</strong>, <strong>- bullet</strong>, <strong>1. nomor</strong>, tabel, kutipan, dan blok kode.
+            </small>
+            {form.terms.trim() && (
+              <div style={{
+                marginTop: '14px',
+                padding: '16px',
+                border: '1px solid var(--border-secondary)',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+              }}>
+                <div style={{ marginBottom: '10px', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Preview tampilan di web
+                </div>
+                <ProductTermsMarkdown content={form.terms} />
+              </div>
+            )}
           </div>
           <div className="form-group">
             <label className="form-label">Status</label>
