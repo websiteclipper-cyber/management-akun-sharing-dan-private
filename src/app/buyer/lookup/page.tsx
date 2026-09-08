@@ -6,6 +6,7 @@ import { useLocale } from '@/lib/locale-context';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import PurchaseInvoice from '@/components/PurchaseInvoice';
+import BuyerCredentialField from '@/components/BuyerCredentialField';
 
 interface BuyerSession {
   id: number;
@@ -294,19 +295,16 @@ function BuyerLookupPage() {
                         </div>
                         <button className="copy-btn" onClick={() => navigator.clipboard.writeText(stock?.account_identifier as string)}>{t('cred_copy')}</button>
                       </div>
-                      <div className="credential-field">
-                        <div>
-                          <div className="credential-label">{t('cred_password')}</div>
-                          <PasswordReveal encrypted={stock?.account_secret_encrypted as string} />
-                        </div>
-                      </div>
+                      <BuyerCredentialField
+                        assignmentId={Number(a.id)}
+                        label={t('cred_password')}
+                      />
                       {Boolean(stock?.two_factor_secret_encrypted) && (
-                        <div className="credential-field">
-                          <div>
-                            <div className="credential-label">KODE 2FA.LIVE</div>
-                            <PasswordReveal encrypted={stock?.two_factor_secret_encrypted as string} credentialType="two_factor" />
-                          </div>
-                        </div>
+                        <BuyerCredentialField
+                          assignmentId={Number(a.id)}
+                          label="KODE 2FA.LIVE"
+                          credentialType="two_factor"
+                        />
                       )}
                       {Boolean(stock?.profile_info) && (
                         <div className="credential-field">
@@ -390,46 +388,6 @@ function BuyerLookupPage() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function PasswordReveal({ encrypted, credentialType = 'password' }: { encrypted: string; credentialType?: 'password' | 'two_factor' }) {
-  const { t } = useLocale();
-  const [revealed, setRevealed] = useState(false);
-  const [password, setPassword] = useState('');
-  const [loadingPw, setLoadingPw] = useState(false);
-
-  async function reveal() {
-    setLoadingPw(true);
-    try {
-      const res = await fetch('/api/buyer/decrypt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
-        },
-        body: JSON.stringify({ encrypted, credentialType }),
-      });
-      const data = await res.json();
-      setPassword(data.decrypted || '••••••••');
-      setRevealed(true);
-    } catch {
-      setPassword('Error');
-    }
-    setLoadingPw(false);
-  }
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <div className="credential-value">{revealed ? password : '••••••••'}</div>
-      {!revealed ? (
-        <button className="copy-btn" onClick={reveal} disabled={loadingPw}>
-          {loadingPw ? '...' : t('cred_reveal')}
-        </button>
-      ) : (
-        <button className="copy-btn" onClick={() => navigator.clipboard.writeText(password)}>{t('cred_copy')}</button>
-      )}
     </div>
   );
 }
