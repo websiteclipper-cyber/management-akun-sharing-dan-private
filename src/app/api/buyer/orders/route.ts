@@ -3,6 +3,12 @@ import { getBuyerAccessFromRequest } from '@/lib/auth';
 import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'private, no-store, max-age=0',
+};
+
 // Buyer data must be fetched through this route, never directly with the
 // browser's Supabase key. The token is bound to one buyer_id server-side.
 export async function GET(request: NextRequest) {
@@ -39,7 +45,7 @@ export async function GET(request: NextRequest) {
 
   const orderIds = (orders || []).map((order) => order.id);
   if (orderIds.length === 0) {
-    return NextResponse.json({ orders: [] });
+    return NextResponse.json({ orders: [] }, { headers: NO_STORE_HEADERS });
   }
 
   const { data: assignments, error: assignmentsError } = await supabase
@@ -70,10 +76,13 @@ export async function GET(request: NextRequest) {
     assignmentsByOrder.set(assignment.order_id, existing);
   }
 
-  return NextResponse.json({
-    orders: (orders || []).map((order) => ({
-      ...order,
-      assignments: assignmentsByOrder.get(order.id) || [],
-    })),
-  });
+  return NextResponse.json(
+    {
+      orders: (orders || []).map((order) => ({
+        ...order,
+        assignments: assignmentsByOrder.get(order.id) || [],
+      })),
+    },
+    { headers: NO_STORE_HEADERS },
+  );
 }

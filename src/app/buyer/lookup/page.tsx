@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import { supabase } from '@/lib/supabase';
@@ -30,10 +30,41 @@ function BuyerLookupPage() {
   const [orderNumber, setOrderNumber] = useState(searchParams.get('order') || '');
   const [orders, setOrders] = useState<Array<Record<string, unknown>>>([]);
   const [selectedOrder, setSelectedOrder] = useState<Record<string, unknown> | null>(null);
-  const [assignments, setAssignments] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
+  const assignments = (selectedOrder?.assignments as Array<Record<string, unknown>>) || [];
+
+  const loadAllOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+
+    try {
+      const token = localStorage.getItem('buyer_token') || '';
+      const response = await fetch('/api/buyer/orders', {
+        headers: { 'Authorization': `Bearer ${token}` },
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        if (!silent) setOrders([]);
+        return;
+      }
+
+      const data = await response.json();
+      const freshOrders = (data.orders || []) as Array<Record<string, unknown>>;
+      setOrders(freshOrders);
+      setSelectedOrder(current => {
+        if (!current) return null;
+
+        return freshOrders.find(order => order.id === current.id)
+          || freshOrders.find(order => order.order_number === current.order_number)
+          || current;
+      });
+    } catch {
+      if (!silent) setOrders([]);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, []);
 
   async function handleLogout() {
     localStorage.removeItem('buyer_session');
@@ -50,8 +81,29 @@ function BuyerLookupPage() {
     }
     const parsed = JSON.parse(session);
     setBuyer(parsed);
-    loadAllOrders();
-  }, [router]);
+    void loadAllOrders();
+  }, [router, loadAllOrders]);
+
+  useEffect(() => {
+    const refreshOrders = () => {
+      if (
+        document.visibilityState === 'visible'
+        && localStorage.getItem('buyer_session')
+      ) {
+        void loadAllOrders(true);
+      }
+    };
+
+    const interval = window.setInterval(refreshOrders, 5000);
+    window.addEventListener('focus', refreshOrders);
+    document.addEventListener('visibilitychange', refreshOrders);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshOrders);
+      document.removeEventListener('visibilitychange', refreshOrders);
+    };
+  }, [loadAllOrders]);
 
   useEffect(() => {
     if (searchParams.get('order') && orders.length > 0) {
@@ -62,25 +114,8 @@ function BuyerLookupPage() {
     }
   }, [orders, searchParams]);
 
-  async function loadAllOrders() {
-    setLoading(true);
-    const token = localStorage.getItem('buyer_token') || '';
-    const response = await fetch('/api/buyer/orders', {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (!response.ok) {
-      setOrders([]);
-      setLoading(false);
-      return;
-    }
-    const data = await response.json();
-    setOrders(data.orders || []);
-    setLoading(false);
-  }
-
   async function selectOrder(order: Record<string, unknown>) {
     setSelectedOrder(order);
-    setAssignments((order.assignments as Array<Record<string, unknown>>) || []);
   }
 
   async function handleSearch(e: React.FormEvent) {
@@ -166,7 +201,7 @@ function BuyerLookupPage() {
               <div>
                 <button
                   className="btn btn-secondary btn-sm"
-                  onClick={() => { setSelectedOrder(null); setAssignments([]); }}
+                  onClick={() => setSelectedOrder(null)}
                   style={{ marginBottom: '8px', background: 'transparent', border: 'none', padding: 0, color: 'var(--brand-primary-light)', fontSize: '0.85rem' }}
                 >
                   {t('lookup_back_list')}
