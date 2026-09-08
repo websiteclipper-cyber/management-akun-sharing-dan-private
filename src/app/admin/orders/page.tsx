@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { adminRpc, adminSelect } from '@/lib/adminApi';
+import { adminRpc, adminSelect, adminUpdate } from '@/lib/adminApi';
 import { Order } from '@/lib/types';
 
 const ITEMS_PER_PAGE = 15;
@@ -76,6 +76,47 @@ export default function OrdersPage() {
     
     if (anyError && !anySuccess) {
       alert('Gagal: ' + anyError);
+      setAssigningOrderId(null);
+      return;
+    }
+
+    const { data: activeAssignments, error: assignmentsError } = await adminSelect(
+      'account_assignments',
+      'id',
+      { order_id: order.id, status: 'active' },
+    );
+    if (assignmentsError || !activeAssignments || activeAssignments.length === 0) {
+      alert('Gagal: assignment tidak tersimpan. Silakan coba lagi.');
+      setAssigningOrderId(null);
+      return;
+    }
+
+    const deliveredAt = new Date().toISOString();
+    for (const assignment of activeAssignments) {
+      const deliveryResult = await adminUpdate(
+        'account_assignments',
+        { delivered_at: deliveredAt, updated_at: deliveredAt },
+        { id: assignment.id },
+      );
+      if (deliveryResult.error) {
+        alert('Assignment tersimpan, tetapi status pengiriman gagal diperbarui: ' + deliveryResult.error.message);
+        setAssigningOrderId(null);
+        return;
+      }
+    }
+
+    const allAssigned = activeAssignments.length >= orderQuantity;
+    const orderUpdate = await adminUpdate(
+      'orders',
+      {
+        order_status: allAssigned ? 'delivered' : 'assigned',
+        delivered_at: allAssigned ? deliveredAt : null,
+        updated_at: deliveredAt,
+      },
+      { id: order.id },
+    );
+    if (orderUpdate.error) {
+      alert('Assignment tersimpan, tetapi status pesanan gagal diperbarui: ' + orderUpdate.error.message);
       setAssigningOrderId(null);
       return;
     }
