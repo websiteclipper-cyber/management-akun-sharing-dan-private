@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
+import ProductTermsMarkdown from '@/components/ProductTermsMarkdown';
 
 interface BuyerSession {
   id: number;
@@ -820,18 +821,7 @@ export default function OrderPage() {
                 <h4 style={{ color: 'var(--accent)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
                   <span>📋</span> Ketentuan & Catatan Khusus {product.name}
                 </h4>
-                <div style={{ display: 'grid', gap: '8px' }}>
-                  {product.terms.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map((line, index) => (
-                    <div key={`${line}-${index}`} style={{
-                      display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '10px 12px',
-                      borderRadius: '10px', background: 'rgba(255,255,255,0.72)', color: 'var(--text-secondary)',
-                      fontSize: '0.82rem', lineHeight: 1.55,
-                    }}>
-                      <span style={{ color: 'var(--accent)', fontWeight: 800, lineHeight: 1.45 }}>•</span>
-                      <span>{line.replace(/^[-•\d.\s]+/, '')}</span>
-                    </div>
-                  ))}
-                </div>
+                <ProductTermsMarkdown content={product.terms} />
               </div>
             )}
 
