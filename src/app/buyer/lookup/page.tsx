@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import PurchaseInvoice from '@/components/PurchaseInvoice';
 import BuyerCredentialField from '@/components/BuyerCredentialField';
+import { FiArrowLeft, FiSearch, FiShield, FiUser } from 'react-icons/fi';
+import styles from '../buyer-flow.module.css';
 
 interface BuyerSession {
   id: number;
@@ -108,14 +110,14 @@ function BuyerLookupPage() {
 
   useEffect(() => {
     if (searchParams.get('order') && orders.length > 0) {
-      const found = orders.find((o: any) => o.order_number === searchParams.get('order'));
+      const found = orders.find((order) => order.order_number === searchParams.get('order'));
       if (found) {
         selectOrder(found);
       }
     }
   }, [orders, searchParams]);
 
-  async function selectOrder(order: Record<string, unknown>) {
+  function selectOrder(order: Record<string, unknown>) {
     setSelectedOrder(order);
   }
 
@@ -125,7 +127,7 @@ function BuyerLookupPage() {
     setSearching(true);
     setError('');
 
-    const found = orders.find((o: any) => o.order_number === orderNumber.trim());
+    const found = orders.find((order) => order.order_number === orderNumber.trim());
     if (found) {
       selectOrder(found);
     } else {
@@ -156,31 +158,36 @@ function BuyerLookupPage() {
   };
 
   return (
-    <div className="public-layout">
-      <header className="public-header" style={{ justifyContent: 'space-between' }}>
-        <Link href="/" className="brand">✦ pastipremium.my.id</Link>
+    <div className={`public-layout ${styles.page}`}>
+      <header className={`public-header ${styles.header}`} style={{ justifyContent: 'space-between' }}>
+        <Link href="/" className={`brand ${styles.brand}`}><span>PP</span> PastiPremium</Link>
         {buyer && (
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <Link href="/warranty" className="btn btn-secondary btn-sm" style={{ textDecoration: 'none', background: 'rgba(147, 51, 234, 0.1)', color: '#c084fc', border: '1px solid rgba(147, 51, 234, 0.3)' }}>
-              🛡️ Klaim Garansi
+          <div className={styles.headerActions} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <Link href="/warranty" className={`btn btn-secondary btn-sm ${styles.warrantyButton}`} style={{ textDecoration: 'none', background: 'rgba(147, 51, 234, 0.1)', color: '#c084fc', border: '1px solid rgba(147, 51, 234, 0.3)' }}>
+              <FiShield aria-hidden="true" /> Klaim Garansi
             </Link>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>👤 {buyer.name}</span>
+            <span className={styles.buyerName} style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}><FiUser aria-hidden="true" /> {buyer.name}</span>
             <button className="btn btn-secondary btn-sm" onClick={() => void handleLogout()}>{t('header_logout')}</button>
           </div>
         )}
       </header>
 
-      <div className="status-container">
+      <div className={`status-container ${styles.portalShell}`}>
+        <div className={styles.portalIntro}>
+          <span className={styles.eyebrow}>PORTAL PEMBELI</span>
+          <h1>Pesanan Saya</h1>
+          <p>Pantau transaksi, lihat detail akun, dan akses bantuan dari satu halaman.</p>
+        </div>
         <div style={{ marginBottom: '16px' }}>
           <Link href="/" className="btn btn-secondary" style={{ display: 'inline-flex', gap: '8px', padding: '8px 16px', fontSize: '0.9rem', borderRadius: 'var(--radius-full)' }}>
-            <span>←</span> {t('lookup_back_home')}
+            <FiArrowLeft aria-hidden="true" /> {t('lookup_back_home')}
           </Link>
         </div>
 
         {/* Search bar */}
-        <div className="status-card" style={{ marginBottom: '20px' }}>
+        <div className={`status-card ${styles.searchCard}`} style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '16px' }}>{t('lookup_title')}</h2>
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
+          <form className={styles.searchForm} onSubmit={handleSearch} style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
             <input
               className="form-input"
               value={orderNumber}
@@ -189,7 +196,7 @@ function BuyerLookupPage() {
               style={{ flex: 1 }}
             />
             <button type="submit" className="btn btn-primary" disabled={searching}>
-              {searching ? <span className="loading-spinner" /> : t('lookup_search')}
+              {searching ? <span className="loading-spinner" /> : <><FiSearch aria-hidden="true" /> {t('lookup_search')}</>}
             </button>
           </form>
           {error && <div className="login-error" style={{ marginTop: '8px' }}>{error}</div>}
@@ -197,8 +204,8 @@ function BuyerLookupPage() {
 
         {/* Order Detail View */}
         {selectedOrder && (
-          <div className="status-card" style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+          <div className={`status-card ${styles.orderDetail}`} style={{ marginBottom: '20px' }}>
+            <div className={styles.detailHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div>
                 <button
                   className="btn btn-secondary btn-sm"
@@ -235,7 +242,7 @@ function BuyerLookupPage() {
 
             {/* Pay now CTA for pending orders */}
             {(selectedOrder.payment_status === 'pending_payment' || selectedOrder.payment_status === 'pending') && (
-              <div style={{ background: 'var(--accent-soft)', border: '1px solid rgba(0,122,255,0.2)', borderRadius: 'var(--radius-lg)', padding: '20px', marginBottom: '24px', textAlign: 'center' }}>
+              <div className={styles.paymentCallout} style={{ background: 'var(--accent-soft)', border: '1px solid rgba(0,122,255,0.2)', borderRadius: 'var(--radius-lg)', padding: '20px', marginBottom: '24px', textAlign: 'center' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '12px' }}>
                   {t('lookup_pay_now')}
                 </div>
@@ -277,7 +284,7 @@ function BuyerLookupPage() {
                   const stock = a.stock_account as Record<string, unknown>;
                   return (
                     <div key={i} className="assignment-card">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div className={styles.assignmentHeader} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                         <span className={`badge ${(a.status as string) === 'active' ? 'badge-success' : 'badge-neutral'}`}>{a.status as string}</span>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                           <span>Expired: {new Date(a.expired_at as string).toLocaleDateString('id-ID')}</span>
@@ -288,7 +295,7 @@ function BuyerLookupPage() {
                           )}
                         </div>
                       </div>
-                      <div className="credential-field">
+                      <div className={`credential-field ${styles.credentialField}`}>
                         <div>
                           <div className="credential-label">{t('cred_email')}</div>
                           <div className="credential-value">{stock?.account_identifier as string}</div>
@@ -307,7 +314,7 @@ function BuyerLookupPage() {
                         />
                       )}
                       {Boolean(stock?.profile_info) && (
-                        <div className="credential-field">
+                        <div className={`credential-field ${styles.credentialField}`}>
                           <div>
                             <div className="credential-label">{t('cred_profile')}</div>
                             <div className="credential-value">{String(stock.profile_info)}</div>
@@ -315,7 +322,7 @@ function BuyerLookupPage() {
                         </div>
                       )}
                       {Boolean(stock?.pin_info) && (
-                        <div className="credential-field">
+                        <div className={`credential-field ${styles.credentialField}`}>
                           <div>
                             <div className="credential-label">{t('cred_pin')}</div>
                             <div className="credential-value">{String(stock.pin_info)}</div>
@@ -342,7 +349,7 @@ function BuyerLookupPage() {
 
         {/* Orders List */}
         {!selectedOrder && (
-          <div className="status-card">
+          <div className={`status-card ${styles.ordersCard}`}>
             {loading ? (
               <div className="loading-page"><div className="loading-spinner" /></div>
             ) : orders.length === 0 ? (
@@ -365,7 +372,7 @@ function BuyerLookupPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((o: any) => (
+                    {orders.map((o) => (
                       <tr key={o.id}>
                         <td>
                           <div style={{ fontFamily: 'monospace', color: 'var(--brand-primary-light)', fontWeight: 600 }}>{o.order_number}</div>
@@ -392,8 +399,13 @@ function BuyerLookupPage() {
   );
 }
 
-function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName, assignments }: { 
-  buyerId: number; orderId: number; orderNumber: string; productName: string; buyerName: string; assignments: any[];
+function SupportSection({ orderNumber, productName, buyerName }: {
+  buyerId: number;
+  orderId: number;
+  orderNumber: string;
+  productName: string;
+  buyerName: string;
+  assignments: Array<Record<string, unknown>>;
 }) {
   const { t } = useLocale();
   const router = useRouter();
@@ -430,7 +442,7 @@ function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName,
   ];
 
   return (
-    <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-secondary)', paddingTop: '24px' }}>
+    <div className={styles.support} style={{ marginTop: '24px', borderTop: '1px solid var(--border-secondary)', paddingTop: '24px' }}>
       <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '12px' }}>
         {t('support_title')}
       </h4>
@@ -439,10 +451,11 @@ function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName,
       </p>
 
       {/* Complaint type selector */}
-      <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
+      <div className={styles.supportOptions} style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
         {complaintOptions.map(opt => (
           <button
             key={opt.value}
+            className={styles.supportOption}
             onClick={() => setComplaintType(opt.value)}
             style={{
               display: 'flex', alignItems: 'center', gap: '10px',
@@ -464,11 +477,11 @@ function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName,
       </div>
 
       {/* WhatsApp & Auto Warranty buttons */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      <div className={styles.supportActions} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <button
           onClick={openWhatsApp}
           disabled={!complaintType || loadingWa}
-          className="btn btn-lg"
+          className={`btn btn-lg ${styles.supportAction}`}
           style={{
             width: '100%', justifyContent: 'center',
             background: complaintType ? '#25D366' : 'var(--bg-tertiary)',
@@ -486,7 +499,7 @@ function SupportSection({ buyerId, orderId, orderNumber, productName, buyerName,
           onClick={() => {
             router.push(`/warranty?order=${orderNumber}`);
           }}
-          className="btn btn-lg"
+          className={`btn btn-lg ${styles.supportAction}`}
           style={{
             width: '100%', justifyContent: 'center',
             background: 'linear-gradient(135deg, #9333ea, #7e22ce)',

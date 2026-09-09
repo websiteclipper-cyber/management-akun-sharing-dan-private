@@ -11,10 +11,11 @@ import { normalizeWhatsAppGroupLink, normalizeWhatsAppPhone } from '@/lib/phone'
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import HelpPopup from '@/components/HelpPopup';
 import { useLocale } from '@/lib/locale-context';
-import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiGooglegemini, SiNotion } from 'react-icons/si';
+import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiClaude, SiGooglegemini, SiNotion } from 'react-icons/si';
 import { BsDisplay, BsStars } from 'react-icons/bs';
-import { FiInfo, FiMonitor, FiX, FiFileText } from 'react-icons/fi';
+import { FiArrowRight, FiCheck, FiCreditCard, FiHeadphones, FiInfo, FiMonitor, FiShield, FiX, FiZap } from 'react-icons/fi';
 import { TbBrandOpenai, TbBrandDisney, TbBrandAmazon, TbRobot, TbScissors, TbPhotoVideo } from 'react-icons/tb';
+import styles from './HomePageClient.module.css';
 
 const PromoPopup = dynamic(() => import('@/components/PromoPopup'), { ssr: false });
 const GlobalPromoPopup = dynamic(() => import('@/components/GlobalPromoPopup'), { ssr: false });
@@ -39,6 +40,66 @@ interface BuyerSession {
 
 const BUYER_LOGIN_REDIRECT_KEY = 'buyer_login_redirect';
 
+const DEMO_PRODUCTS: Product[] = [
+  {
+    id: -101,
+    code: 'DEMO-CHATGPT-PLUS',
+    name: 'ChatGPT Plus Sharing',
+    platform_name: 'ChatGPT',
+    catalog_category: 'ai_productivity',
+    account_type: 'sharing',
+    price: 59000,
+    newcomer_price: 49000,
+    duration_days: 30,
+    warranty_days: 30,
+    default_max_slot: 4,
+    description: 'Akses ChatGPT Plus untuk riset, menulis, belajar, dan produktivitas harian.',
+    terms: 'Gunakan hanya profil yang diberikan.\nDilarang mengubah email atau password akun.',
+    status: 'active',
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    available_stock: 12,
+  },
+  {
+    id: -102,
+    code: 'DEMO-GEMINI-PRO',
+    name: 'Gemini Advanced',
+    platform_name: 'Gemini',
+    catalog_category: 'ai_productivity',
+    account_type: 'private',
+    price: 79000,
+    newcomer_price: null,
+    duration_days: 30,
+    warranty_days: 30,
+    default_max_slot: 1,
+    description: 'Paket AI Google untuk brainstorming, pekerjaan, pembelajaran, dan analisis dokumen.',
+    terms: 'Akun digunakan untuk satu pengguna.\nIkuti ketentuan pemakaian yang diberikan.',
+    status: 'active',
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    available_stock: 7,
+  },
+  {
+    id: -103,
+    code: 'DEMO-CLAUDE-PRO',
+    name: 'Claude Pro',
+    platform_name: 'Claude',
+    catalog_category: 'ai_productivity',
+    account_type: 'private',
+    price: 89000,
+    newcomer_price: 75000,
+    duration_days: 30,
+    warranty_days: 30,
+    default_max_slot: 1,
+    description: 'Asisten AI premium untuk coding, merangkum dokumen panjang, dan pekerjaan kreatif.',
+    terms: 'Akun digunakan untuk satu pengguna.\nDilarang mengubah data keamanan tanpa izin.',
+    status: 'active',
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    available_stock: 5,
+  },
+];
+
 function safeInternalRedirect(value: string | null): string {
   return value?.startsWith('/') && !value.startsWith('//') ? value : '/';
 }
@@ -56,6 +117,7 @@ const PLATFORM_ICONS: Record<string, React.ReactNode> = {
   CANVA: <SiCanva color="#fff" aria-hidden="true" focusable="false" />,
   CHATGPT: <TbBrandOpenai color="#fff" aria-hidden="true" focusable="false" />,
   GEMINI: <SiGooglegemini color="#fff" aria-hidden="true" focusable="false" />,
+  CLAUDE: <SiClaude color="#fff" aria-hidden="true" focusable="false" />,
   NOTION: <SiNotion color="#fff" aria-hidden="true" focusable="false" />,
   GROK: <TbRobot color="#fff" aria-hidden="true" focusable="false" />,
   CAPCUT: <TbScissors color="#fff" aria-hidden="true" focusable="false" />,
@@ -76,6 +138,7 @@ const PLATFORM_GRADIENTS: Record<string, string> = {
   CANVA: 'linear-gradient(135deg, #00C4CC 0%, #00969C 100%)',
   CHATGPT: 'linear-gradient(135deg, #10A37F 0%, #0D7A5F 100%)',
   GEMINI: 'linear-gradient(135deg, #8E75B2 0%, #6B5899 100%)',
+  CLAUDE: 'linear-gradient(135deg, #D97757 0%, #A84E35 100%)',
   NOTION: 'linear-gradient(135deg, #252525 0%, #000000 100%)',
   GROK: 'linear-gradient(135deg, #1d1d1f 0%, #333333 100%)',
   CAPCUT: 'linear-gradient(135deg, #1d1d1f 0%, #333333 100%)',
@@ -306,11 +369,20 @@ export default function HomePage({
     }
   }
 
+  const isDemoCatalog = process.env.NODE_ENV === 'development' && products.length === 0;
+  const displayProducts = isDemoCatalog ? DEMO_PRODUCTS : products;
   const categories = Array.from(new Set(
-    products
+    displayProducts
       .filter(p => p.status === 'active')
       .map(p => p.platform_name.toUpperCase())
   ));
+  const uniquePlatformNames = Array.from(
+    new Set(displayProducts.filter(p => p.status === 'active').map(p => p.platform_name))
+  );
+  const defaultShowcase = ['ChatGPT', 'Claude', 'Gemini', 'Netflix', 'Spotify', 'Canva'];
+  const showcasePlatforms = Array.from(
+    new Set([...uniquePlatformNames, ...defaultShowcase])
+  ).slice(0, 6);
   const normalizedSupportWa = normalizeWhatsAppPhone(supportWa);
   const waUrl = normalizedSupportWa
     ? `https://wa.me/${normalizedSupportWa}?text=${encodeURIComponent('Hi admin pastipremium.my.id, I need help.')}`
@@ -341,6 +413,7 @@ export default function HomePage({
     CANVA: 'rgba(0, 196, 204, 0.15)',
     CHATGPT: 'rgba(16, 163, 127, 0.15)',
     GEMINI: 'rgba(142, 117, 178, 0.15)',
+    CLAUDE: 'rgba(217, 119, 87, 0.15)',
     NOTION: 'rgba(15, 23, 42, 0.12)',
     GROK: 'rgba(15, 23, 42, 0.08)',
     CAPCUT: 'rgba(15, 23, 42, 0.08)',
@@ -357,7 +430,7 @@ export default function HomePage({
   }
 
   return (
-    <div style={{
+    <div className={styles.page} style={{
       minHeight: '100vh',
       background: C_BG,
       fontFamily: 'var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
@@ -384,7 +457,7 @@ export default function HomePage({
       )}
 
       {/* Header */}
-      <header style={{
+      <header className={styles.header} style={{
         position: 'sticky', top: 0, zIndex: 100,
         background: 'var(--glass-bg)',
         backdropFilter: 'var(--glass-blur)',
@@ -397,8 +470,8 @@ export default function HomePage({
         boxShadow: '0 1px 0 rgba(15, 23, 42, 0.03)',
       }}>
         {/* Logo */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <span style={{
+        <Link href="/" className={styles.brand} style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <span className={styles.brandMark} style={{
             width: '32px',
             height: '32px',
             borderRadius: '10px',
@@ -411,7 +484,7 @@ export default function HomePage({
             fontWeight: 800,
             boxShadow: '0 8px 18px rgba(15, 23, 42, 0.12)',
           }}>PP</span>
-          <span style={{
+          <span className={styles.brandName} style={{
             fontWeight: 800, fontSize: '1.05rem', letterSpacing: '0',
             color: C_TEXT,
           }}>
@@ -420,7 +493,7 @@ export default function HomePage({
         </Link>
 
         {/* Nav actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className={styles.headerActions} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <LanguageSwitcher />
           <Link
             href="/ketentuan"
@@ -581,125 +654,97 @@ export default function HomePage({
         )}
       </>
 
-      <main>
+      <main className={styles.main}>
       {/* Hero */}
-      <section
-        style={{
-          padding: '88px 20px 64px',
-          textAlign: 'center',
-          maxWidth: '920px', margin: '0 auto',
-          position: 'relative',
-        }}
-      >
-        <h1
-          style={{
-            fontSize: 'clamp(2.1rem, 7vw, 3.3rem)',
-            fontWeight: 800,
-            letterSpacing: 0,
-            lineHeight: 1.1,
-            color: C_TEXT,
-            marginBottom: '16px',
-            position: 'relative',
-            zIndex: 1,
-          }}
-        >
-          {t('hero_title_2')}
-        </h1>
-        <p
-          style={{
-            fontSize: '1.15rem', color: C_TEXT_MUTED,
-            lineHeight: 1.6, maxWidth: '520px',
-            margin: '0 auto 40px', fontWeight: 400,
-            position: 'relative', zIndex: 1,
-          }}
-        >
-          {t('hero_subtitle')}
-        </p>
+      <section className={styles.hero}>
+        <div className={styles.heroCopy}>
+          <div className={styles.eyebrow}><span /> {t('home_eyebrow')}</div>
+          <h1>
+            {t('hero_title_1')}<br />
+            <span>{t('hero_title_2')}</span>
+          </h1>
+          <p>{t('hero_subtitle')}</p>
 
-        <div
-          style={{ display: 'flex', gap: '16px', justifyContent: 'center', position: 'relative', zIndex: 1, flexWrap: 'wrap' }}
-        >
-          <button
-            onClick={() => {
-              const el = document.getElementById('katalog');
-              if (el) {
-                const y = el.getBoundingClientRect().top + window.scrollY - 80;
-                window.scrollTo({ top: y, behavior: 'smooth' });
-              }
-            }}
-            style={{
-              background: C_BLUE, color: '#fff', border: 'none',
-              padding: '15px 30px', borderRadius: '12px',
-              fontSize: '1rem', fontWeight: 600,
-              cursor: 'pointer', transition: 'all 0.25s ease',
-              boxShadow: '0 14px 28px rgba(37, 99, 235, 0.20)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = C_BLUE_HOVER;
-              e.currentTarget.style.boxShadow = '0 18px 34px rgba(37, 99, 235, 0.25)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = C_BLUE;
-              e.currentTarget.style.boxShadow = '0 14px 28px rgba(37, 99, 235, 0.20)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >{t('view_catalog')}</button>
-          <Link
-            href="/ketentuan"
-            style={{
-              background: C_CARD, color: C_TEXT,
-              border: `1px solid ${C_BORDER}`,
-              padding: '15px 30px', borderRadius: '12px',
-              fontSize: '1rem', fontWeight: 600,
-              textDecoration: 'none', transition: 'all 0.25s ease',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--bg-card-hover)';
-              e.currentTarget.style.borderColor = 'var(--border-hover)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = C_CARD;
-              e.currentTarget.style.borderColor = 'var(--border-primary)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            <FiFileText /> {t('terms_all_products')}
-          </Link>
-          {hasHelpOption && (
+          <div className={styles.heroActions}>
             <button
-              type="button"
-              onClick={openHelpPopup}
-              style={{
-                background: C_CARD, color: C_TEXT,
-                border: `1px solid ${C_BORDER}`,
-                padding: '15px 30px', borderRadius: '12px',
-                fontSize: '1rem', fontWeight: 600,
-                textDecoration: 'none', transition: 'all 0.25s ease',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
+              className={styles.primaryCta}
+              onClick={() => {
+                const el = document.getElementById('katalog');
+                if (el) {
+                  const y = el.getBoundingClientRect().top + window.scrollY - 80;
+                  window.scrollTo({ top: y, behavior: 'smooth' });
+                }
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--bg-card-hover)';
-                e.currentTarget.style.borderColor = 'var(--border-hover)';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = C_CARD;
-                e.currentTarget.style.borderColor = 'var(--border-primary)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >{t('help')}</button>
-          )}
+            >{t('view_catalog')} <FiArrowRight aria-hidden="true" /></button>
+            <Link
+              href="/buyer/lookup"
+              className={styles.secondaryCta}
+            >
+              {t('home_check_order')}
+            </Link>
+          </div>
+
+          <div className={styles.heroProof}>
+            <div className={styles.proofAvatars} aria-hidden="true"><span>N</span><span>S</span><span>Y</span></div>
+            <div><strong>{t('home_practical_title')}</strong><small>{t('home_practical_desc')}</small></div>
+          </div>
         </div>
+
+        <div className={styles.heroVisual} aria-label="Pilihan akun premium tersedia">
+          <div className={styles.visualGlow} />
+          <div className={styles.offerCard}>
+            <div className={styles.offerHeader}>
+              <div>
+                <span className={styles.offerLabel}>{t('home_premium_selection')}</span>
+                <h2>{t('home_all_digital_needs')}</h2>
+              </div>
+              <span className={styles.liveBadge}><i /> {t('home_available')}</span>
+            </div>
+
+            <div className={styles.platformLogoGrid} role="list" aria-label="Daftar platform populer">
+              {showcasePlatforms.map(platform => (
+                <button
+                  type="button"
+                  key={platform}
+                  className={styles.platformLogoItem}
+                  onClick={() => {
+                    setSelectedCategory(platform.toUpperCase());
+                    const el = document.getElementById('katalog');
+                    if (el) {
+                      const y = el.getBoundingClientRect().top + window.scrollY - 80;
+                      window.scrollTo({ top: y, behavior: 'smooth' });
+                    }
+                  }}
+                  aria-label={`Pilih platform ${platform}`}
+                >
+                  <span
+                    className={styles.platformLogoIcon}
+                    style={{
+                      background: getPlatformGradient(platform),
+                      boxShadow: `0 8px 20px ${getPlatformGlow(platform).replace('0.15', '0.35').replace('0.12', '0.3').replace('0.08', '0.15').replace('0.1', '0.2')}`,
+                    }}
+                  >
+                    {getPlatformIcon(platform)}
+                  </span>
+                  <span className={styles.platformLogoName}>{platform}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={styles.deliveryChip}><FiCheck aria-hidden="true" /> {t('home_ready')}</div>
+        </div>
+      </section>
+
+      <section className={styles.trustBar} aria-label="Keunggulan layanan">
+        <div><span><FiZap aria-hidden="true" /></span><p><strong>{t('home_fast_process')}</strong><small>{t('home_fast_process_desc')}</small></p></div>
+        <div><span><FiCreditCard aria-hidden="true" /></span><p><strong>{t('home_qris')}</strong><small>{t('home_qris_desc')}</small></p></div>
+        <div><span><FiShield aria-hidden="true" /></span><p><strong>{t('home_warranty')}</strong><small>{t('home_warranty_desc')}</small></p></div>
+        <div><span><FiHeadphones aria-hidden="true" /></span><p><strong>{t('home_direct_help')}</strong><small>{t('home_direct_help_desc')}</small></p></div>
       </section>
 
       {/* Leaderboard */}
       {leaderboard.length > 0 && (
-        <section style={{ padding: '0 24px 60px', maxWidth: '1050px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        <section className={styles.leaderboardSection} style={{ padding: '0 24px 60px', maxWidth: '1050px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div
             style={{
               background: C_CARD,
@@ -778,7 +823,7 @@ export default function HomePage({
       )}
 
       {/* Catalog */}
-      <section id="katalog" style={{ padding: '0 24px 100px', maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+      <section id="katalog" className={styles.catalog} style={{ padding: '0 24px 100px', maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
         {loading ? (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -787,7 +832,7 @@ export default function HomePage({
             <div style={{ width: '28px', height: '28px', border: '3px solid var(--border-secondary)', borderTopColor: C_BLUE, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
           </div>
 
-        ) : catalogError ? (
+        ) : catalogError && !isDemoCatalog ? (
           <div style={{ textAlign: 'center', padding: '80px 20px', color: C_TEXT_MUTED }}>
             <h2 style={{ fontWeight: 700, fontSize: '1.3rem', marginBottom: '8px', color: C_TEXT }}>
               {t('catalog_error_title')}
@@ -802,7 +847,7 @@ export default function HomePage({
             </button>
           </div>
 
-        ) : products.length === 0 ? (
+        ) : displayProducts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 20px', color: C_TEXT_MUTED }}>
             <h2 style={{ fontWeight: 700, fontSize: '1.3rem', marginBottom: '8px', color: C_TEXT }}>{t('catalog_empty_title')}</h2>
             <p>{t('catalog_empty_desc')}</p>
@@ -814,11 +859,15 @@ export default function HomePage({
               <div
                 key="categories"
               >
-                <div style={{ marginBottom: '44px', textAlign: 'center' }}>
+                <div className={styles.catalogHeading} style={{ marginBottom: '44px', textAlign: 'center' }}>
+                  <span className={styles.sectionEyebrow}>{t('home_catalog_label')}</span>
                   <h2 style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: 0, marginBottom: '10px', color: C_TEXT }}>
                     {t('choose_platform')}
                   </h2>
                   <p style={{ fontSize: '1.05rem', color: C_TEXT_MUTED }}>{t('categories_available', { count: categories.length })}</p>
+                  {isDemoCatalog && (
+                    <div className={styles.demoNotice}>Mode preview · Produk contoh tidak dapat dibeli</div>
+                  )}
                 </div>
 
                 {(() => {
@@ -826,7 +875,7 @@ export default function HomePage({
                     .map(group => ({
                       title: group.title,
                       platforms: categories.filter(platform => {
-                        const product = products.find(item =>
+                        const product = displayProducts.find(item =>
                           item.status === 'active' && item.platform_name.toUpperCase() === platform,
                         );
                         return getProductCatalogCategory(product) === group.id;
@@ -847,7 +896,7 @@ export default function HomePage({
                             gap: '24px',
                           }}>
                             {group.platforms.map(category => {
-                              const count = products.filter(p =>
+                              const count = displayProducts.filter(p =>
                                 p.platform_name.toUpperCase() === category && !isProductUnavailable(p)
                               ).length;
                               const icon = getPlatformIcon(category);
@@ -858,7 +907,7 @@ export default function HomePage({
                                 <button
                                   type="button"
                                   key={category}
-                                  className="platform-card"
+                                   className={`platform-card ${styles.platformCard}`}
                                   onClick={() => setSelectedCategory(category)}
                                   style={{
                                     background: C_CARD,
@@ -883,15 +932,16 @@ export default function HomePage({
                                   }}
                                   onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.08) rotate(4deg)'}
                                   onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1) rotate(0deg)'}
-                                  >{icon}</div>
+                                   >{icon}</div>
 
                                   <h3 style={{ fontWeight: 700, fontSize: '1.2rem', color: C_TEXT, marginBottom: '6px' }}>
                                     {category}
                                   </h3>
-                                  <p style={{ fontSize: '0.9rem', color: C_TEXT_MUTED, fontWeight: 500 }}>
-                                    {t('variants_available', { count })}
-                                  </p>
-                                </button>
+                                   <p style={{ fontSize: '0.9rem', color: C_TEXT_MUTED, fontWeight: 500 }}>
+                                     {t('variants_available', { count })}
+                                   </p>
+                                   <span className={styles.cardLink}>{t('home_view_packages')} <FiArrowRight aria-hidden="true" /></span>
+                                 </button>
                               );
                             })}
                           </div>
@@ -949,7 +999,7 @@ export default function HomePage({
                   gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
                   gap: '28px'
                 }}>
-                  {products
+                  {displayProducts
                     .filter(p => p.platform_name.toUpperCase() === selectedCategory)
                     .sort((a, b) => {
                       const aSoldOut = isProductUnavailable(a);
@@ -990,11 +1040,12 @@ export default function HomePage({
                       const hasNewcomerPrice = product.newcomer_price !== null && product.newcomer_price !== undefined;
                       const availableStock = getAvailableStock(product);
                       const isUnavailable = isProductUnavailable(product);
+                      const isDemoProduct = product.id < 0;
 
                       return (
                         <div
                           key={product.id}
-                          className="product-card"
+                           className={`product-card ${styles.productCard}`}
                           data-inactive={isUnavailable}
                           style={{
                             background: C_CARD,
@@ -1022,7 +1073,15 @@ export default function HomePage({
                           }}
                         >
                         {/* Sold Out or Promo/Newcomer Badge */}
-                        {isUnavailable ? (
+                        {isDemoProduct ? (
+                          <button
+                            disabled
+                            className={`btn ${styles.demoButton}`}
+                            style={{ width: '100%' }}
+                          >
+                            Produk Demo
+                          </button>
+                        ) : isUnavailable ? (
                           <div style={{
                             position: 'absolute', top: '-14px', left: '32px',
                             background: '#334155',
@@ -1236,7 +1295,11 @@ export default function HomePage({
                 >
                   Tutup
                 </button>
-                {!isProductUnavailable(detailProduct) ? (
+                {detailProduct.id < 0 ? (
+                  <button type="button" className={`btn ${styles.demoButton}`} disabled>
+                    Produk Demo
+                  </button>
+                ) : !isProductUnavailable(detailProduct) ? (
                   <Link
                     href={`/order/${detailProduct.id}`}
                     className="btn btn-primary"
@@ -1289,7 +1352,7 @@ export default function HomePage({
       )}
 
       {/* Footer */}
-      <footer style={{
+      <footer className={styles.footer} style={{
         padding: '48px 20px',
         borderTop: `1px solid ${C_BORDER}`,
         textAlign: 'center', background: 'var(--bg-card)',

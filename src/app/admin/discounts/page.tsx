@@ -206,9 +206,9 @@ export default function AdminDiscountsPage() {
   const totalRedeemed = campaigns.reduce((sum, c) => sum + c.current_uses, 0);
 
   return (
-    <div>
+    <div className="admin-standalone-page">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="admin-page-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Kode Diskon</h1>
           <p style={{ color: 'var(--text-muted)' }}>Kelola kampanye kode diskon / voucher untuk pembeli.</p>
@@ -242,7 +242,7 @@ export default function AdminDiscountsPage() {
 
       {/* Form */}
       {showForm && (
-        <div style={{
+        <div className="admin-form-panel" style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border-secondary)',
           borderRadius: 'var(--radius-lg)',
@@ -399,7 +399,7 @@ export default function AdminDiscountsPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '12px' }}>
+            <div className="admin-form-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '12px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
                 <input
                   type="checkbox"
@@ -433,7 +433,7 @@ export default function AdminDiscountsPage() {
             const usagePercent = campaign.max_uses ? Math.round((campaign.current_uses / campaign.max_uses) * 100) : null;
 
             return (
-              <div
+              <div className="admin-list-card"
                 key={campaign.id}
                 style={{
                   background: 'var(--bg-card)',
@@ -586,7 +586,7 @@ export default function AdminDiscountsPage() {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                <div className="admin-card-actions" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                   <button
                     className="btn btn-sm"
                     style={{

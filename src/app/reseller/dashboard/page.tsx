@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FiCopy, FiLogOut } from 'react-icons/fi';
+import styles from '../reseller-flow.module.css';
 
 interface ResellerSession {
   id: string;
@@ -28,7 +30,7 @@ interface Commission {
   status: string;
   paid_at: string | null;
   created_at: string;
-  order?: { order_number: string; total_amount: number; buyer: { name: string } };
+  order?: { order_number: string; total_amount: number; buyer: { name: string } | null };
 }
 
 interface Promo {
@@ -98,6 +100,8 @@ export default function ResellerDashboardPage() {
       .then(res => res.json())
       .then(d => setLeaderboard(d.entries || []))
       .catch(() => {});
+  // Dashboard data is intentionally loaded once from the persisted session.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   async function loadDashboard(token: string) {
@@ -166,22 +170,22 @@ export default function ResellerDashboardPage() {
   const r = data.reseller;
 
   return (
-    <div className="public-layout">
+    <div className={`public-layout ${styles.dashboardPage}`}>
       {/* Header */}
-      <header className="public-header" style={{ justifyContent: 'space-between' }}>
-        <Link href="/" className="brand">✦ pastipremium.my.id</Link>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ textAlign: 'right' }}>
+      <header className={`public-header ${styles.dashboardHeader}`} style={{ justifyContent: 'space-between' }}>
+        <Link href="/" className={styles.dashboardBrand}><span>PP</span> PastiPremium</Link>
+        <div className={styles.accountArea} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div className={styles.accountCopy} style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>🤝 {session.name}</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Mitra • {session.ref_code}</div>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={handleLogout}>Logout</button>
+          <button className="btn btn-secondary btn-sm" onClick={handleLogout}><FiLogOut aria-hidden="true" /> Logout</button>
         </div>
       </header>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px 20px 80px' }}>
+      <div className={styles.dashboardShell} style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px 20px 80px' }}>
         {/* Welcome Banner */}
-        <div style={{
+        <div className={styles.welcomeCard} style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border-secondary)',
           borderRadius: 'var(--radius-xl)',
@@ -200,7 +204,7 @@ export default function ResellerDashboardPage() {
           </p>
           
           {/* Referral Link */}
-          <div style={{
+          <div className={styles.referralBar} style={{
             background: 'var(--bg-base)',
             border: '1px solid var(--border-secondary)',
             borderRadius: 'var(--radius-lg)',
@@ -223,13 +227,13 @@ export default function ResellerDashboardPage() {
               onClick={copyLink}
               style={{ whiteSpace: 'nowrap' }}
             >
-              {copied ? '✅ Tersalin!' : '📋 Copy Link'}
+              {copied ? 'Tersalin!' : <><FiCopy aria-hidden="true" /> Copy Link</>}
             </button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="stats-grid" style={{ marginBottom: '24px' }}>
+        <div className={`stats-grid ${styles.statsGrid}`} style={{ marginBottom: '24px' }}>
           <div className="stat-card">
             <div className="stat-label">TOTAL PENJUALAN</div>
             <div className="stat-value">{r.total_sales}</div>
@@ -258,7 +262,7 @@ export default function ResellerDashboardPage() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div className={styles.tabs} style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <button className={`btn btn-sm ${tab === 'overview' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setTab('overview')}>
             📊 Ringkasan
           </button>
@@ -461,7 +465,7 @@ export default function ResellerDashboardPage() {
         {tab === 'commissions' && (
           <div>
             {/* Filter */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <div className={styles.filters} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
               {(['all', 'unpaid', 'paid'] as const).map(f => (
                 <button
                   key={f}
@@ -524,7 +528,7 @@ export default function ResellerDashboardPage() {
                       </td>
                       <td>
                         <div><code style={{ color: 'var(--accent)', fontSize: '0.8rem' }}>{c.order?.order_number || '-'}</code></div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{(c.order?.buyer as any)?.name || '-'}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{c.order?.buyer?.name || '-'}</div>
                       </td>
                       <td style={{ fontWeight: 600 }}>{c.product_name || '-'}</td>
                       <td>

@@ -1,0 +1,404 @@
+.page {
+  --buyer-ink: #10233f;
+  --buyer-blue: #175cd3;
+  background:
+    radial-gradient(circle at 10% 8%, rgba(23, 92, 211, 0.1), transparent 28rem),
+    radial-gradient(circle at 92% 28%, rgba(22, 163, 111, 0.06), transparent 24rem),
+    #f7f9fc;
+}
+
+.header {
+  min-height: 70px !important;
+  height: auto !important;
+  padding: 10px max(20px, calc((100vw - 1120px) / 2)) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-bottom: 1px solid rgba(16, 35, 63, 0.08) !important;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--buyer-ink) !important;
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.brand > span {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #175cd3, #0b3c8c);
+  color: white;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 0.7rem;
+  box-shadow: 0 8px 20px rgba(23, 92, 211, 0.22);
+}
+
+.authLayout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 420px);
+  align-items: center;
+  justify-content: center;
+  gap: clamp(32px, 6vw, 72px);
+  width: min(1040px, calc(100% - 40px));
+  min-height: calc(100vh - 70px) !important;
+  margin: 0 auto;
+  padding: 40px 0;
+}
+
+.authStory {
+  max-width: 520px;
+}
+
+.eyebrow {
+  color: var(--buyer-blue);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.authStory h1,
+.portalIntro h1 {
+  color: var(--buyer-ink);
+  letter-spacing: -0.045em;
+}
+
+.authStory h1 {
+  margin: 14px 0 18px;
+  font-size: clamp(2.5rem, 5vw, 4.25rem);
+  line-height: 1.02;
+}
+
+.authStory > p,
+.portalIntro p {
+  color: #65758b;
+  line-height: 1.7;
+}
+
+.benefitList {
+  display: grid;
+  gap: 12px;
+  margin-top: 34px;
+}
+
+.benefitList > div {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.benefitList span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 13px;
+  background: #eaf2ff;
+  color: var(--buyer-blue);
+}
+
+.benefitList p,
+.benefitList strong,
+.benefitList small {
+  display: block;
+  margin: 0;
+}
+
+.benefitList strong { color: var(--buyer-ink); font-size: 0.86rem; }
+.benefitList small { margin-top: 2px; color: #7b899b; font-size: 0.72rem; }
+
+.authCard,
+.searchCard,
+.orderDetail,
+.ordersCard {
+  border-color: #dce4ee !important;
+  border-radius: 24px !important;
+  box-shadow: 0 24px 65px rgba(16, 35, 63, 0.1) !important;
+}
+
+.authCard {
+  width: 100% !important;
+  max-width: 440px !important;
+  margin: 0 auto !important;
+  padding: 34px !important;
+}
+
+.authIntro h2 {
+  color: var(--buyer-ink);
+  font-size: 1.65rem;
+}
+
+.authIcon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 16px;
+  place-items: center;
+  border: 1px solid #cdddf5;
+  border-radius: 18px;
+  background: #edf4ff;
+  color: var(--buyer-blue);
+  font-size: 1.5rem;
+}
+
+.primaryAction {
+  min-height: 52px;
+  border-radius: 13px !important;
+  background: var(--buyer-blue) !important;
+  box-shadow: 0 14px 28px rgba(23, 92, 211, 0.2) !important;
+}
+
+.googleAction {
+  min-height: 52px;
+  border-radius: 13px !important;
+}
+
+.safeNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.safeNote svg { color: #15805e; }
+
+.headerActions {
+  min-width: 0;
+}
+
+.buyerName {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  font-weight: 650;
+}
+
+.warrantyButton {
+  border-color: #d7c9f3 !important;
+  background: #f5f0ff !important;
+  color: #7043b5 !important;
+}
+
+.portalShell {
+  max-width: 920px !important;
+  padding-top: 48px !important;
+}
+
+.portalIntro {
+  margin-bottom: 24px;
+}
+
+.portalIntro h1 {
+  margin: 8px 0 5px;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+}
+
+.portalIntro p {
+  font-size: 0.9rem;
+}
+
+.searchCard {
+  padding: 24px !important;
+}
+
+.searchForm button {
+  min-width: 120px;
+}
+
+.orderDetail {
+  padding: 28px !important;
+}
+
+.paymentCallout {
+  border-color: #cdddf5 !important;
+  background: linear-gradient(145deg, #f4f8fe, #edf4ff) !important;
+}
+
+.credentialField {
+  gap: 14px;
+  align-items: center !important;
+  background: white !important;
+}
+
+.credentialField > div:first-child {
+  min-width: 0;
+}
+
+.support {
+  border-top-color: #dce4ee !important;
+}
+
+.supportOption {
+  width: 100%;
+}
+
+.supportAction {
+  white-space: normal !important;
+}
+
+.invoice {
+  border-color: #d6e0ed !important;
+  border-radius: 17px !important;
+  background: linear-gradient(145deg, #f7faff, #ffffff) !important;
+}
+
+.invoiceHeader > div:first-child > div:first-child {
+  color: var(--buyer-blue) !important;
+}
+
+.invoiceTerms {
+  border-color: #efd4b1 !important;
+  background: #fff9f1 !important;
+}
+
+@media (max-width: 800px) {
+  .authLayout {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    max-width: 520px !important;
+    margin: 0 auto !important;
+    padding: 36px 16px 48px !important;
+    gap: 24px !important;
+    min-height: calc(100vh - 70px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .authStory {
+    width: 100% !important;
+    max-width: 440px !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+  }
+
+  .authStory h1 {
+    font-size: clamp(1.8rem, 6.5vw, 2.5rem) !important;
+    margin: 8px 0 10px !important;
+  }
+
+  .authStory > p {
+    font-size: 0.88rem !important;
+    margin: 0 auto !important;
+  }
+
+  .benefitList {
+    display: none !important;
+  }
+
+  .authCard {
+    width: 100% !important;
+    max-width: 440px !important;
+    margin: 0 auto !important;
+  }
+}
+
+@media (max-width: 540px) {
+  .authLayout {
+    padding: 24px 14px 40px !important;
+    gap: 16px !important;
+  }
+
+  .authStory {
+    display: none !important;
+  }
+
+  .authCard {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 26px 18px !important;
+    border-radius: 20px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    padding: 9px 14px !important;
+  }
+
+  .headerActions {
+    gap: 7px !important;
+  }
+
+  .buyerName {
+    display: none !important;
+  }
+
+  .headerActions :global(.btn) {
+    padding: 8px 10px;
+    font-size: 0.72rem;
+  }
+
+  .portalShell {
+    padding: 32px 12px 56px !important;
+  }
+
+  .authCard,
+  .searchCard,
+  .orderDetail,
+  .ordersCard {
+    padding: 20px 16px !important;
+    border-radius: 19px !important;
+  }
+
+  .searchForm {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .searchForm button {
+    width: 100%;
+  }
+
+  .detailHeader,
+  .assignmentHeader {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .assignmentHeader > div:last-child {
+    align-items: flex-start !important;
+  }
+
+  .credentialField {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .credentialField > button,
+  .credentialField > div:last-child:not(:first-child) {
+    align-self: flex-end;
+  }
+
+  .supportActions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .invoice {
+    padding: 16px !important;
+  }
+
+  .invoiceActions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .invoiceActions > button {
+    grid-column: auto !important;
+  }
+
+  .invoiceRow {
+    grid-template-columns: 1fr !important;
+    gap: 2px !important;
+    padding-bottom: 7px;
+    border-bottom: 1px solid #e6ebf2;
+  }
+}

@@ -19,19 +19,6 @@ interface TopProduct {
   revenue: number;
 }
 
-interface RevenueRow {
-  total_amount: number | null;
-  created_at: string;
-  payment_status?: string | null;
-  product_id?: number | null;
-}
-
-interface ProductSalesRow {
-  product_id: number | null;
-  total_amount: number | null;
-  product?: { name?: string | null } | null;
-}
-
 interface SalesData {
   // Summary cards
   totalRevenue: number;
@@ -350,10 +337,10 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      <div className="admin-page-body" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
 
         {/* ===== ROW 1: Revenue Summary ===== */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <div className="admin-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
           <div style={{ background: 'linear-gradient(135deg, var(--admin-accent-strong), var(--admin-teal))', borderRadius: 'var(--radius-xl)', padding: '28px', color: '#fff', boxShadow: '0 18px 38px rgba(15, 118, 110, 0.16)' }}>
             <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, opacity: 0.75, marginBottom: '10px' }}>💰 Total Revenue</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.03em' }}>{formatPrice(data?.totalRevenue || 0)}</div>
@@ -429,7 +416,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* ===== ROW 3: Chart + Top Products ===== */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div className="admin-dashboard-split" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
 
           {/* Revenue Chart (Bar) */}
           <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-primary)', padding: '24px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
@@ -500,7 +487,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* ===== ROW 4: Order Status Breakdown + Recent Orders ===== */}
-        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
+        <div className="admin-dashboard-detail-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
 
           {/* Order Status Donut-style */}
           <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-primary)', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>

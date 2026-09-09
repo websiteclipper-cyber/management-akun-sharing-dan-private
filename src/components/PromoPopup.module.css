@@ -1,0 +1,81 @@
+.backdrop {
+  background: rgba(15, 23, 42, 0.56) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.positioner {
+  width: min(calc(100% - 32px), 430px) !important;
+}
+
+.card {
+  border: 1px solid #dce4ee !important;
+  border-radius: 24px !important;
+  background: #fff !important;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24) !important;
+  transform: none !important;
+}
+
+.close {
+  display: grid !important;
+  width: 36px !important;
+  height: 36px !important;
+  place-items: center !important;
+  border: 1px solid #dce4ee !important;
+  border-radius: 11px !important;
+  background: #f5f7fa !important;
+  color: #64748b !important;
+}
+
+.close:hover {
+  background: #eaf0f6 !important;
+  color: #10233f !important;
+}
+
+.header {
+  background: linear-gradient(145deg, #10233f, #175cd3) !important;
+}
+
+.content {
+  background: #fff !important;
+}
+
+.icon {
+  background: linear-gradient(145deg, #175cd3, #0b3c8c) !important;
+  box-shadow: 0 10px 26px rgba(23, 92, 211, 0.22) !important;
+}
+
+.action {
+  border-color: #175cd3 !important;
+  background: #175cd3 !important;
+  color: #fff !important;
+  box-shadow: 0 14px 28px rgba(23, 92, 211, 0.22) !important;
+}
+
+.action:hover {
+  background: #0e47a1 !important;
+  color: #fff !important;
+}
+
+@media (max-width: 560px) {
+  .positioner {
+    top: auto !important;
+    right: 12px !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    left: 12px !important;
+    width: auto !important;
+    transform: none !important;
+  }
+
+  .card {
+    max-height: 88vh;
+    overflow-y: auto !important;
+    border-radius: 22px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .positioner {
+    animation: none !important;
+  }
+}

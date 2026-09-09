@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useLocale } from '@/lib/locale-context';
+import styles from '@/app/buyer/buyer-flow.module.css';
 
 interface PurchaseInvoiceProps {
   order: Record<string, unknown>;
@@ -167,7 +168,7 @@ export default function PurchaseInvoice({ order, productName, buyerName: buyerNa
   }
 
   return (
-    <section style={{
+    <section className={styles.invoice} style={{
       marginTop: '20px',
       marginBottom: '24px',
       padding: '20px',
@@ -176,7 +177,7 @@ export default function PurchaseInvoice({ order, productName, buyerName: buyerNa
       border: '1px solid var(--border-primary)',
       borderRadius: 'var(--radius-lg)',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '18px' }}>
+      <div className={styles.invoiceHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '18px' }}>
         <div>
           <div style={{ color: 'var(--brand-primary-light)', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>
             Invoice Pembelian
@@ -188,7 +189,7 @@ export default function PurchaseInvoice({ order, productName, buyerName: buyerNa
         <span className="badge badge-success">LUNAS</span>
       </div>
 
-      <div style={{ display: 'grid', gap: '9px', fontSize: '0.84rem' }}>
+      <div className={styles.invoiceDetails} style={{ display: 'grid', gap: '9px', fontSize: '0.84rem' }}>
         <InvoiceRow label="Tanggal" value={paidAt} />
         <InvoiceRow label="Buyer" value={buyerName} />
         <InvoiceRow label="Produk" value={productName || '-'} />
@@ -197,7 +198,7 @@ export default function PurchaseInvoice({ order, productName, buyerName: buyerNa
         <InvoiceRow label="Total" value={formatPriceIDR(total)} highlight />
       </div>
 
-      <div style={{
+      <div className={styles.invoiceTerms} style={{
         marginTop: '18px',
         padding: '14px 16px',
         color: 'var(--brand-warning)',
@@ -215,7 +216,7 @@ export default function PurchaseInvoice({ order, productName, buyerName: buyerNa
         Kirim invoice ini ke admin untuk verifikasi pesanan. Data login akun tidak disertakan.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+      <div className={styles.invoiceActions} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
         <button type="button" className="btn" onClick={sendToAdmin} style={{ justifyContent: 'center', background: '#25D366', color: '#fff', border: 0 }}>
           Kirim ke Admin
         </button>
@@ -232,7 +233,7 @@ export default function PurchaseInvoice({ order, productName, buyerName: buyerNa
 
 function InvoiceRow({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '12px' }}>
+    <div className={styles.invoiceRow} style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '12px' }}>
       <span style={{ color: 'var(--text-muted)' }}>{label}</span>
       <span style={{ color: highlight ? 'var(--brand-success)' : 'var(--text-primary)', fontWeight: highlight ? 800 : 600, overflowWrap: 'anywhere' }}>
         {value}

@@ -15,6 +15,7 @@ import {
   FiSend,
   FiUserPlus,
 } from 'react-icons/fi';
+import styles from '../reseller-flow.module.css';
 
 export default function ResellerRegisterPage() {
   const [loading, setLoading] = useState(false);
@@ -118,8 +119,9 @@ export default function ResellerRegisterPage() {
     }
 
     return (
-      <div className="reseller-register-page">
-        <section className="register-card success-card" aria-labelledby="register-success-title">
+      <div className={`reseller-register-page ${styles.authPage}`}>
+        <Link href="/" className={styles.authBrand}><span>PP</span> PastiPremium</Link>
+        <section className={`register-card success-card ${styles.authCard}`} aria-labelledby="register-success-title">
           <div className="success-mark" aria-hidden="true">
             <FiCheck />
           </div>
@@ -199,8 +201,9 @@ export default function ResellerRegisterPage() {
   }
 
   return (
-    <div className="reseller-register-page">
-      <section className="register-card" aria-labelledby="register-title">
+    <div className={`reseller-register-page ${styles.authPage}`}>
+      <Link href="/" className={styles.authBrand}><span>PP</span> PastiPremium</Link>
+      <section className={`register-card ${styles.authCard}`} aria-labelledby="register-title">
         <div className="register-mark" aria-hidden="true">
           <FiUserPlus />
         </div>
@@ -224,7 +227,7 @@ export default function ResellerRegisterPage() {
           ))}
         </div>
 
-        {error && <div className="register-error">{error}</div>}
+        {error && <div className="register-error" role="alert">{error}</div>}
 
         <form className="register-form" onSubmit={handleRegister}>
           <div className="form-group">
@@ -336,7 +339,7 @@ export default function ResellerRegisterPage() {
 function RegisterStyles() {
   return (
     <style jsx global>{`
-      .reseller-register-page {
+      .reseller-register-page:not([data-theme]) {
         min-height: 100vh;
         width: 100%;
         display: flex;
@@ -348,7 +351,7 @@ function RegisterStyles() {
           var(--bg-base);
       }
 
-      .register-card {
+      .reseller-register-page .register-card {
         width: min(100%, 480px);
         margin: 0 auto;
         background: var(--bg-card);
@@ -377,7 +380,7 @@ function RegisterStyles() {
       }
 
       .register-mark {
-        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        background: linear-gradient(145deg, #175cd3, #0b3c8c);
       }
 
       .success-mark {
@@ -528,7 +531,7 @@ function RegisterStyles() {
         justify-content: center;
         border: none;
         border-radius: 12px;
-        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        background: #175cd3;
         color: #ffffff;
         box-shadow: 0 18px 34px rgba(37, 99, 235, 0.22);
       }

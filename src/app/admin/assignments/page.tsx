@@ -89,7 +89,7 @@ export default function AssignmentsPage() {
   return (
     <div className="admin-content">
       <div className="admin-topbar"><h2>Account Assignments</h2></div>
-      <div style={{ padding: '32px' }}>
+      <div className="admin-page-body" style={{ padding: '32px' }}>
         <div style={{ marginBottom: '24px', display: 'flex', gap: '16px' }}>
           <input
             type="text"

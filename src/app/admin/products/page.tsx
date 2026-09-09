@@ -75,12 +75,12 @@ export default function ProductsPage() {
         <h2>Produk</h2>
         <button className="btn btn-primary" onClick={() => { setEditItem(null); setIsCopy(false); setShowForm(true); }}>+ Tambah Produk</button>
       </div>
-      <div style={{ padding: '32px' }}>
+      <div className="admin-page-body" style={{ padding: '32px' }}>
         {loading ? (
           <div className="loading-page"><div className="loading-spinner" /></div>
         ) : (
           <>
-            <div style={{ display: 'flex', gap: '24px', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '0', overflowX: 'auto' }}>
+            <div className="admin-segmented-tabs" style={{ display: 'flex', gap: '24px', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '0', overflowX: 'auto' }}>
               {([
                 { value: 'all', label: 'Semua Produk', count: products.length },
                 { value: 'active', label: 'Produk Aktif', count: products.filter(product => product.status === 'active').length },
@@ -108,7 +108,7 @@ export default function ProductsPage() {
               ))}
             </div>
 
-            <div
+            <div className="admin-toolbar"
               style={{
                 display: 'flex',
                 alignItems: 'center',

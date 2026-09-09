@@ -218,7 +218,7 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      <div style={{ padding: '28px' }}>
+      <div className="admin-page-body" style={{ padding: '28px' }}>
         {/* Auto-Reset Info Box */}
         <div style={{
           background: 'rgba(59,130,246,0.06)',

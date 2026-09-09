@@ -141,7 +141,7 @@ export default function AdminWarrantyClaims() {
         </button>
       </div>
 
-      <div style={{ padding: '32px' }}>
+      <div className="admin-page-body" style={{ padding: '32px' }}>
         {/* Stats Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '24px' }}>
           {[
@@ -303,7 +303,7 @@ export default function AdminWarrantyClaims() {
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: 700 }}>
                   Informasi Klaim
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem' }}>
+                <div className="admin-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem' }}>
                   <div><span style={{ color: 'var(--text-muted)' }}>Kode:</span> <strong style={{ fontFamily: 'monospace' }}>{selectedClaim.claim_code}</strong></div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Waktu:</span> {new Date(selectedClaim.created_at).toLocaleString('id-ID')}</div>
                   <div><span style={{ color: 'var(--text-muted)' }}>Order:</span> <strong>{selectedClaim.orders?.order_number || selectedClaim.order_id}</strong></div>

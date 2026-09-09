@@ -208,10 +208,10 @@ export default function StockAccountsPage() {
           <button className="btn btn-primary" onClick={() => { setEditItem(null); setIsCopy(false); setShowForm(true); }}>+ Tambah Stok</button>
         </div>
       </div>
-      <div style={{ padding: '32px' }}>
+      <div className="admin-page-body" style={{ padding: '32px' }}>
         {loadError && <div className="login-error" style={{ marginBottom: '16px' }}>{loadError}</div>}
         {/* Quick Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+        <div className="admin-compact-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', marginBottom: '20px' }}>
           {[
             { label: 'Total', value: stats.total, color: 'var(--text-primary)' },
             { label: 'Active', value: stats.active, color: '#22c55e' },
@@ -231,7 +231,7 @@ export default function StockAccountsPage() {
         </div>
 
         {/* Search & Filters */}
-        <div style={{
+        <div className="admin-toolbar" style={{
           background: 'var(--bg-card)', border: '1px solid var(--border-secondary)',
           borderRadius: 'var(--radius-lg)', padding: '16px', marginBottom: '20px',
         }}>

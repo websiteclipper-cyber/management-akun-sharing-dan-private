@@ -101,9 +101,9 @@ export default function AdminCommissionsPage() {
   }
 
   return (
-    <div style={{ padding: '32px' }}>
+    <div className="admin-standalone-page" style={{ padding: '32px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="admin-page-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>⚙️ Pengaturan Komisi</h1>
           <p style={{ color: 'var(--text-muted)' }}>Atur komisi mitra di satu tempat. Perubahan akan berlaku untuk <strong style={{ color: 'var(--accent)' }}>SEMUA mitra</strong>.</p>
@@ -123,7 +123,7 @@ export default function AdminCommissionsPage() {
       </div>
 
       {/* Info banner */}
-      <div style={{
+      <div className="admin-form-panel" style={{
         background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)',
         borderRadius: 'var(--radius-lg)', padding: '14px 18px', marginBottom: '24px',
         display: 'flex', gap: '10px', alignItems: 'flex-start'
@@ -137,7 +137,7 @@ export default function AdminCommissionsPage() {
       </div>
 
       {/* Default Commission Card */}
-      <div style={{
+      <div className="admin-form-panel" style={{
         background: 'var(--bg-card)', border: '1px solid var(--border-secondary)',
         borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px'
       }}>

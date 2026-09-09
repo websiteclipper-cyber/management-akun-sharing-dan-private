@@ -7,6 +7,8 @@ import { Product } from '@/lib/types';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 import ProductTermsMarkdown from '@/components/ProductTermsMarkdown';
+import { FiCheck, FiLock, FiShield } from 'react-icons/fi';
+import styles from '../purchase-flow.module.css';
 
 interface BuyerSession {
   id: number;
@@ -397,9 +399,9 @@ export default function OrderPage() {
     : totalBasePrice;
 
   return (
-    <div className="public-layout">
-      <header className="public-header order-header" style={{ justifyContent: 'space-between' }}>
-        <Link href="/" className="brand order-brand">✦ pastipremium.my.id</Link>
+    <div className={`public-layout ${styles.flowPage}`}>
+      <header className={`public-header order-header ${styles.header}`} style={{ justifyContent: 'space-between' }}>
+        <Link href="/" className={`brand order-brand ${styles.brand}`}><span>PP</span> PastiPremium</Link>
         {buyer && (
           <div className="order-buyer-header" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <span className="order-buyer-name" style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>👤 {buyer.name}</span>
@@ -408,10 +410,10 @@ export default function OrderPage() {
         )}
       </header>
 
-      <div className="order-form-container">
+      <div className={`order-form-container ${styles.checkoutContainer}`}>
         {result ? (
           /* ===== PAYMENT VIA KLIKQRIS ===== */
-          <div className="order-form-card">
+          <div className={`order-form-card ${styles.flowCard}`}>
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>💳</div>
               <h2 style={{ marginBottom: '8px' }}>{t('payment_continue')}</h2>
@@ -504,7 +506,14 @@ export default function OrderPage() {
             </div>
           </div>
         ) : (
-          <div className="order-form-card">
+          <div className={`order-form-card ${styles.flowCard} ${styles.checkoutCard}`}>
+            <div className={styles.steps} aria-label="Tahapan pembelian">
+              <span className={styles.stepDone}><i><FiCheck aria-hidden="true" /></i>Pilih paket</span>
+              <b />
+              <span className={styles.stepActive}><i>2</i>Konfirmasi</span>
+              <b />
+              <span><i>3</i>Bayar</span>
+            </div>
             <Link href="/" className="order-back-link" style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -521,8 +530,12 @@ export default function OrderPage() {
             >
               {t('order_back')}
             </Link>
-            <h2>{t('order_confirm')}</h2>
-            <div className="order-product-summary">
+            <div className={styles.checkoutHeading}>
+              <span>CHECKOUT AMAN</span>
+              <h2>{t('order_confirm')}</h2>
+              <p>Periksa paket dan total pembayaran sebelum melanjutkan.</p>
+            </div>
+            <div className={`order-product-summary ${styles.productSummary}`}>
               <div className="platform" style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--accent)' }}>
                 {product.platform_name}
               </div>
@@ -569,7 +582,7 @@ export default function OrderPage() {
             </div>
 
             {/* Buyer Info */}
-            <div className="buyer-info-card" style={{ background: 'var(--accent-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,122,255,0.2)', padding: '16px', marginBottom: '20px' }}>
+            <div className={`buyer-info-card ${styles.infoCard}`} style={{ background: 'var(--accent-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,122,255,0.2)', padding: '16px', marginBottom: '20px' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '12px' }}>
                 {t('order_buyer_data')}
               </div>
@@ -585,7 +598,7 @@ export default function OrderPage() {
               </div>
             </div>
 
-            <div className="quantity-card" style={{
+            <div className={`quantity-card ${styles.sectionCard}`} style={{
               background: 'var(--bg-secondary)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)',
@@ -647,7 +660,7 @@ export default function OrderPage() {
             </div>
 
             {/* ===== DISCOUNT CODE SECTION ===== */}
-            <div className="discount-card" style={{
+            <div className={`discount-card ${styles.sectionCard}`} style={{
               background: 'var(--bg-secondary)',
               borderRadius: 'var(--radius-lg)',
               border: `1px solid ${discountInfo ? 'rgba(52,199,89,0.4)' : 'var(--border-secondary)'}`,
@@ -747,7 +760,7 @@ export default function OrderPage() {
             </div>
 
             {/* ===== PRICE SUMMARY ===== */}
-            <div className="price-summary-card" style={{
+            <div className={`price-summary-card ${styles.priceCard}`} style={{
               background: 'var(--bg-secondary)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)',
@@ -809,7 +822,7 @@ export default function OrderPage() {
 
             {/* ===== CUSTOM PRODUCT TERMS ===== */}
             {product.terms && (
-              <div style={{
+              <div className={styles.productTerms} style={{
                 background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.05))',
                 borderRadius: 'var(--radius-lg)',
                 border: '1px solid rgba(59, 130, 246, 0.22)',
@@ -826,7 +839,7 @@ export default function OrderPage() {
             )}
 
             {/* ===== TERMS AND CONDITIONS ===== */}
-            <div style={{
+            <div className={styles.termsCard} style={{
               background: 'linear-gradient(145deg, rgba(255, 59, 48, 0.08), rgba(255, 149, 0, 0.04))',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid rgba(255, 59, 48, 0.24)',
@@ -874,10 +887,16 @@ export default function OrderPage() {
             </div>
 
             <form onSubmit={handleSubmit}>
-              <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center', opacity: (!agreed || submitting) ? 0.5 : 1 }} disabled={submitting || !agreed}>
+              <button type="submit" className={`btn btn-primary btn-lg ${styles.payButton}`} style={{ width: '100%', justifyContent: 'center', opacity: (!agreed || submitting) ? 0.5 : 1 }} disabled={submitting || !agreed}>
                 {submitting ? <span className="loading-spinner" /> : `${t('order_confirm_pay')} ${formatPrice(finalDisplayPrice)}`}
               </button>
             </form>
+
+            <div className={styles.securityNote}>
+              <FiLock aria-hidden="true" /> Pembayaran aman melalui QRIS
+              <span>·</span>
+              <FiShield aria-hidden="true" /> Garansi sesuai ketentuan
+            </div>
 
             <div style={{ textAlign: 'center', marginTop: '12px' }}>
               <button
