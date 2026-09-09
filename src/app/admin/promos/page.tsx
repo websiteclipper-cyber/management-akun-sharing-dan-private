@@ -178,9 +178,9 @@ export default function AdminPromosPage() {
   });
 
   return (
-    <div>
+    <div className="admin-standalone-page">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="admin-page-heading" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Promo & Diskon</h1>
           <p style={{ color: 'var(--text-muted)' }}>Kelola harga promo untuk produk yang sedang didiskon.</p>
@@ -214,7 +214,7 @@ export default function AdminPromosPage() {
 
       {/* Form */}
       {showForm && (
-        <div style={{
+        <div className="admin-form-panel" style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border-secondary)',
           borderRadius: 'var(--radius-lg)',
@@ -301,7 +301,7 @@ export default function AdminPromosPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '12px' }}>
+            <div className="admin-form-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '12px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
                 <input
                   type="checkbox"
@@ -321,7 +321,7 @@ export default function AdminPromosPage() {
 
       {/* Tabs */}
       {!loading && promos.length > 0 && (
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--border-secondary)', paddingBottom: '12px', overflowX: 'auto' }}>
+        <div className="admin-filter-tabs" style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--border-secondary)', paddingBottom: '12px', overflowX: 'auto' }}>
           <button
             onClick={() => setActiveTab('active')}
             style={{
@@ -402,7 +402,7 @@ export default function AdminPromosPage() {
             const discount = getDiscount(promo.original_price, promo.promo_price);
 
             return (
-              <div
+              <div className="admin-list-card"
                 key={promo.id}
                 style={{
                   background: 'var(--bg-card)',
@@ -479,7 +479,7 @@ export default function AdminPromosPage() {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                <div className="admin-card-actions" style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
                   <button
                     className="btn btn-sm"
                     style={{

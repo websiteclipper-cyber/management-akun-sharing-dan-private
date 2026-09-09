@@ -159,7 +159,7 @@ export default function SettingsPage() {
   return (
     <div className="admin-content">
       <div className="admin-topbar"><h2>Pengaturan Umum</h2></div>
-      <div style={{ padding: '32px', maxWidth: '700px' }}>
+      <div className="admin-page-body admin-settings-body" style={{ padding: '32px', maxWidth: '700px' }}>
         {loading ? (
           <div className="loading-page"><div className="loading-spinner" /></div>
         ) : (
@@ -353,7 +353,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="admin-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="form-group">
                   <label className="form-label">Minimal Komisi (Rp)</label>
                   <input
@@ -489,7 +489,7 @@ export default function SettingsPage() {
                 </label>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', opacity: promoActive ? 1 : 0.6, pointerEvents: promoActive ? 'auto' : 'none', transition: 'all 0.2s' }}>
+              <div className="admin-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', opacity: promoActive ? 1 : 0.6, pointerEvents: promoActive ? 'auto' : 'none', transition: 'all 0.2s' }}>
                 <div className="form-group" style={{ gridColumn: '1 / -1', background: 'rgba(74,222,128,0.05)', padding: '16px', borderRadius: '12px', border: '1px dashed rgba(74,222,128,0.3)' }}>
                   <label className="form-label" style={{ color: '#4ade80', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     ⚡ Isi Otomatis dari Promo & Diskon

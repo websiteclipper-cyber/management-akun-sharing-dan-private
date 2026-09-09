@@ -295,9 +295,9 @@ export default function OrdersPage() {
           {syncing ? <><span className="loading-spinner" style={{ width: '14px', height: '14px' }} /> Syncing...</> : '🔄 Sync KlikQRIS'}
         </button>
       </div>
-      <div style={{ padding: '32px' }}>
+      <div className="admin-page-body" style={{ padding: '32px' }}>
         {/* Search & Date Filter */}
-        <div style={{
+        <div className="admin-toolbar" style={{
           background: 'var(--bg-card)', border: '1px solid var(--border-secondary)',
           borderRadius: 'var(--radius-lg)', padding: '16px', marginBottom: '16px',
         }}>
@@ -332,7 +332,7 @@ export default function OrdersPage() {
         </div>
 
         {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div className="admin-filter-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
           {[
             { key: 'all', label: 'Semua', count: orders.filter(o => o.payment_status !== 'pending_payment').length },
             { key: 'pending_payment', label: 'Belum Bayar', count: orders.filter(o => o.payment_status === 'pending_payment').length },

@@ -104,7 +104,7 @@ export default function BuyersPage() {
           </button>
         </div>
       </div>
-      <div style={{ padding: '32px' }}>
+      <div className="admin-page-body" style={{ padding: '32px' }}>
         <div
           style={{
             marginBottom: '20px',

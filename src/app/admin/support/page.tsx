@@ -29,7 +29,7 @@ export default function SupportPage() {
   return (
     <div className="admin-content">
       <div className="admin-topbar"><h2>Support Tickets</h2></div>
-      <div style={{ padding: '32px' }}>
+      <div className="admin-page-body" style={{ padding: '32px' }}>
         {loading ? (
           <div className="loading-page"><div className="loading-spinner" /></div>
         ) : (

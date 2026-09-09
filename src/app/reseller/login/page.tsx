@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FiLock, FiTrendingUp } from 'react-icons/fi';
+import styles from '../reseller-flow.module.css';
 
 export default function ResellerLoginPage() {
   const router = useRouter();
@@ -49,10 +51,11 @@ export default function ResellerLoginPage() {
   }
 
   return (
-    <div className="reseller-login-page">
-      <div className="reseller-login-card">
+    <div className={`reseller-login-page ${styles.authPage}`}>
+      <Link href="/" className={styles.authBrand}><span>PP</span> PastiPremium</Link>
+      <div className={`reseller-login-card ${styles.authCard}`}>
         <div className="login-mark" aria-hidden="true">
-          M
+          <FiTrendingUp />
         </div>
 
         <h1 className="login-title">Portal Mitra</h1>
@@ -60,12 +63,13 @@ export default function ResellerLoginPage() {
           Masuk untuk melihat performa penjualan dan komisi Anda.
         </p>
 
-        {error && <div className="login-error">{error}</div>}
+        {error && <div className="login-error" role="alert">{error}</div>}
 
         <form className="login-form" onSubmit={handleLogin}>
           <div className="form-group">
-            <label className="form-label">Kode Referral</label>
+            <label className="form-label" htmlFor="reseller-ref-code">Kode Referral</label>
             <input
+              id="reseller-ref-code"
               className="form-input"
               value={form.ref_code}
               onChange={e => setForm({ ...form, ref_code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
@@ -77,8 +81,9 @@ export default function ResellerLoginPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">PIN</label>
+            <label className="form-label" htmlFor="reseller-pin">PIN</label>
             <input
+              id="reseller-pin"
               type="password"
               className="form-input"
               value={form.pin}
@@ -99,6 +104,7 @@ export default function ResellerLoginPage() {
           >
             {loading ? <span className="loading-spinner" /> : 'Masuk ke Portal Mitra'}
           </button>
+          <div className={styles.secureNote}><FiLock aria-hidden="true" /> Akses portal mitra terlindungi</div>
         </form>
 
         <div className="login-links">
@@ -141,7 +147,7 @@ export default function ResellerLoginPage() {
           height: 64px;
           margin: 0 auto 18px;
           border-radius: 18px;
-          background: linear-gradient(135deg, #2563eb, #7c3aed);
+            background: linear-gradient(145deg, #175cd3, #0b3c8c);
           color: #ffffff;
           display: flex;
           align-items: center;
@@ -201,7 +207,7 @@ export default function ResellerLoginPage() {
           justify-content: center;
           border: none;
           border-radius: 12px;
-          background: linear-gradient(135deg, #2563eb, #7c3aed);
+            background: #175cd3;
           box-shadow: 0 18px 34px rgba(37, 99, 235, 0.22);
         }
 

@@ -3,6 +3,8 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { FiCheck, FiClock, FiLock } from 'react-icons/fi';
+import styles from '../purchase-flow.module.css';
 
 interface PaymentData {
   order_id: string;
@@ -111,22 +113,29 @@ function KlikQrisPaymentPage() {
   const qrisSource = payment?.qris_url || payment?.qris_image;
 
   return (
-    <div className="public-layout">
-      <header className="public-header" style={{ justifyContent: 'space-between' }}>
-        <Link href="/" className="brand">✦ pastipremium.my.id</Link>
+    <div className={`public-layout ${styles.flowPage}`}>
+      <header className={`public-header ${styles.header}`} style={{ justifyContent: 'space-between' }}>
+        <Link href="/" className={`brand ${styles.brand}`}><span>PP</span> PastiPremium</Link>
       </header>
 
-      <div className="order-form-container">
-        <div className="order-form-card" style={{ textAlign: 'center' }}>
+      <div className={`order-form-container ${styles.paymentContainer}`}>
+        <div className={`order-form-card ${styles.flowCard} ${styles.paymentCard}`} style={{ textAlign: 'center' }}>
+          <div className={styles.steps} aria-label="Tahapan pembelian">
+            <span className={styles.stepDone}><i><FiCheck aria-hidden="true" /></i>Pilih paket</span>
+            <b />
+            <span className={styles.stepDone}><i><FiCheck aria-hidden="true" /></i>Konfirmasi</span>
+            <b />
+            <span className={styles.stepActive}><i>3</i>Bayar</span>
+          </div>
           {status === 'pending' && payment && (
-            <>
-              <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>▦</div>
+            <div className={styles.paymentState}>
+              <div className={styles.statusPill}><i /> Menunggu pembayaran</div>
               <h2 style={{ marginBottom: '8px' }}>Scan QRIS untuk Membayar</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>
                 Gunakan aplikasi bank atau e-wallet yang mendukung QRIS.
               </p>
 
-              <div style={{
+              <div className={styles.qrFrame} style={{
                 padding: '14px', background: '#fff', borderRadius: '16px',
                 display: 'inline-flex', marginBottom: '18px', minWidth: '260px', minHeight: '260px',
                 alignItems: 'center', justifyContent: 'center',
@@ -140,7 +149,7 @@ function KlikQrisPaymentPage() {
                 )}
               </div>
 
-              <div style={{
+              <div className={styles.amountCard} style={{
                 background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)',
                 borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '16px',
               }}>
@@ -157,40 +166,47 @@ function KlikQrisPaymentPage() {
                 )}
               </div>
 
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '18px' }}>
+              <div className={styles.paymentMeta} style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '18px' }}>
                 <div>Order: <strong>{orderNumber}</strong></div>
-                {payment.expired_at && <div>Berlaku sampai: {payment.expired_at} WIB</div>}
+                {payment.expired_at && <div><FiClock aria-hidden="true" /> Berlaku sampai: {payment.expired_at} WIB</div>}
               </div>
 
-              <button className="btn btn-primary" onClick={checkPayment} disabled={checking} style={{ width: '100%', justifyContent: 'center' }}>
+              <div className={styles.paymentInstructions}>
+                <div><span>1</span><p><strong>Buka aplikasi pembayaran</strong><small>Pilih menu QRIS atau scan QR.</small></p></div>
+                <div><span>2</span><p><strong>Scan dan bayar tepat</strong><small>Pastikan nominal sama dengan total.</small></p></div>
+                <div><span>3</span><p><strong>Tunggu konfirmasi</strong><small>Status diperiksa secara otomatis.</small></p></div>
+              </div>
+
+              <button className={`btn btn-primary ${styles.payButton}`} onClick={checkPayment} disabled={checking} style={{ width: '100%', justifyContent: 'center' }}>
                 {checking ? 'Mengecek pembayaran...' : 'Saya Sudah Bayar'}
               </button>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '10px' }}>
                 Status juga diperiksa otomatis setiap 5 detik.
               </p>
-            </>
+              <div className={styles.securityNote}><FiLock aria-hidden="true" /> Transaksi diproses dengan aman</div>
+            </div>
           )}
 
           {status === 'expired' && (
-            <>
-              <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⌛</div>
+            <div className={styles.centerState}>
+              <div className={styles.warningIcon}><FiClock aria-hidden="true" /></div>
               <h2>QRIS Kedaluwarsa</h2>
               <p style={{ color: 'var(--text-muted)', margin: '10px 0 20px' }}>
                 Silakan kembali ke katalog dan buat pesanan baru.
               </p>
               <Link href="/" className="btn btn-primary">Kembali ke Katalog</Link>
-            </>
+            </div>
           )}
 
           {status === 'error' && (
-            <>
-              <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⚠️</div>
+            <div className={styles.centerState}>
+              <div className={styles.errorIcon}>!</div>
               <h2>Pembayaran Tidak Dapat Dibuka</h2>
               <p style={{ color: 'var(--text-muted)', margin: '10px 0 20px' }}>{error}</p>
               <Link href={`/buyer/lookup?order=${encodeURIComponent(orderNumber)}`} className="btn btn-secondary">
                 Lihat Pesanan
               </Link>
-            </>
+            </div>
           )}
         </div>
       </div>

@@ -376,7 +376,7 @@ export default function AdminResellersPage() {
   }
 
   return (
-    <div style={{ padding: '32px' }}>
+    <div className="admin-standalone-page" style={{ padding: '32px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Reseller / Mitra</h1>
@@ -491,7 +491,7 @@ export default function AdminResellersPage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Kode Referral (Unik)</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="admin-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <input
                       required={!editingId}

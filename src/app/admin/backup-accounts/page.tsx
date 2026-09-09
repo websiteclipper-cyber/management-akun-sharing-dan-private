@@ -187,7 +187,7 @@ export default function AdminBackupAccounts() {
         </div>
       </div>
 
-      <div style={{ padding: '32px' }}>
+      <div className="admin-page-body" style={{ padding: '32px' }}>
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {[
@@ -354,7 +354,7 @@ export default function AdminBackupAccounts() {
                 <label className="form-label">{editMode ? 'Password (kosongkan jika tidak diubah)' : 'Password *'}</label>
                 <input className="form-input" type="password" required={!editMode} value={formData.account_secret} onChange={e => setFormData({...formData, account_secret: e.target.value})} placeholder="••••••••" />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div className="admin-responsive-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <div className="form-group">
                   <label className="form-label">Profile Info</label>
                   <input className="form-input" value={formData.profile_info} onChange={e => setFormData({...formData, profile_info: e.target.value})} placeholder="Nama profil..." />

@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { FcGoogle } from 'react-icons/fc';
+import { FiCheck, FiLock, FiPackage, FiShield } from 'react-icons/fi';
+import styles from '../buyer-flow.module.css';
 
 const BUYER_LOGIN_REDIRECT_KEY = 'buyer_login_redirect';
 
@@ -204,15 +206,26 @@ function BuyerLoginPage() {
   }
 
   return (
-    <div className="public-layout">
-      <header className="public-header">
-        <Link href="/" className="brand">✦ pastipremium.my.id</Link>
+    <div className={`public-layout ${styles.page}`}>
+      <header className={`public-header ${styles.header}`}>
+        <Link href="/" className={`brand ${styles.brand}`}><span>PP</span> PastiPremium</Link>
       </header>
 
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-        <div className="order-form-card" style={{ maxWidth: '440px', width: '100%' }}>
-          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>👤</div>
+      <div className={styles.authLayout}>
+        <aside className={styles.authStory}>
+          <span className={styles.eyebrow}>PORTAL PEMBELI</span>
+          <h1>Semua pesanan premium dalam satu tempat.</h1>
+          <p>Masuk untuk memantau status, menerima detail akun, mengunduh invoice, dan menggunakan layanan garansi.</p>
+          <div className={styles.benefitList}>
+            <div><span><FiPackage aria-hidden="true" /></span><p><strong>Pantau pesanan</strong><small>Status diperbarui secara otomatis</small></p></div>
+            <div><span><FiLock aria-hidden="true" /></span><p><strong>Akses aman</strong><small>Masuk melalui Google atau link email</small></p></div>
+            <div><span><FiShield aria-hidden="true" /></span><p><strong>Bantuan & garansi</strong><small>Penanganan mudah langsung dari pesanan</small></p></div>
+          </div>
+        </aside>
+
+        <div className={`order-form-card ${styles.authCard}`}>
+          <div className={styles.authIntro} style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <div className={styles.authIcon}><FiCheck aria-hidden="true" /></div>
             <h2 style={{ marginBottom: '8px' }}>{t('login_title')}</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
               {t('login_subtitle')}
@@ -258,7 +271,7 @@ function BuyerLoginPage() {
               </div>
               <button
                 type="submit"
-                className="btn btn-primary btn-lg"
+                className={`btn btn-primary btn-lg ${styles.primaryAction}`}
                 style={{ width: '100%', justifyContent: 'center' }}
                 disabled={loading}
               >
@@ -269,7 +282,7 @@ function BuyerLoginPage() {
             <>
               <button
                 type="button"
-                className="btn btn-lg"
+                className={`btn btn-lg ${styles.googleAction}`}
                 style={{
                   width: '100%',
                   justifyContent: 'center',
@@ -309,7 +322,7 @@ function BuyerLoginPage() {
                 </div>
                 <button
                   type="submit"
-                  className="btn btn-primary btn-lg"
+                  className={`btn btn-primary btn-lg ${styles.primaryAction}`}
                   style={{ width: '100%', justifyContent: 'center' }}
                   disabled={loading}
                 >
@@ -319,7 +332,8 @@ function BuyerLoginPage() {
             </>
           )}
 
-          <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          <div className={styles.safeNote} style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            <FiLock aria-hidden="true" />
             {t('login_safe')}
           </div>
         </div>

@@ -1,0 +1,682 @@
+.page {
+  --home-ink: #10233f;
+  --home-blue: #175cd3;
+  --home-blue-dark: #0e47a1;
+  --home-mint: #e8f8f2;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(29, 111, 218, 0.11), transparent 28rem),
+    radial-gradient(circle at 92% 18%, rgba(25, 169, 116, 0.08), transparent 25rem),
+    #f7f9fc !important;
+}
+
+.header {
+  height: 76px !important;
+  padding: 0 max(24px, calc((100vw - 1180px) / 2)) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-bottom-color: rgba(16, 35, 63, 0.08) !important;
+  box-shadow: 0 1px 0 rgba(16, 35, 63, 0.02) !important;
+}
+
+.brandMark {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 13px !important;
+  background: linear-gradient(145deg, #175cd3, #0b3c8c) !important;
+  box-shadow: 0 10px 22px rgba(23, 92, 211, 0.24) !important;
+}
+
+.brandName {
+  color: var(--home-ink) !important;
+  font-size: 1.08rem !important;
+  letter-spacing: -0.02em !important;
+}
+
+.main {
+  overflow: hidden;
+}
+
+.hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(360px, 0.96fr);
+  align-items: center;
+  gap: clamp(48px, 7vw, 92px);
+  width: min(1180px, calc(100% - 48px));
+  min-height: 620px;
+  margin: 0 auto;
+  padding: 82px 0 72px;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 32px;
+  left: -96px;
+  width: 260px;
+  height: 260px;
+  border: 1px solid rgba(23, 92, 211, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 2;
+}
+
+.eyebrow,
+.sectionEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--home-blue);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.eyebrow span {
+  width: 26px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--home-blue);
+}
+
+.heroCopy h1 {
+  max-width: 690px;
+  margin: 20px 0 22px;
+  color: var(--home-ink);
+  font-size: clamp(3rem, 5.2vw, 5.15rem);
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.heroCopy h1 span {
+  color: var(--home-blue);
+}
+
+.heroCopy > p {
+  max-width: 580px;
+  margin: 0 0 32px;
+  color: #596b82;
+  font-size: clamp(1rem, 1.5vw, 1.12rem);
+  line-height: 1.75;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.primaryCta,
+.secondaryCta {
+  display: inline-flex;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 24px;
+  border-radius: 13px;
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.primaryCta {
+  border: 1px solid var(--home-blue);
+  background: var(--home-blue);
+  color: white;
+  box-shadow: 0 14px 30px rgba(23, 92, 211, 0.24);
+}
+
+.secondaryCta {
+  border: 1px solid #ced8e6;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--home-ink);
+  box-shadow: 0 5px 14px rgba(16, 35, 63, 0.06);
+}
+
+.primaryCta:hover,
+.secondaryCta:hover {
+  transform: translateY(-2px);
+}
+
+.primaryCta:hover {
+  background: var(--home-blue-dark);
+  color: white;
+  box-shadow: 0 18px 38px rgba(23, 92, 211, 0.3);
+}
+
+.secondaryCta:hover {
+  border-color: #aebdd0;
+  background: white;
+  color: var(--home-ink);
+}
+
+.heroProof {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-top: 34px;
+}
+
+.proofAvatars {
+  display: flex;
+  padding-left: 8px;
+}
+
+.proofAvatars span {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  margin-left: -8px;
+  place-items: center;
+  border: 2px solid #f7f9fc;
+  border-radius: 50%;
+  background: var(--home-ink);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.proofAvatars span:nth-child(2) { background: #1a9c6c; }
+.proofAvatars span:nth-child(3) { background: #e34b52; }
+
+.heroProof strong,
+.heroProof small {
+  display: block;
+}
+
+.heroProof strong {
+  color: var(--home-ink);
+  font-size: 0.82rem;
+}
+
+.heroProof small {
+  margin-top: 1px;
+  color: #738196;
+  font-size: 0.72rem;
+}
+
+.heroVisual {
+  position: relative;
+  z-index: 1;
+}
+
+.visualGlow {
+  position: absolute;
+  inset: 8% -8% -8% 4%;
+  border-radius: 42%;
+  background: radial-gradient(circle, rgba(23, 92, 211, 0.19), rgba(23, 92, 211, 0.02) 66%, transparent 70%);
+  filter: blur(14px);
+}
+
+.offerCard {
+  position: relative;
+  overflow: hidden;
+  padding: 28px;
+  border: 1px solid rgba(16, 35, 63, 0.1);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 34px 80px rgba(27, 55, 94, 0.17), 0 4px 10px rgba(27, 55, 94, 0.04);
+  transform: rotate(1.2deg);
+}
+
+.offerCard::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -80px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: rgba(232, 248, 242, 0.86);
+}
+
+.offerHeader,
+.offerFooter {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.offerLabel {
+  color: var(--home-blue);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.offerHeader h2 {
+  max-width: 270px;
+  margin-top: 7px;
+  color: var(--home-ink);
+  font-size: clamp(1.35rem, 2.2vw, 1.75rem);
+  line-height: 1.16;
+}
+
+.liveBadge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid #bee7d7;
+  border-radius: 999px;
+  background: var(--home-mint);
+  color: #087454;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.liveBadge i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #16a36f;
+  box-shadow: 0 0 0 4px rgba(22, 163, 111, 0.12);
+}
+
+.platformLogoGrid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 24px 0 6px;
+}
+
+.platformLogoItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 8px;
+  border: 1px solid #e3e9f2;
+  border-radius: 18px;
+  background: #fbfcfe;
+  cursor: pointer;
+  font: inherit;
+  transition: all 0.2s ease;
+}
+
+.platformLogoItem:hover {
+  transform: translateY(-3px);
+  border-color: #c7d7eb;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(16, 35, 63, 0.08);
+}
+
+.platformLogoIcon {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  border-radius: 16px;
+  color: white;
+  font-size: 1.55rem;
+  margin-bottom: 10px;
+  transition: transform 0.2s ease;
+}
+
+.platformLogoItem:hover .platformLogoIcon {
+  transform: scale(1.08) rotate(2deg);
+}
+
+.platformLogoName {
+  color: var(--home-ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.deliveryChip {
+  position: absolute;
+  right: -18px;
+  bottom: 42px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border: 1px solid #ccebdd;
+  border-radius: 12px;
+  background: #fff;
+  color: #087454;
+  font-size: 0.76rem;
+  font-weight: 800;
+  box-shadow: 0 14px 30px rgba(16, 35, 63, 0.12);
+}
+
+.deliveryChip svg {
+  padding: 3px;
+  border-radius: 50%;
+  background: #16a36f;
+  color: white;
+  font-size: 1.05rem;
+}
+
+.trustBar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto 76px;
+  overflow: hidden;
+  border: 1px solid #dce4ee;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 15px 40px rgba(16, 35, 63, 0.06);
+}
+
+.trustBar > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 20px;
+}
+
+.trustBar > div + div {
+  border-left: 1px solid #e3e9f1;
+}
+
+.trustBar span {
+  display: grid;
+  width: 39px;
+  height: 39px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: #edf4ff;
+  color: var(--home-blue);
+}
+
+.trustBar p,
+.trustBar strong,
+.trustBar small {
+  display: block;
+  margin: 0;
+}
+
+.trustBar strong {
+  color: var(--home-ink);
+  font-size: 0.8rem;
+}
+
+.trustBar small {
+  margin-top: 2px;
+  color: #7a899d;
+  font-size: 0.67rem;
+  line-height: 1.35;
+}
+
+.leaderboardSection > div {
+  border-radius: 24px !important;
+  box-shadow: 0 18px 46px rgba(16, 35, 63, 0.08) !important;
+}
+
+.catalog {
+  width: min(1200px, 100%) !important;
+}
+
+.catalogHeading {
+  max-width: 650px;
+  margin-right: auto !important;
+  margin-left: auto !important;
+}
+
+.catalogHeading h2 {
+  margin-top: 10px;
+  color: var(--home-ink) !important;
+  font-size: clamp(2rem, 4vw, 3rem) !important;
+  letter-spacing: -0.04em !important;
+}
+
+.demoNotice {
+  display: inline-flex;
+  margin-top: 16px;
+  padding: 7px 12px;
+  border: 1px solid #f0d8a8;
+  border-radius: 999px;
+  background: #fff9eb;
+  color: #99670b;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.platformCard {
+  min-height: 258px;
+  border-color: #dde5ef !important;
+  border-radius: 22px !important;
+  box-shadow: 0 12px 30px rgba(16, 35, 63, 0.07) !important;
+}
+
+.cardLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 18px;
+  color: var(--home-blue);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.platformCard:hover .cardLink svg {
+  transform: translateX(3px);
+}
+
+.cardLink svg {
+  transition: transform 180ms ease;
+}
+
+.productCard {
+  border-radius: 22px !important;
+  box-shadow: 0 12px 32px rgba(16, 35, 63, 0.07) !important;
+}
+
+.demoButton {
+  border: 1px solid #d9e2ee !important;
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  cursor: default !important;
+  opacity: 1 !important;
+}
+
+.footer {
+  border-top-color: #dce4ee !important;
+  background: #f0f4f9 !important;
+}
+
+@media (max-width: 980px) {
+  .hero {
+    grid-template-columns: 1fr 0.86fr;
+    gap: 34px;
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(2.75rem, 6vw, 4.2rem);
+  }
+
+  .offerCard {
+    padding: 22px;
+  }
+
+  .trustBar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .trustBar > div:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid #e3e9f1;
+  }
+
+  .trustBar > div:nth-child(4) {
+    border-top: 1px solid #e3e9f1;
+  }
+}
+
+@media (max-width: 760px) {
+  .header {
+    height: 66px !important;
+    padding: 0 16px !important;
+  }
+
+  .headerActions {
+    gap: 8px !important;
+  }
+
+  .brandName {
+    font-size: 0.98rem !important;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+    width: min(100% - 32px, 600px);
+    min-height: 0;
+    padding: 62px 0 54px;
+    text-align: center;
+  }
+
+  .heroCopy h1 {
+    margin-right: auto;
+    margin-left: auto;
+    font-size: clamp(2.65rem, 12vw, 4rem);
+  }
+
+  .heroCopy > p {
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .eyebrow,
+  .heroActions,
+  .heroProof {
+    justify-content: center;
+  }
+
+  .heroVisual {
+    width: min(100%, 500px);
+    margin: 0 auto;
+    text-align: left;
+  }
+
+  .offerCard {
+    transform: none;
+  }
+
+  .deliveryChip {
+    right: -6px;
+    bottom: -18px;
+  }
+
+  .trustBar {
+    width: min(100% - 32px, 600px);
+    margin-bottom: 60px;
+  }
+
+  .leaderboardSection {
+    padding-right: 16px !important;
+    padding-left: 16px !important;
+  }
+
+  .catalog {
+    padding-right: 16px !important;
+    padding-left: 16px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .brandMark {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .hero {
+    padding-top: 48px;
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(2.45rem, 13vw, 3.35rem);
+  }
+
+  .heroActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .primaryCta,
+  .secondaryCta {
+    width: 100%;
+  }
+
+  .heroProof {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .offerCard {
+    padding: 20px 16px;
+    border-radius: 22px;
+  }
+
+  .offerHeader {
+    align-items: flex-start;
+  }
+
+  .platformLogoGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .platformLogoItem {
+    padding: 12px 6px;
+    border-radius: 14px;
+  }
+
+  .platformLogoIcon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.3rem;
+    border-radius: 13px;
+    margin-bottom: 6px;
+  }
+
+  .platformLogoName {
+    font-size: 0.7rem;
+  }
+
+  .deliveryChip {
+    display: none;
+  }
+
+  .trustBar {
+    grid-template-columns: 1fr;
+  }
+
+  .trustBar > div + div,
+  .trustBar > div:nth-child(3) {
+    border-top: 1px solid #e3e9f1;
+    border-left: 0;
+  }
+
+  .platformCard {
+    min-height: 232px;
+    padding: 28px 20px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryCta,
+  .secondaryCta,
+  .cardLink svg {
+    transition: none;
+  }
+}

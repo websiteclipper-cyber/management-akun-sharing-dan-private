@@ -5,30 +5,34 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { adminSelect } from '@/lib/adminApi';
-import { FiLogOut } from 'react-icons/fi';
+import {
+  FiArchive, FiAward, FiBell, FiBox, FiDollarSign,
+  FiGrid, FiHeadphones, FiKey, FiLink, FiLogOut, FiMenu, FiPercent,
+  FiRefreshCw, FiSettings, FiShield, FiShoppingCart, FiTag, FiUsers, FiX,
+} from 'react-icons/fi';
 import { ADMIN_SESSION_UPDATED_EVENT, AdminSession } from '@/lib/adminSession';
 
 const navItems = [
-  { label: 'Dashboard', href: '/admin', icon: '📊' },
+  { label: 'Dashboard', href: '/admin', icon: <FiGrid /> },
   { section: 'Katalog' },
-  { label: 'Produk', href: '/admin/products', icon: '📦' },
-  { label: 'Stok Akun', href: '/admin/stock-accounts', icon: '🔑' },
-  { label: 'Promo & Diskon', href: '/admin/promos', icon: '🏷️' },
-  { label: 'Kode Diskon', href: '/admin/discounts', icon: '🎟️' },
+  { label: 'Produk', href: '/admin/products', icon: <FiBox /> },
+  { label: 'Stok Akun', href: '/admin/stock-accounts', icon: <FiKey /> },
+  { label: 'Promo & Diskon', href: '/admin/promos', icon: <FiTag /> },
+  { label: 'Kode Diskon', href: '/admin/discounts', icon: <FiPercent /> },
   { section: 'Transaksi' },
-  { label: 'Pesanan', href: '/admin/orders', icon: '🛒' },
-  { label: 'Assignment', href: '/admin/assignments', icon: '🔗' },
+  { label: 'Pesanan', href: '/admin/orders', icon: <FiShoppingCart /> },
+  { label: 'Assignment', href: '/admin/assignments', icon: <FiLink /> },
   { section: 'Manajemen' },
-  { label: 'Reseller / Mitra', href: '/admin/resellers', icon: '🤝' },
-  { label: 'Pengaturan Komisi', href: '/admin/commissions', icon: '⚙️' },
-  { label: 'Leaderboard Mitra', href: '/admin/leaderboard', icon: '🏆' },
-  { label: 'Buyer', href: '/admin/buyers', icon: '👥' },
-  { label: 'Support Tickets', href: '/admin/support', icon: '🎫' },
-  { label: 'Klaim Garansi', href: '/admin/warranty', icon: '🛡️' },
-  { label: 'Pengajuan Refund', href: '/admin/refunds', icon: '💸' },
+  { label: 'Reseller / Mitra', href: '/admin/resellers', icon: <FiUsers /> },
+  { label: 'Pengaturan Komisi', href: '/admin/commissions', icon: <FiDollarSign /> },
+  { label: 'Leaderboard Mitra', href: '/admin/leaderboard', icon: <FiAward /> },
+  { label: 'Buyer', href: '/admin/buyers', icon: <FiUsers /> },
+  { label: 'Support Tickets', href: '/admin/support', icon: <FiHeadphones /> },
+  { label: 'Klaim Garansi', href: '/admin/warranty', icon: <FiShield /> },
+  { label: 'Pengajuan Refund', href: '/admin/refunds', icon: <FiRefreshCw /> },
   { section: 'Sistem' },
-  { label: 'Akun Backup', href: '/admin/backup-accounts', icon: '🔄' },
-  { label: 'Pengaturan Umum', href: '/admin/settings', icon: '⚙️' },
+  { label: 'Akun Backup', href: '/admin/backup-accounts', icon: <FiArchive /> },
+  { label: 'Pengaturan Umum', href: '/admin/settings', icon: <FiSettings /> },
 ];
 
 interface RealtimeNotification {
@@ -227,7 +231,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="admin-layout">
       {/* Mobile overlay */}
-      <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
+      <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} aria-hidden="true" />
 
       <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
@@ -287,18 +291,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="profile-role">{admin.role}</div>
             </div>
           </div>
-          <button onClick={handleLogout} className="btn-logout" title="Logout">
+          <button onClick={handleLogout} className="btn-logout" title="Logout" aria-label="Keluar dari admin">
             <FiLogOut style={{ fontSize: '0.95rem' }} />
           </button>
         </div>
       </aside>
       <main className="admin-main">
         <div className="mobile-only-topbar">
-          <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)}>☰</button>
-          <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>✦ pastipremium.my.id</span>
+          <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Buka navigasi admin" aria-expanded={sidebarOpen}><FiMenu /></button>
+          <span className="mobile-admin-brand"><b>PP</b> Admin</span>
           {/* Notification bell (mobile) */}
           <button
             onClick={() => setShowNotifications(!showNotifications)}
+            aria-label="Buka notifikasi"
+            aria-expanded={showNotifications}
+            className="admin-notification-button"
             style={{
               position: 'relative',
               background: 'var(--bg-card)',
@@ -309,7 +316,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               padding: '6px',
             }}
           >
-            🔔
+            <FiBell />
             {unreadCount > 0 && (
               <span style={{
                 position: 'absolute', top: '-2px', right: '-2px',
@@ -321,6 +328,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </span>
             )}
           </button>
+          {showNotifications && (
+            <div className="mobile-notification-panel">
+              <div className="notification-panel-header">
+                <strong>Notifikasi {unreadCount > 0 && `(${unreadCount})`}</strong>
+                <button onClick={() => setShowNotifications(false)} aria-label="Tutup notifikasi"><FiX /></button>
+              </div>
+              <div className="notification-panel-list">
+                {notifications.length === 0 ? (
+                  <p>Belum ada notifikasi</p>
+                ) : notifications.map(notif => (
+                  <button key={notif.id} onClick={() => handleNotifClick(notif)} data-unread={!notif.read}>
+                    <strong>{notif.message}</strong>
+                    <small>{notif.time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Desktop notification bar — inline, not fixed */}
@@ -358,7 +383,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 transition: 'all 0.2s',
               }}
             >
-              🔔
+              <FiBell />
               {unreadCount > 0 && (
                 <span style={{
                   position: 'absolute', top: '-4px', right: '-4px',
@@ -446,7 +471,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        {children}
+        <div className="admin-route-content">{children}</div>
       </main>
 
       <style jsx>{`

@@ -102,6 +102,7 @@ function RefundForm() {
     <div className={styles.page}>
       <div className={styles.ambient} aria-hidden="true" />
       <header className={styles.header}>
+        <Link href="/" className={styles.brand}><span>PP</span> PastiPremium</Link>
         <Link href="/" className={styles.backLink}>
           <FiArrowLeft aria-hidden="true" /> Kembali
         </Link>

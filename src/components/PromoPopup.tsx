@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useLocale } from '@/lib/locale-context';
+import styles from './PromoPopup.module.css';
 
 interface ActiveCampaign {
   id: string;
@@ -81,6 +82,7 @@ export default function PromoPopup() {
     <>
       {/* Backdrop */}
       <div
+        className={styles.backdrop}
         onClick={handleClose}
         style={{
           position: 'fixed',
@@ -95,6 +97,7 @@ export default function PromoPopup() {
 
       {/* Floating Ticket */}
       <div
+        className={styles.positioner}
         style={{
           position: 'fixed',
           top: '50%',
@@ -107,7 +110,7 @@ export default function PromoPopup() {
         }}
       >
         {/* The Ticket Card */}
-        <div style={{
+        <div className={styles.card} role="dialog" aria-modal="true" aria-labelledby="featured-promo-title" style={{
           background: '#ffffff',
           borderRadius: '20px',
           overflow: 'hidden',
@@ -118,6 +121,9 @@ export default function PromoPopup() {
         }}>
           {/* Close button */}
           <button
+            type="button"
+            className={styles.close}
+            aria-label="Tutup promo"
             onClick={handleClose}
             style={{
               position: 'absolute',
@@ -145,7 +151,7 @@ export default function PromoPopup() {
           </button>
 
           {/* Top Section - Dark Header */}
-          <div style={{
+          <div className={styles.header} style={{
             background: '#111',
             padding: '28px 28px 20px',
             textAlign: 'center',
@@ -162,6 +168,7 @@ export default function PromoPopup() {
               {t('promo_exclusive')}
             </div>
             <div
+              id="featured-promo-title"
               className="promo-code-display"
               title={campaign.code}
               style={{
@@ -195,7 +202,7 @@ export default function PromoPopup() {
           </div>
 
           {/* Perforated Divider */}
-          <div style={{
+          <div className={styles.content} style={{
             position: 'relative',
             height: '24px',
             background: '#fff',
@@ -335,6 +342,8 @@ export default function PromoPopup() {
 
             {/* Copy Button */}
             <button
+              type="button"
+              className={styles.action}
               onClick={handleCopy}
               style={{
                 width: '100%',

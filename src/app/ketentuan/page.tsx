@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
 import ProductTermsMarkdown from '@/components/ProductTermsMarkdown';
 import { FiAlertCircle, FiShield, FiFileText, FiInfo, FiCheckCircle, FiXCircle, FiRefreshCw, FiArrowRight, FiChevronDown, FiStar } from 'react-icons/fi';
+import styles from '../aftersales.module.css';
 
 export default function KetentuanPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -46,14 +47,14 @@ export default function KetentuanPage() {
   const productsInCategory = products.filter(p => (p.platform_name || 'Lainnya') === selectedCategory);
 
   return (
-    <div className="terms-page" style={{
+    <div className={`terms-page ${styles.termsPage}`} style={{
       minHeight: '100vh',
       background: 'radial-gradient(circle at top, #fff7ed 0, #fbfbfd 34%, #f8fafc 100%)',
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif",
       color: '#1d1d1f',
     }}>
       {/* Header */}
-      <header className="terms-header" style={{
+      <header className={`terms-header ${styles.termsHeader}`} style={{
         position: 'sticky', top: 0, zIndex: 100,
         background: 'rgba(255,255,255,0.72)',
         backdropFilter: 'blur(20px) saturate(180%)',
@@ -63,12 +64,12 @@ export default function KetentuanPage() {
         height: '56px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{
+        <Link href="/" className={styles.brand} style={{
           fontWeight: 600, fontSize: '1.05rem',
           letterSpacing: '-0.01em', color: '#1d1d1f',
           textDecoration: 'none',
         }}>
-          PastiPremium
+          <span>PP</span> PastiPremium
         </Link>
         <Link href="/" style={{
           fontSize: '0.85rem', fontWeight: 500,
@@ -80,11 +81,11 @@ export default function KetentuanPage() {
       </header>
 
       {/* Page Content */}
-      <main className="terms-main" style={{ maxWidth: '860px', margin: '0 auto', padding: '56px 24px 88px' }}>
+      <main className={`terms-main ${styles.termsMain}`} style={{ maxWidth: '920px', margin: '0 auto', padding: '56px 24px 88px' }}>
 
         {/* Page Title */}
-        <div className="terms-hero" style={{ marginBottom: '36px', textAlign: 'center' }}>
-          <div style={{
+        <div className={`terms-hero ${styles.termsHero}`} style={{ marginBottom: '36px', textAlign: 'center' }}>
+          <div className={styles.termsHeroIcon} style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: '64px', height: '64px', borderRadius: '20px',
             background: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
@@ -114,7 +115,7 @@ export default function KetentuanPage() {
         </div>
 
         {/* Greeting Card */}
-        <div className="terms-intro-card" style={{
+        <div className={`terms-intro-card ${styles.termsIntro}`} style={{
           background: 'linear-gradient(135deg, rgba(255,255,255,0.92), rgba(239,246,255,0.84))',
           backdropFilter: 'blur(12px)',
           border: '1px solid rgba(0,0,0,0.05)',
@@ -131,7 +132,7 @@ export default function KetentuanPage() {
 
         {/* Section - Garansi */}
         <section style={{ marginBottom: '32px' }}>
-          <div className="terms-card" style={{
+            <div className={`terms-card ${styles.termsCard}`} style={{
             background: '#ffffff',
             border: '1px solid rgba(0,0,0,0.06)',
             borderRadius: '24px',
@@ -193,7 +194,7 @@ export default function KetentuanPage() {
 
         {/* Interactive Warranty Checker */}
         <section style={{ marginBottom: '32px' }}>
-          <div className="terms-card" style={{
+            <div className={`terms-card ${styles.termsCard}`} style={{
             background: 'linear-gradient(145deg, #ffffff, #fcfcfd)',
             border: '1px solid rgba(0,0,0,0.06)',
             borderRadius: '24px',
@@ -295,7 +296,7 @@ export default function KetentuanPage() {
 
         {/* Section - Kebijakan Kelangsungan Layanan */}
         <section style={{ marginBottom: '32px' }}>
-          <div className="terms-card" style={{
+            <div className={`terms-card ${styles.termsCard}`} style={{
             background: '#ffffff',
             border: '1px solid rgba(0,0,0,0.06)',
             borderRadius: '24px',
@@ -324,7 +325,7 @@ export default function KetentuanPage() {
         {/* Section - Product-specific Terms (Interactive) */}
         {!loading && products.length > 0 && (
           <section style={{ marginBottom: '40px' }}>
-            <div className="terms-card product-terms-card" style={{
+            <div className={`terms-card product-terms-card ${styles.termsCard}`} style={{
               background: '#ffffff',
               border: '1px solid rgba(0,0,0,0.06)',
               borderRadius: '24px',
@@ -471,7 +472,7 @@ export default function KetentuanPage() {
         )}
 
         {/* Summary Box */}
-        <div className="terms-summary" style={{
+        <div className={`terms-summary ${styles.termsSummary}`} style={{
           background: 'linear-gradient(135deg, #1d1d1f, #2d2d2f)',
           borderRadius: '24px', padding: '36px',
           marginBottom: '40px', color: '#fff',
@@ -495,7 +496,7 @@ export default function KetentuanPage() {
         </div>
 
         {/* CTA */}
-        <div className="terms-cta" style={{ textAlign: 'center' }}>
+        <div className={`terms-cta ${styles.termsCta}`} style={{ textAlign: 'center' }}>
           <p style={{ fontSize: '0.95rem', color: '#86868b', marginBottom: '24px' }}>
             Punya pertanyaan lain? Tim CS kami siap membantu Anda.
           </p>

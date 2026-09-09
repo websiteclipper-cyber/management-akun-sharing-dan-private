@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { FiArrowLeft, FiCheck, FiKey, FiShield } from 'react-icons/fi';
+import styles from '../reseller-flow.module.css';
 
 export default function ForgotPinPage() {
   const [loading, setLoading] = useState(false);
@@ -38,8 +40,9 @@ export default function ForgotPinPage() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-card">
+    <div className={styles.authPage}>
+      <Link href="/" className={styles.authBrand}><span>PP</span> PastiPremium</Link>
+      <div className={styles.authCard}>
         <div style={{ textAlign: 'center', marginBottom: '8px' }}>
           <div style={{ 
             width: '64px', height: '64px', borderRadius: '16px',
@@ -47,7 +50,7 @@ export default function ForgotPinPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 16px', fontSize: '1.8rem', color: 'white'
           }}>
-            🔑
+            <FiKey aria-hidden="true" />
           </div>
         </div>
         <h1>Lupa PIN Mitra</h1>
@@ -55,10 +58,10 @@ export default function ForgotPinPage() {
           Masukkan Kode Referral dan No. WhatsApp Anda untuk mendapatkan PIN baru.
         </div>
 
-        {error && <div className="login-error">{error}</div>}
+        {error && <div className={styles.error} role="alert">{error}</div>}
 
         {newPin ? (
-          <div style={{ 
+          <div className={styles.pinResult} style={{
             background: 'var(--success-bg, #ecfdf5)', 
             border: '1px solid var(--success-border, #a7f3d0)', 
             padding: '24px', 
@@ -67,7 +70,7 @@ export default function ForgotPinPage() {
             marginBottom: '24px'
           }}>
             <h3 style={{ color: 'var(--success-text, #065f46)', marginBottom: '12px', fontSize: '1.1rem' }}>
-              Reset PIN Berhasil!
+              <FiCheck aria-hidden="true" /> Reset PIN Berhasil!
             </h3>
             <p style={{ marginBottom: '16px', fontSize: '0.9rem', color: 'var(--text)' }}>
               Ini adalah PIN baru Anda. <strong style={{ color: 'red' }}>Catat dan simpan baik-baik!</strong> PIN ini hanya ditampilkan satu kali.
@@ -86,17 +89,16 @@ export default function ForgotPinPage() {
               {newPin}
             </div>
             
-            <Link href="/reseller/login">
-              <button className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: '24px' }}>
-                Kembali ke Login
-              </button>
+            <Link href="/reseller/login" className={`btn btn-primary btn-lg ${styles.fullButton}`} style={{ width: '100%', marginTop: '24px' }}>
+              Kembali ke Login
             </Link>
           </div>
         ) : (
           <form onSubmit={handleReset}>
             <div className="form-group">
-              <label className="form-label">Kode Referral</label>
+              <label className="form-label" htmlFor="forgot-ref-code">Kode Referral</label>
               <input
+                id="forgot-ref-code"
                 className="form-input"
                 value={form.ref_code}
                 onChange={e => setForm({ ...form, ref_code: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })}
@@ -107,8 +109,9 @@ export default function ForgotPinPage() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">No. WhatsApp</label>
+              <label className="form-label" htmlFor="forgot-phone">No. WhatsApp</label>
               <input
+                id="forgot-phone"
                 type="tel"
                 className="form-input"
                 value={form.phone}
@@ -120,8 +123,8 @@ export default function ForgotPinPage() {
 
             <button
               type="submit"
-              className="btn btn-primary btn-lg"
-              style={{ width: '100%', justifyContent: 'center', background: 'linear-gradient(135deg, #f59e0b, #d97706)', border: 'none' }}
+              className={`btn btn-primary btn-lg ${styles.fullButton}`}
+              style={{ width: '100%', justifyContent: 'center', border: 'none' }}
               disabled={loading}
             >
               {loading ? <span className="loading-spinner" /> : 'Minta PIN Baru'}
@@ -130,12 +133,13 @@ export default function ForgotPinPage() {
         )}
 
         {!newPin && (
-          <div style={{ textAlign: 'center', marginTop: '24px' }}>
+          <div className={styles.authLinks} style={{ textAlign: 'center', marginTop: '24px' }}>
             <Link href="/reseller/login" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              ← Kembali ke Login
+              <FiArrowLeft aria-hidden="true" /> Kembali ke Login
             </Link>
           </div>
         )}
+        <div className={styles.secureNote}><FiShield aria-hidden="true" /> Verifikasi menggunakan data mitra terdaftar</div>
       </div>
     </div>
   );

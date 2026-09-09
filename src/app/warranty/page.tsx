@@ -5,6 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiAlertCircle, FiCheckCircle, FiCopy, FiArrowLeft, FiEye, FiEyeOff, FiShield, FiFileText } from 'react-icons/fi';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import styles from '../aftersales.module.css';
+
+interface WarrantyResult {
+  status: string;
+  claim_code?: string;
+  resolution_notes?: string;
+  new_email?: string;
+  new_password?: string;
+}
 
 export default function WarrantyClaimPage() {
   return (
@@ -13,7 +22,7 @@ export default function WarrantyClaimPage() {
         <div className="loading-spinner"></div>
       </div>
     }>
-      <div style={{ 
+      <div className={styles.page} style={{
         minHeight: '100vh', 
         background: '#000', 
         color: '#ededed',
@@ -42,8 +51,9 @@ export default function WarrantyClaimPage() {
           zIndex: 0
         }} />
 
-        <header style={{ position: 'relative', zIndex: 10, padding: '32px 40px', display: 'flex', alignItems: 'center' }}>
-          <Link href="/" style={{ 
+        <header className={styles.header} style={{ position: 'relative', zIndex: 10, padding: '32px 40px', display: 'flex', alignItems: 'center' }}>
+          <Link href="/" className={styles.brand}><span>PP</span> PastiPremium</Link>
+          <Link href="/" className={styles.backLink} style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px', 
             color: '#888', textDecoration: 'none', transition: 'color 0.2s', 
             fontSize: '0.9rem', fontWeight: 500 
@@ -55,7 +65,7 @@ export default function WarrantyClaimPage() {
           </Link>
         </header>
 
-        <main style={{ 
+        <main className={styles.main} style={{
           position: 'relative', zIndex: 10, flex: 1, display: 'flex', 
           flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
           padding: '20px 24px 80px' 
@@ -70,7 +80,7 @@ export default function WarrantyClaimPage() {
 function WarrantyForm() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<WarrantyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -102,7 +112,7 @@ function WarrantyForm() {
       } else {
         setResult(data);
       }
-    } catch (err) {
+    } catch {
       setError('Gagal menghubungi server. Periksa koneksi internet Anda.');
     } finally {
       setLoading(false);
@@ -147,8 +157,9 @@ function WarrantyForm() {
   };
 
   return (
-    <div style={{ width: '100%', maxWidth: '440px' }}>
+    <div className={styles.formWrap} style={{ width: '100%', maxWidth: '520px' }}>
       <motion.div 
+        className={styles.card}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
@@ -160,8 +171,8 @@ function WarrantyForm() {
           boxShadow: '0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)'
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ 
+        <div className={styles.titleBlock} style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div className={styles.titleIcon} style={{
             width: '48px', height: '48px', margin: '0 auto 20px',
             background: '#111', border: '1px solid #333',
             borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -195,7 +206,7 @@ function WarrantyForm() {
                     </div>
                   </div>
                   
-                  <div style={{ background: '#0a0a0a', border: '1px solid #222', borderRadius: '8px', padding: '16px', marginBottom: '24px' }}>
+                  <div className={styles.resultPanel} style={{ background: '#0a0a0a', border: '1px solid #222', borderRadius: '8px', padding: '16px', marginBottom: '24px' }}>
                     <div style={{ marginBottom: '16px' }}>
                       <span style={{ fontSize: '0.75rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email Baru</span>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
@@ -226,7 +237,7 @@ function WarrantyForm() {
                   <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 16px', lineHeight: 1.5 }}>
                     Pengajuan belum otomatis diterima. Admin akan memeriksa ID pesanan dan memutuskan klaim diterima atau ditolak.
                   </p>
-                  <div style={{ background: '#0a0a0a', border: '1px solid #222', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: '#aaa' }}>
+                  <div className={styles.resultPanel} style={{ background: '#0a0a0a', border: '1px solid #222', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: '#aaa' }}>
                     ID Klaim: <strong style={{ color: '#fff' }}>{result.claim_code}</strong>
                   </div>
                 </div>
@@ -240,7 +251,8 @@ function WarrantyForm() {
                 </div>
               )}
 
-              <button 
+              <button
+                className={styles.secondaryButton}
                 onClick={() => {
                   setResult(null);
                   setShowPassword(false);
@@ -279,7 +291,7 @@ function WarrantyForm() {
                 </div>
               )}
 
-              <div style={{
+              <div className={styles.infoNotice} style={{
                 background: 'rgba(59,130,246,0.08)',
                 border: '1px solid rgba(59,130,246,0.25)',
                 borderRadius: '8px',
@@ -302,6 +314,7 @@ function WarrantyForm() {
                 </div>
                 <Link
                   href="/ketentuan"
+                  className={styles.termsLink}
                   style={{
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                     alignSelf: 'flex-start',
@@ -317,7 +330,7 @@ function WarrantyForm() {
                 </Link>
               </div>
 
-              <div style={{
+              <div className={styles.reviewNotice} style={{
                 background: 'rgba(234,179,8,0.08)',
                 border: '1px solid rgba(234,179,8,0.22)',
                 borderRadius: '8px',
@@ -337,12 +350,12 @@ function WarrantyForm() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className={styles.formFields} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
                   <label style={labelStyle}>ID Pesanan</label>
                   <input
                     type="text" required placeholder="Contoh: ORD-20260726-A1B2C3D4"
-                    style={inputStyle} value={formData.order_number}
+                    className={styles.input} style={inputStyle} value={formData.order_number}
                     onChange={e => setFormData({...formData, order_number: e.target.value.toUpperCase().replace(/\s+/g, '')})}
                     onFocus={focusStyle} onBlur={blurStyle}
                   />
@@ -352,7 +365,7 @@ function WarrantyForm() {
                   <label style={labelStyle}>Email / Username Akun</label>
                   <input
                     type="text" required placeholder="email@akun.com"
-                    style={inputStyle} value={formData.reported_email}
+                    className={styles.input} style={inputStyle} value={formData.reported_email}
                     onChange={e => setFormData({...formData, reported_email: e.target.value})}
                     onFocus={focusStyle} onBlur={blurStyle}
                   />
@@ -365,13 +378,14 @@ function WarrantyForm() {
                       type={showPassword ? 'text' : 'password'}
                       required
                       placeholder="Masukkan password akun"
-                      style={{ ...inputStyle, paddingRight: '48px' }}
+                      className={styles.input} style={{ ...inputStyle, paddingRight: '48px' }}
                       value={formData.reported_password}
                       onChange={e => setFormData({ ...formData, reported_password: e.target.value })}
                       onFocus={focusStyle}
                       onBlur={blurStyle}
                     />
                     <button
+                      className={styles.passwordToggle}
                       type="button"
                       onClick={() => setShowPassword(value => !value)}
                       aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
@@ -403,7 +417,7 @@ function WarrantyForm() {
                 <div>
                   <label style={labelStyle}>Jenis Kendala</label>
                   <select
-                    style={{ ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8.825L1.175 4 2.238 2.938 6 6.7 9.763 2.937 10.825 4z' fill='%23666'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center' }}
+                    className={styles.input} style={{ ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8.825L1.175 4 2.238 2.938 6 6.7 9.763 2.937 10.825 4z' fill='%23666'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center' }}
                     value={formData.issue_type}
                     onChange={e => setFormData({...formData, issue_type: e.target.value})}
                     onFocus={focusStyle} onBlur={blurStyle}
@@ -419,7 +433,7 @@ function WarrantyForm() {
                   <label style={labelStyle}>Keterangan (Opsional)</label>
                   <textarea
                     placeholder="Detail kendala..."
-                    style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
+                    className={styles.input} style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
                     value={formData.issue_description}
                     onChange={e => setFormData({...formData, issue_description: e.target.value})}
                     onFocus={focusStyle} onBlur={blurStyle}
@@ -428,6 +442,7 @@ function WarrantyForm() {
               </div>
 
               <button
+                className={styles.submitButton}
                 type="submit" disabled={loading}
                 style={{ 
                   width: '100%', padding: '12px', borderRadius: '8px', marginTop: '32px',

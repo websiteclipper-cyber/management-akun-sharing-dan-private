@@ -155,7 +155,7 @@ export default function AdminRefundsPage() {
         <button type="button" onClick={() => void loadRequests()} className="btn btn-secondary">🔄 Refresh</button>
       </div>
 
-      <div style={{ padding: '32px' }}>
+      <div className="admin-page-body" style={{ padding: '32px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '12px', marginBottom: '22px' }}>
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-secondary)', borderRadius: 'var(--radius-md)', padding: '14px 16px', textAlign: 'center' }}>
             <div style={{ fontSize: '1.45rem', fontWeight: 800 }}>{requests.length}</div>

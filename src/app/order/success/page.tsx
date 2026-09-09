@@ -6,6 +6,8 @@ import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 import PurchaseInvoice from '@/components/PurchaseInvoice';
 import BuyerCredentialField from '@/components/BuyerCredentialField';
+import { FiCheck, FiCheckCircle } from 'react-icons/fi';
+import styles from '../purchase-flow.module.css';
 
 export default function PaymentSuccessWrapper() {
   return (
@@ -121,22 +123,25 @@ function PaymentSuccessPage() {
   if (!orderNumber) return null;
 
   return (
-    <div className="public-layout">
-      <header className="public-header" style={{ justifyContent: 'space-between' }}>
-        <Link href="/" className="brand">✦ pastipremium.my.id</Link>
+    <div className={`public-layout ${styles.flowPage}`}>
+      <header className={`public-header ${styles.header}`} style={{ justifyContent: 'space-between' }}>
+        <Link href="/" className={`brand ${styles.brand}`}><span>PP</span> PastiPremium</Link>
       </header>
 
-      <div className="order-form-container">
+      <div className={`order-form-container ${styles.successContainer}`}>
         {status === 'waiting' && (
           /* ===== WAITING FOR PAYMENT CONFIRMATION ===== */
-          <div className="order-form-card" style={{ textAlign: 'center' }}>
-            <div style={{
+          <div className={`order-form-card ${styles.flowCard} ${styles.successCard}`} style={{ textAlign: 'center' }}>
+            <div className={styles.steps} aria-label="Tahapan pembelian">
+              <span className={styles.stepDone}><i><FiCheck aria-hidden="true" /></i>Pilih paket</span><b />
+              <span className={styles.stepDone}><i><FiCheck aria-hidden="true" /></i>Konfirmasi</span><b />
+              <span className={styles.stepActive}><i>3</i>Verifikasi</span>
+            </div>
+            <div className={styles.waitingSpinner} style={{
               width: '80px', height: '80px', margin: '0 auto 24px',
               borderRadius: '50%', border: '4px solid var(--border-secondary)',
               borderTopColor: 'var(--accent)', animation: 'spin 1s linear infinite',
             }} />
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-
             <h2 style={{ marginBottom: '8px', fontSize: '1.3rem' }}>{t('success_processing')}</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.9rem' }}>
               {t('success_waiting')}
@@ -144,7 +149,7 @@ function PaymentSuccessPage() {
             </p>
 
             {/* Order info */}
-            <div style={{
+            <div className={styles.orderSummary} style={{
               background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)', padding: '16px', marginBottom: '20px',
             }}>
@@ -193,8 +198,8 @@ function PaymentSuccessPage() {
 
         {status === 'paid' && (
           /* ===== PAID BUT ACCOUNT NOT YET ASSIGNED ===== */
-          <div className="order-form-card" style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>✅</div>
+          <div className={`order-form-card ${styles.flowCard} ${styles.successCard}`} style={{ textAlign: 'center' }}>
+            <div className={styles.successIcon}><FiCheckCircle aria-hidden="true" /></div>
             <h2 style={{ marginBottom: '8px', color: 'var(--brand-success)' }}>{t('success_paid')}</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.9rem' }}>
               {t('success_preparing')}
@@ -214,14 +219,14 @@ function PaymentSuccessPage() {
 
         {status === 'delivered' && (
           /* ===== ACCOUNT DELIVERED - SHOW CREDENTIALS ===== */
-          <div className="order-form-card">
+          <div className={`order-form-card ${styles.flowCard} ${styles.deliveredCard}`}>
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{
+              <div className={styles.successIcon} style={{
                 width: '70px', height: '70px', margin: '0 auto 16px',
                 background: 'linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05))',
                 borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '2rem',
-              }}>🎉</div>
+              }}><FiCheckCircle aria-hidden="true" /></div>
               <h2 style={{ marginBottom: '4px', color: 'var(--brand-success)', fontSize: '1.4rem' }}>
                 {t('success_paid')}
               </h2>
@@ -231,7 +236,7 @@ function PaymentSuccessPage() {
             </div>
 
             {/* Order Summary */}
-            <div style={{
+            <div className={styles.orderSummary} style={{
               background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)',
               border: '1px solid var(--border-secondary)', padding: '14px 16px', marginBottom: '20px',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -263,7 +268,7 @@ function PaymentSuccessPage() {
                 {assignments.map((a, i) => {
                   const stock = a.stock_account as Record<string, unknown>;
                   return (
-                    <div key={i} style={{
+                    <div key={i} className={styles.credentialCard} style={{
                       background: 'var(--accent-soft)',
                       border: '1px solid rgba(0,122,255,0.2)',
                       borderRadius: 'var(--radius-lg)',
@@ -357,7 +362,7 @@ function PaymentSuccessPage() {
             )}
 
             {/* Actions */}
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <div className={styles.successActions} style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <Link href={`/buyer/lookup?order=${orderNumber}`} className="btn btn-primary">
                 {t('success_view_orders')}
               </Link>
@@ -369,8 +374,8 @@ function PaymentSuccessPage() {
         )}
 
         {status === 'error' && (
-          <div className="order-form-card" style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>❌</div>
+          <div className={`order-form-card ${styles.flowCard} ${styles.successCard}`} style={{ textAlign: 'center' }}>
+            <div className={styles.errorIcon}>!</div>
             <h2>{t('success_not_found')}</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>{t('success_not_found_desc', { order: orderNumber })}</p>
             <Link href="/" className="btn btn-primary">{t('success_back')}</Link>
@@ -392,7 +397,7 @@ function CredentialField({ label, value, copyLabel, copiedLabel }: { label: stri
   }
 
   return (
-    <div style={{
+    <div className={styles.credentialField} style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: '10px 12px', background: 'var(--bg-base)', borderRadius: 'var(--radius-md)',
       border: '1px solid var(--border-secondary)', marginBottom: '8px',
@@ -401,7 +406,7 @@ function CredentialField({ label, value, copyLabel, copiedLabel }: { label: stri
         <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted)', marginBottom: '2px' }}>{label}</div>
         <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'monospace', wordBreak: 'break-all' }}>{value}</div>
       </div>
-      <button
+      <button className={styles.credentialButton}
         onClick={copy}
         style={{
           background: copied ? 'rgba(22,163,74,0.12)' : 'var(--bg-secondary)',

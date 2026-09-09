@@ -5,6 +5,7 @@ import { useLocale } from '@/lib/locale-context';
 import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiGooglegemini } from 'react-icons/si';
 import { TbBrandOpenai, TbBrandDisney, TbBrandAmazon, TbRobot, TbScissors, TbPhotoVideo } from 'react-icons/tb';
 import { BsStars } from 'react-icons/bs';
+import styles from './PromoPopup.module.css';
 
 function getPlatformIcon(name: string) {
   const upper = name.toUpperCase();
@@ -85,6 +86,7 @@ export default function GlobalPromoPopup({ initialSettings, onSelectPlatform }: 
     <>
       {/* Backdrop */}
       <div
+        className={styles.backdrop}
         onClick={handleClose}
         style={{
           position: 'fixed',
@@ -99,6 +101,7 @@ export default function GlobalPromoPopup({ initialSettings, onSelectPlatform }: 
 
       {/* Modal */}
       <div
+        className={styles.positioner}
         style={{
           position: 'fixed',
           top: '50%',
@@ -110,7 +113,7 @@ export default function GlobalPromoPopup({ initialSettings, onSelectPlatform }: 
           animation: closing ? 'scaleDown 0.4s ease forwards' : 'scaleUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         }}
       >
-        <div style={{
+        <div className={styles.card} role="dialog" aria-modal="true" aria-labelledby="global-promo-title" style={{
           background: '#ffffff',
           borderRadius: '18px',
           padding: '32px 24px 24px',
@@ -125,6 +128,7 @@ export default function GlobalPromoPopup({ initialSettings, onSelectPlatform }: 
           {/* Close button */}
           <button
             type="button"
+            className={styles.close}
             aria-label="Tutup promo"
             onClick={handleClose}
             style={{
@@ -151,7 +155,7 @@ export default function GlobalPromoPopup({ initialSettings, onSelectPlatform }: 
           </button>
 
           {/* Icon */}
-          <div aria-hidden="true" style={{
+          <div className={styles.icon} aria-hidden="true" style={{
             width: '64px',
             height: '64px',
             borderRadius: '20px',
@@ -167,7 +171,7 @@ export default function GlobalPromoPopup({ initialSettings, onSelectPlatform }: 
             {getPlatformIcon(platform)}
           </div>
 
-          <h2 style={{
+          <h2 id="global-promo-title" style={{
             fontSize: '1.4rem',
             fontWeight: 800,
             color: '#0f172a',
@@ -236,6 +240,8 @@ export default function GlobalPromoPopup({ initialSettings, onSelectPlatform }: 
           </div>
 
           <button
+            type="button"
+            className={styles.action}
             onClick={handleAction}
             style={{
               width: '100%',
