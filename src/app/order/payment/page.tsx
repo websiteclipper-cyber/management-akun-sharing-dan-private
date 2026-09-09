@@ -48,11 +48,18 @@ function KlikQrisPaymentPage() {
     try {
       const response = await fetch('/api/public/check-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
+        },
         body: JSON.stringify({ order_number: orderNumber }),
       });
       const result = await response.json();
 
+      if (response.status === 401) {
+        router.replace(`/buyer/login?redirect=${encodeURIComponent(`/order/payment?order=${orderNumber}`)}`);
+        return;
+      }
       if (result.status === 'paid' || result.synced) {
         router.replace(`/order/success?order=${encodeURIComponent(orderNumber)}`);
       } else if (result.status === 'expired') {
@@ -76,10 +83,17 @@ function KlikQrisPaymentPage() {
       try {
         const response = await fetch('/api/public/klikqris/create', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
+          },
           body: JSON.stringify({ order_number: orderNumber }),
         });
         const result = await response.json();
+        if (response.status === 401) {
+          router.replace(`/buyer/login?redirect=${encodeURIComponent(`/order/payment?order=${orderNumber}`)}`);
+          return;
+        }
         if (!response.ok) throw new Error(result.error || 'Gagal membuat transaksi QRIS.');
 
         if (result.already_paid || result.status === 'SUCCESS') {

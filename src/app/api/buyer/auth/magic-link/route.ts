@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { consumePublicRateLimit, readJsonBody } from '@/lib/publicApiSecurity';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, redirect } = await request.json();
+    const { email, redirect } = await readJsonBody<{ email?: unknown; redirect?: unknown }>(request);
     const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
     const safeRedirect = typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')
       ? redirect
@@ -14,6 +15,13 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Jika email terdaftar, link masuk telah dikirim.',
     });
+
+    const rateLimit = await consumePublicRateLimit(request, 'buyer-magic-link', {
+      maxRequests: 5,
+      windowSeconds: 3600,
+      subject: normalizedEmail,
+    });
+    if (rateLimit.limited) return success;
 
     if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return success;

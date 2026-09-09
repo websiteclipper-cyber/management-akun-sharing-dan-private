@@ -1,6 +1,29 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { getAdminFromRequest } from '@/lib/auth';
+import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
+import { readJsonBody } from '@/lib/publicApiSecurity';
+
+const MAX_SELECT_ROWS = 5000;
+const SUPER_ADMIN_WRITE_TABLES = new Set([
+  'payments',
+  'resellers',
+  'reseller_commissions',
+  'reseller_product_commissions',
+  'audit_logs',
+  'promos',
+  'discount_campaigns',
+  'site_settings',
+]);
+
+interface AdminDbBody {
+  table?: string;
+  operation?: 'select' | 'insert' | 'update' | 'delete';
+  data?: Record<string, unknown> | Record<string, unknown>[];
+  match?: Record<string, unknown>;
+  select?: string;
+  rpc?: string;
+  rpcParams?: Record<string, unknown>;
+}
 
 // Generic admin CRUD endpoint — all writes go through here
 // Verifies admin JWT before executing any operation
@@ -11,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const body = await readJsonBody<AdminDbBody>(request, 64 * 1024);
     const { table, operation, data, match, select, rpc, rpcParams } = body;
 
     // RPC call support. Never pass a client-supplied function name through to
@@ -31,7 +54,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, data: result });
     }
 
-    if (!table || !operation) {
+    if (typeof table !== 'string' || typeof operation !== 'string') {
       return NextResponse.json({ error: 'Missing table or operation' }, { status: 400 });
     }
 
@@ -44,6 +67,12 @@ export async function POST(request: Request) {
     ];
     if (!allowedTables.includes(table)) {
       return NextResponse.json({ error: 'Table not allowed' }, { status: 403 });
+    }
+    if (operation !== 'select' && SUPER_ADMIN_WRITE_TABLES.has(table) && !isSuperAdmin(admin)) {
+      return NextResponse.json({ error: 'Super admin required' }, { status: 403 });
+    }
+    if (table === 'audit_logs' && operation !== 'select') {
+      return NextResponse.json({ error: 'Audit logs are immutable' }, { status: 403 });
     }
 
     switch (operation) {
@@ -67,6 +96,7 @@ export async function POST(request: Request) {
 
           const rows = pageData || [];
           selectedRows.push(...rows);
+          if (selectedRows.length >= MAX_SELECT_ROWS) break;
           if (rows.length < pageSize) break;
         }
 
@@ -74,6 +104,7 @@ export async function POST(request: Request) {
       }
 
       case 'insert': {
+        if (!data) return NextResponse.json({ error: 'Data required for insert' }, { status: 400 });
         const { data: insertData, error: insertErr } = await supabase
           .from(table)
           .insert(data)
@@ -83,7 +114,9 @@ export async function POST(request: Request) {
       }
 
       case 'update': {
-        if (!match) return NextResponse.json({ error: 'Match required for update' }, { status: 400 });
+        if (!match || !data || Array.isArray(data)) {
+          return NextResponse.json({ error: 'Match and object data required for update' }, { status: 400 });
+        }
         let updateQuery = supabase.from(table).update(data);
         for (const [key, value] of Object.entries(match)) {
           updateQuery = updateQuery.eq(key, value as string);
@@ -108,6 +141,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Invalid operation' }, { status: 400 });
     }
   } catch (err) {
-    return NextResponse.json({ error: 'Server error: ' + (err as Error).message }, { status: 500 });
+    if (err instanceof Error && err.message === 'REQUEST_TOO_LARGE') {
+      return NextResponse.json({ error: 'Request terlalu besar.' }, { status: 413 });
+    }
+    if (err instanceof Error && err.message === 'UNSUPPORTED_CONTENT_TYPE') {
+      return NextResponse.json({ error: 'Content-Type harus application/json.' }, { status: 415 });
+    }
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

@@ -60,6 +60,10 @@ export default function ForgotPinPage() {
 
         {error && <div className={styles.error} role="alert">{error}</div>}
 
+        <div className={styles.error} role="status">
+          Reset PIN mandiri sementara dinonaktifkan. Hubungi admin agar identitas mitra dapat diverifikasi sebelum PIN diganti.
+        </div>
+
         {newPin ? (
           <div className={styles.pinResult} style={{
             background: 'var(--success-bg, #ecfdf5)', 
@@ -125,7 +129,7 @@ export default function ForgotPinPage() {
               type="submit"
               className={`btn btn-primary btn-lg ${styles.fullButton}`}
               style={{ width: '100%', justifyContent: 'center', border: 'none' }}
-              disabled={loading}
+              disabled
             >
               {loading ? <span className="loading-spinner" /> : 'Minta PIN Baru'}
             </button>

@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { decrypt } from '@/lib/crypto';
-import { getAdminFromRequest } from '@/lib/auth';
+import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
 
 // Credentials are decrypted only after the application admin token is verified.
 
 export async function GET(request: NextRequest) {
-  if (!(await getAdminFromRequest(request))) {
+  const admin = await getAdminFromRequest(request);
+  if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!isSuperAdmin(admin)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
@@ -45,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ secret: decryptedSecret }, { status: 200 });
   } catch (error: unknown) {
-    const detail = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: 'Failed to decrypt', detail }, { status: 500 });
+    console.error('Failed to decrypt stock credential:', error);
+    return NextResponse.json({ error: 'Failed to decrypt' }, { status: 500 });
   }
 }

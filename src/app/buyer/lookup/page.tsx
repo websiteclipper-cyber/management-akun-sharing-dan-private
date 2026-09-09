@@ -306,7 +306,7 @@ function BuyerLookupPage() {
                         assignmentId={Number(a.id)}
                         label={t('cred_password')}
                       />
-                      {Boolean(stock?.two_factor_secret_encrypted) && (
+                      {Boolean(stock?.has_two_factor_secret) && (
                         <BuyerCredentialField
                           assignmentId={Number(a.id)}
                           label="KODE 2FA.LIVE"
@@ -372,22 +372,28 @@ function BuyerLookupPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((o) => (
-                      <tr key={o.id}>
+                    {orders.map((o) => {
+                      const product = o.product as Record<string, unknown> | undefined;
+                      const orderId = String(o.id || o.order_number || '');
+                      const createdAt = String(o.created_at || '');
+                      const orderStatus = String(o.order_status || '');
+                      return (
+                      <tr key={orderId}>
                         <td>
-                          <div style={{ fontFamily: 'monospace', color: 'var(--brand-primary-light)', fontWeight: 600 }}>{o.order_number}</div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(o.created_at).toLocaleDateString('id-ID')}</div>
+                          <div style={{ fontFamily: 'monospace', color: 'var(--brand-primary-light)', fontWeight: 600 }}>{String(o.order_number || '')}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(createdAt).toLocaleDateString('id-ID')}</div>
                         </td>
-                        <td style={{ color: 'var(--text-primary)' }}>{o.product?.name || '-'}</td>
-                        <td style={{ color: 'var(--brand-success)', fontWeight: 600 }}>{formatPrice(o.total_amount)}</td>
-                        <td><span className={`badge ${getStatusBadge(o.order_status)}`}>{o.order_status}</span></td>
+                        <td style={{ color: 'var(--text-primary)' }}>{String(product?.name || '-')}</td>
+                        <td style={{ color: 'var(--brand-success)', fontWeight: 600 }}>{formatPrice(Number(o.total_amount || 0))}</td>
+                        <td><span className={`badge ${getStatusBadge(orderStatus)}`}>{orderStatus}</span></td>
                         <td>
                           <button className="btn btn-secondary btn-sm" onClick={() => selectOrder(o)}>
                             {t('lookup_view_detail')}
                           </button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

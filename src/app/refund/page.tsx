@@ -3,7 +3,7 @@
 import { FormEvent, Suspense, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FiAlertCircle, FiArrowLeft, FiCheck, FiCheckCircle, FiClock, FiCreditCard, FiUser, FiX } from 'react-icons/fi';
 import styles from './refund.module.css';
 
@@ -29,6 +29,7 @@ export default function RefundPage() {
 
 function RefundForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState<RefundSuccess | null>(null);
@@ -70,7 +71,10 @@ function RefundForm() {
     try {
       const response = await fetch('/api/refund', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
+        },
         body: JSON.stringify({
           ...formData,
           order_number: formData.order_number.trim().toUpperCase(),
@@ -80,6 +84,12 @@ function RefundForm() {
       });
       const result = await response.json();
 
+      if (response.status === 401) {
+        const order = formData.order_number.trim();
+        const destination = order ? `/refund?order=${encodeURIComponent(order)}` : '/refund';
+        router.push(`/buyer/login?redirect=${encodeURIComponent(destination)}`);
+        return;
+      }
       if (!response.ok) {
         setError(result.error || 'Pengajuan refund belum dapat dikirim.');
         return;

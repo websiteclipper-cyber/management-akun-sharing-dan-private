@@ -55,7 +55,6 @@ export async function GET(request: NextRequest) {
       stock_account:stock_accounts(
         id,
         account_identifier,
-        account_secret_encrypted,
         two_factor_secret_encrypted,
         account_type,
         profile_info,
@@ -72,7 +71,17 @@ export async function GET(request: NextRequest) {
   const assignmentsByOrder = new Map<number, typeof assignments>();
   for (const assignment of assignments || []) {
     const existing = assignmentsByOrder.get(assignment.order_id) || [];
-    existing.push(assignment);
+    const stockAccount = Array.isArray(assignment.stock_account)
+      ? assignment.stock_account[0]
+      : assignment.stock_account;
+    const { two_factor_secret_encrypted: twoFactorSecret, ...publicStockAccount } = stockAccount || {};
+    existing.push({
+      ...assignment,
+      stock_account: {
+        ...publicStockAccount,
+        has_two_factor_secret: Boolean(twoFactorSecret),
+      },
+    });
     assignmentsByOrder.set(assignment.order_id, existing);
   }
 

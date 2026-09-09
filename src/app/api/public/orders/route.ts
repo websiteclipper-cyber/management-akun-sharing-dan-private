@@ -9,6 +9,7 @@ import {
   getMinimumQuantity,
   normalizeOrderQuantity,
 } from '@/lib/discount-pricing';
+import { consumePublicRateLimit, readJsonBody } from '@/lib/publicApiSecurity';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +28,25 @@ export async function POST(request: NextRequest) {
     }
 
     const buyer = buyerAccess.buyer;
-    const { product_id, ref_code, discount_code, quantity: rawQty, reseller_token } = await request.json();
+    const rateLimit = await consumePublicRateLimit(request, 'order-create', {
+      maxRequests: 15,
+      windowSeconds: 600,
+      subject: String(buyer.id),
+    });
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        { error: 'Terlalu banyak percobaan membuat pesanan.' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const { product_id, ref_code, discount_code, quantity: rawQty, reseller_token } = await readJsonBody<{
+      product_id?: number;
+      ref_code?: string;
+      discount_code?: string;
+      quantity?: unknown;
+      reseller_token?: string;
+    }>(request);
     const quantity = normalizeOrderQuantity(rawQty);
 
     if (!product_id) {
@@ -371,7 +390,13 @@ export async function POST(request: NextRequest) {
       discount_amount: discountAmount,
       is_newcomer: isNewcomer,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === 'REQUEST_TOO_LARGE') {
+      return NextResponse.json({ error: 'Request terlalu besar.' }, { status: 413 });
+    }
+    if (error instanceof Error && error.message === 'UNSUPPORTED_CONTENT_TYPE') {
+      return NextResponse.json({ error: 'Content-Type harus application/json.' }, { status: 415 });
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
