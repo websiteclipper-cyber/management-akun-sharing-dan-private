@@ -69,10 +69,17 @@ function PaymentSuccessPage() {
     try {
       const res = await fetch('/api/public/check-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
+        },
         body: JSON.stringify({ order_number: orderNumber }),
       });
       const data = await res.json();
+      if (res.status === 401) {
+        router.replace(`/buyer/login?redirect=${encodeURIComponent(`/order/success?order=${orderNumber}`)}`);
+        return;
+      }
       if (data.status === 'paid' || data.synced) {
         // Payment confirmed! Re-check order status from DB
         await checkOrderStatus();
@@ -80,7 +87,7 @@ function PaymentSuccessPage() {
     } catch {
       // Silently fail — will retry on next poll
     }
-  }, [orderNumber, checkOrderStatus]);
+  }, [orderNumber, checkOrderStatus, router]);
 
   // Poll every 3 seconds for status update
   useEffect(() => {
@@ -289,7 +296,7 @@ function PaymentSuccessPage() {
                         label={t('cred_password')}
                       />
 
-                      {Boolean(stock?.two_factor_secret_encrypted) && (
+                      {Boolean(stock?.has_two_factor_secret) && (
                         <BuyerCredentialField
                           assignmentId={Number(a.id)}
                           label="KODE 2FA.LIVE"

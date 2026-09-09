@@ -1,13 +1,33 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
+import { consumePublicRateLimit, readJsonBody } from '@/lib/publicApiSecurity';
 
 export async function POST(request: Request) {
   try {
-    const { name, phone, ref_code, pin } = await request.json();
+    const rateLimit = await consumePublicRateLimit(request, 'reseller-register', {
+      maxRequests: 5,
+      windowSeconds: 3600,
+    });
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        { error: 'Terlalu banyak pendaftaran. Silakan coba lagi nanti.' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const { name, phone, ref_code, pin } = await readJsonBody<{
+      name?: unknown;
+      phone?: unknown;
+      ref_code?: unknown;
+      pin?: unknown;
+    }>(request);
 
     // Validate required fields
-    if (!name || !phone || !ref_code || !pin) {
+    if (
+      typeof name !== 'string' || typeof phone !== 'string'
+      || typeof ref_code !== 'string' || typeof pin !== 'string'
+    ) {
       return NextResponse.json(
         { error: 'Semua field wajib diisi: Nama, No. WhatsApp, Kode Referral, dan PIN' },
         { status: 400 }
@@ -146,8 +166,14 @@ export async function POST(request: Request) {
         status: newReseller.status,
       },
     });
-  } catch (err) {
-    console.error('Register error:', err);
+    } catch (err) {
+      console.error('Register error:', err);
+      if (err instanceof Error && err.message === 'REQUEST_TOO_LARGE') {
+        return NextResponse.json({ error: 'Request terlalu besar.' }, { status: 413 });
+      }
+      if (err instanceof Error && err.message === 'UNSUPPORTED_CONTENT_TYPE') {
+        return NextResponse.json({ error: 'Content-Type harus application/json.' }, { status: 415 });
+      }
     return NextResponse.json(
       { error: 'Server error: ' + (err as Error).message },
       { status: 500 }

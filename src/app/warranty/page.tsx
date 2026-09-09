@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiAlertCircle, FiCheckCircle, FiCopy, FiArrowLeft, FiEye, FiEyeOff, FiShield, FiFileText } from 'react-icons/fi';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import styles from '../aftersales.module.css';
 
 interface WarrantyResult {
@@ -79,6 +79,7 @@ export default function WarrantyClaimPage() {
 
 function WarrantyForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<WarrantyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -102,11 +103,20 @@ function WarrantyForm() {
     try {
       const res = await fetch('/api/warranty/claim', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
+        },
         body: JSON.stringify(formData)
       });
       const data = await res.json();
 
+      if (res.status === 401) {
+        const order = formData.order_number.trim();
+        const destination = order ? `/warranty?order=${encodeURIComponent(order)}` : '/warranty';
+        router.push(`/buyer/login?redirect=${encodeURIComponent(destination)}`);
+        return;
+      }
       if (!res.ok) {
         setError(data.error || 'Terjadi kesalahan sistem');
       } else {
@@ -211,7 +221,7 @@ function WarrantyForm() {
                       <span style={{ fontSize: '0.75rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email Baru</span>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                         <span style={{ color: '#fff', fontFamily: 'monospace', fontSize: '1rem' }}>{result.new_email}</span>
-                        <button onClick={() => handleCopy(result.new_email, 'email')} style={{ background: 'none', border: 'none', color: copied === 'email' ? '#22c55e' : '#666', cursor: 'pointer' }}>
+                        <button onClick={() => handleCopy(String(result.new_email || ''), 'email')} style={{ background: 'none', border: 'none', color: copied === 'email' ? '#22c55e' : '#666', cursor: 'pointer' }}>
                           {copied === 'email' ? <FiCheckCircle /> : <FiCopy />}
                         </button>
                       </div>
@@ -221,7 +231,7 @@ function WarrantyForm() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                         <span style={{ color: '#fff', fontFamily: 'monospace', fontSize: '1rem' }}>{result.new_password || '---'}</span>
                         {result.new_password && (
-                          <button onClick={() => handleCopy(result.new_password, 'password')} style={{ background: 'none', border: 'none', color: copied === 'password' ? '#22c55e' : '#666', cursor: 'pointer' }}>
+                          <button onClick={() => handleCopy(String(result.new_password), 'password')} style={{ background: 'none', border: 'none', color: copied === 'password' ? '#22c55e' : '#666', cursor: 'pointer' }}>
                             {copied === 'password' ? <FiCheckCircle /> : <FiCopy />}
                           </button>
                         )}

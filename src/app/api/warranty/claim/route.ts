@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import crypto from 'crypto';
 import { sendTelegramNotification } from '@/lib/telegram';
+import { getBuyerAccessFromRequest } from '@/lib/auth';
+import { consumePublicRateLimit, readJsonBody } from '@/lib/publicApiSecurity';
 
 function normalizeText(value: unknown, maxLength: number) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
@@ -28,7 +30,23 @@ function escapeTelegramHtml(value: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const payload = await request.json();
+    const access = await getBuyerAccessFromRequest(request);
+    if (!access) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (access.status !== 'active') return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
+
+    const rateLimit = await consumePublicRateLimit(request, 'warranty', {
+      maxRequests: 8,
+      windowSeconds: 3600,
+      subject: String(access.buyer.id),
+    });
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        { error: 'Terlalu banyak pengajuan. Silakan coba lagi nanti.' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const payload = await readJsonBody(request);
     const orderNumber = normalizeOrderNumber(payload.order_number);
     const reportedEmail = normalizeText(payload.reported_email, 320);
     const issueType = normalizeText(payload.issue_type, 100);
@@ -47,6 +65,7 @@ export async function POST(request: NextRequest) {
       .from('orders')
       .select('id, buyer_id, product_id, order_status')
       .eq('order_number', orderNumber)
+      .eq('buyer_id', access.buyer.id)
       .order('created_at', { ascending: false })
       .limit(1);
 
@@ -138,6 +157,12 @@ Status: <b>Menunggu Peninjauan Admin</b>
     return NextResponse.json(claim, { status: 201 });
   } catch (error: unknown) {
     console.error('Warranty claim error:', error);
+    if (error instanceof Error && error.message === 'REQUEST_TOO_LARGE') {
+      return NextResponse.json({ error: 'Request terlalu besar.' }, { status: 413 });
+    }
+    if (error instanceof Error && error.message === 'UNSUPPORTED_CONTENT_TYPE') {
+      return NextResponse.json({ error: 'Content-Type harus application/json.' }, { status: 415 });
+    }
     const message = error instanceof Error ? error.message : 'Terjadi kesalahan sistem';
     return NextResponse.json({ error: message }, { status: 500 });
   }

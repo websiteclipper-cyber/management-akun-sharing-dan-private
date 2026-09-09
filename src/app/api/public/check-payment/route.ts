@@ -11,13 +11,31 @@ import {
   isBuyerIdentityBanned,
   recordBannedBuyerIdentity,
 } from '@/lib/buyerBanIdentity';
+import { getBuyerAccessFromRequest } from '@/lib/auth';
+import { consumePublicRateLimit, readJsonBody } from '@/lib/publicApiSecurity';
 
 export const runtime = 'nodejs';
 
 // Buyer-facing fallback when a KlikQRIS webhook is delayed or missed.
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const access = await getBuyerAccessFromRequest(request);
+    if (!access) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (access.status !== 'active') return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
+
+    const rateLimit = await consumePublicRateLimit(request, 'payment-check', {
+      maxRequests: 30,
+      windowSeconds: 300,
+      subject: String(access.buyer.id),
+    });
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        { error: 'Pengecekan terlalu sering. Tunggu sebentar.' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const body = await readJsonBody(request);
     const orderNumber = typeof body.order_number === 'string' ? body.order_number.trim() : '';
     if (!orderNumber) {
       return NextResponse.json({ error: 'order_number wajib diisi.' }, { status: 400 });
@@ -27,6 +45,7 @@ export async function POST(request: NextRequest) {
       .from('orders')
       .select('id, order_number, payment_status, buyer:buyers(id, email, phone, status)')
       .eq('order_number', orderNumber)
+      .eq('buyer_id', access.buyer.id)
       .single();
 
     if (orderError || !order) {
@@ -123,6 +142,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, status: 'pending', synced: false });
   } catch (error) {
     console.error('KlikQRIS payment check error:', error);
+    if (error instanceof Error && error.message === 'REQUEST_TOO_LARGE') {
+      return NextResponse.json({ error: 'Request terlalu besar.' }, { status: 413 });
+    }
+    if (error instanceof Error && error.message === 'UNSUPPORTED_CONTENT_TYPE') {
+      return NextResponse.json({ error: 'Content-Type harus application/json.' }, { status: 415 });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Gagal mengecek pembayaran KlikQRIS.' },
       { status: 502 },

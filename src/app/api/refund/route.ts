@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
+import { getBuyerAccessFromRequest } from '@/lib/auth';
+import { consumePublicRateLimit, readJsonBody } from '@/lib/publicApiSecurity';
 
 const ELIGIBLE_ORDER_STATUSES = new Set(['paid', 'assigned', 'delivered', 'completed']);
 const EWALLET_PROVIDERS = new Set(['dana', 'gopay']);
@@ -24,7 +26,23 @@ function createRequestCode() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const access = await getBuyerAccessFromRequest(request);
+    if (!access) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (access.status !== 'active') return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
+
+    const rateLimit = await consumePublicRateLimit(request, 'refund', {
+      maxRequests: 5,
+      windowSeconds: 3600,
+      subject: String(access.buyer.id),
+    });
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        { error: 'Terlalu banyak pengajuan. Silakan coba lagi nanti.' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const body = await readJsonBody(request);
     const orderNumber = normalizeOrderNumber(body.order_number);
     const ewalletProvider = normalizeText(body.ewallet_provider, 20).toLowerCase();
     const ewalletNumber = normalizeText(body.ewallet_number, 20).replace(/\D/g, '');
@@ -44,6 +62,7 @@ export async function POST(request: NextRequest) {
       .from('orders')
       .select('id, buyer_id, total_amount, payment_status, order_status, created_at')
       .eq('order_number', orderNumber)
+      .eq('buyer_id', access.buyer.id)
       .order('created_at', { ascending: false })
       .limit(1);
     const order = orders?.[0];
@@ -92,6 +111,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ...refundRequest, estimated_days: '3–7 hari' }, { status: 201 });
   } catch (error) {
     console.error('Refund request error:', error);
+    if (error instanceof Error && error.message === 'REQUEST_TOO_LARGE') {
+      return NextResponse.json({ error: 'Request terlalu besar.' }, { status: 413 });
+    }
+    if (error instanceof Error && error.message === 'UNSUPPORTED_CONTENT_TYPE') {
+      return NextResponse.json({ error: 'Content-Type harus application/json.' }, { status: 415 });
+    }
     return NextResponse.json({ error: 'Terjadi kesalahan saat memproses refund.' }, { status: 500 });
   }
 }

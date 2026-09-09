@@ -2,10 +2,15 @@ import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
-const TAG_LENGTH = 16;
 
 function getKey(): Buffer {
-  const key = process.env.ENCRYPTION_KEY || 'default-key-change-me';
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ENCRYPTION_KEY must be configured.');
+    }
+    return crypto.createHash('sha256').update('development-only-encryption-key').digest();
+  }
   return crypto.createHash('sha256').update(key).digest();
 }
 

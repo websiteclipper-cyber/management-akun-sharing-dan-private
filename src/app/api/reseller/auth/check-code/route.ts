@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
+import { consumePublicRateLimit } from '@/lib/publicApiSecurity';
 
 export async function GET(request: Request) {
   try {
+    const rateLimit = await consumePublicRateLimit(request, 'reseller-code-check', {
+      maxRequests: 30,
+      windowSeconds: 300,
+    });
+    if (rateLimit.limited) {
+      return NextResponse.json(
+        { available: false, error: 'Terlalu banyak pengecekan.' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code')?.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 
