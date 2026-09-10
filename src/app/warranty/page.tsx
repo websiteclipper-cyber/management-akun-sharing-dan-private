@@ -1,78 +1,46 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiAlertCircle, FiCheckCircle, FiCopy, FiArrowLeft, FiEye, FiEyeOff, FiShield, FiFileText } from 'react-icons/fi';
+import { FormEvent, Suspense, useEffect, useState } from 'react';
+import { FiAlertCircle, FiArrowLeft, FiCheckCircle, FiFileText, FiShield } from 'react-icons/fi';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import ProductTermsMarkdown from '@/components/ProductTermsMarkdown';
 import styles from '../aftersales.module.css';
+
+interface AssignmentSummary {
+  id: number;
+  expired_at: string | null;
+  warranty_expired_at: string | null;
+  stock_account: { account_identifier?: string } | null;
+}
+
+interface OrderSummary {
+  order_number: string;
+  product: {
+    name: string;
+    terms?: string | null;
+    warranty_fulfillment_type?: 'standard_replacement' | 'gemini_pro_invite';
+  };
+  assignments: AssignmentSummary[];
+}
 
 interface WarrantyResult {
   status: string;
   claim_code?: string;
   resolution_notes?: string;
-  new_email?: string;
-  new_password?: string;
 }
+
+const inputStyle = {
+  width: '100%', padding: '12px 16px', background: '#0a0a0a', border: '1px solid #333',
+  borderRadius: '8px', color: '#ededed', fontSize: '0.95rem', outline: 'none',
+};
+
+const labelStyle = { display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#aaa', marginBottom: '8px' };
 
 export default function WarrantyClaimPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen" style={{ background: '#000' }}>
-        <div className="loading-spinner"></div>
-      </div>
-    }>
-      <div className={styles.page} style={{
-        minHeight: '100vh', 
-        background: '#000', 
-        color: '#ededed',
-        fontFamily: 'var(--font-sans), system-ui, sans-serif',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Subtle top gradient line */}
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
-        }} />
-
-        {/* Ambient background glow */}
-        <div style={{
-          position: 'absolute',
-          top: '-20%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '600px',
-          height: '400px',
-          background: 'radial-gradient(ellipse at top, rgba(59,130,246,0.15) 0%, transparent 70%)',
-          pointerEvents: 'none',
-          zIndex: 0
-        }} />
-
-        <header className={styles.header} style={{ position: 'relative', zIndex: 10, padding: '32px 40px', display: 'flex', alignItems: 'center' }}>
-          <Link href="/" className={styles.brand}><span>PP</span> PastiPremium</Link>
-          <Link href="/" className={styles.backLink} style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px', 
-            color: '#888', textDecoration: 'none', transition: 'color 0.2s', 
-            fontSize: '0.9rem', fontWeight: 500 
-          }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#ededed'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#888'}
-          >
-            <FiArrowLeft /> <span>Kembali</span>
-          </Link>
-        </header>
-
-        <main className={styles.main} style={{
-          position: 'relative', zIndex: 10, flex: 1, display: 'flex', 
-          flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
-          padding: '20px 24px 80px' 
-        }}>
-          <WarrantyForm />
-        </main>
-      </div>
+    <Suspense fallback={<div className="loading-page"><div className="loading-spinner" /></div>}>
+      <WarrantyForm />
     </Suspense>
   );
 }
@@ -80,398 +48,183 @@ export default function WarrantyClaimPage() {
 function WarrantyForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const orderNumber = searchParams.get('order') || searchParams.get('order_number') || '';
+  const [order, setOrder] = useState<OrderSummary | null>(null);
+  const [loadingOrder, setLoadingOrder] = useState(Boolean(orderNumber));
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [result, setResult] = useState<WarrantyResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const [formData, setFormData] = useState({
-    order_number: searchParams.get('order') || searchParams.get('order_number') || '',
-    reported_email: '',
-    reported_password: '',
-    issue_type: 'password_changed',
-    issue_description: ''
+  const [form, setForm] = useState({
+    assignment_id: '', issue_type: 'password_changed', issue_description: '',
+    gemini_invite_email: '', gemini_invite_email_confirmation: '', terms_accepted: false,
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (!orderNumber) return;
+    const token = localStorage.getItem('buyer_token') || '';
+    fetch(`/api/buyer/orders?order=${encodeURIComponent(orderNumber)}`, {
+      headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',
+    })
+      .then(async response => {
+        const data = await response.json();
+        if (response.status === 401) {
+          router.replace(`/buyer/login?redirect=${encodeURIComponent(`/warranty?order=${orderNumber}`)}`);
+          return;
+        }
+        if (!response.ok) throw new Error(data.error || 'Gagal memuat pesanan.');
+        const selectedOrder = data.orders?.[0] as OrderSummary | undefined;
+        if (!selectedOrder) throw new Error('Pesanan tidak ditemukan pada akun buyer ini.');
+        if (!selectedOrder.assignments?.length) throw new Error('Pesanan belum memiliki akun aktif yang dapat diklaim.');
+        setOrder(selectedOrder);
+        setForm(current => ({ ...current, assignment_id: String(selectedOrder.assignments[0].id) }));
+      })
+      .catch(fetchError => setError(fetchError instanceof Error ? fetchError.message : 'Gagal memuat pesanan.'))
+      .finally(() => setLoadingOrder(false));
+  }, [orderNumber, router]);
+
+  const isGeminiInvite = order?.product.warranty_fulfillment_type === 'gemini_pro_invite';
+  const selectedAssignment = order?.assignments.find(item => String(item.id) === form.assignment_id);
+  const terms = order?.product.terms?.trim() || 'Ketentuan garansi umum PastiPremium berlaku untuk pesanan ini.';
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setError('');
+    if (isGeminiInvite && form.gemini_invite_email.trim().toLowerCase() !== form.gemini_invite_email_confirmation.trim().toLowerCase()) {
+      setError('Konfirmasi email Google tidak sama.');
+      return;
+    }
     setLoading(true);
-    setError(null);
-    setResult(null);
-
     try {
-      const res = await fetch('/api/warranty/claim', {
+      const response = await fetch('/api/warranty/claim', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
-        },
-        body: JSON.stringify(formData)
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('buyer_token') || ''}` },
+        body: JSON.stringify({
+          order_number: orderNumber,
+          assignment_id: form.assignment_id,
+          issue_type: form.issue_type,
+          issue_description: form.issue_description,
+          gemini_invite_email: isGeminiInvite ? form.gemini_invite_email : null,
+          terms_accepted: form.terms_accepted,
+        }),
       });
-      const data = await res.json();
-
-      if (res.status === 401) {
-        const order = formData.order_number.trim();
-        const destination = order ? `/warranty?order=${encodeURIComponent(order)}` : '/warranty';
-        router.push(`/buyer/login?redirect=${encodeURIComponent(destination)}`);
+      const data = await response.json();
+      if (response.status === 401) {
+        router.push(`/buyer/login?redirect=${encodeURIComponent(`/warranty?order=${orderNumber}`)}`);
         return;
       }
-      if (!res.ok) {
-        setError(data.error || 'Terjadi kesalahan sistem');
-      } else {
-        setResult(data);
-      }
-    } catch {
-      setError('Gagal menghubungi server. Periksa koneksi internet Anda.');
+      if (!response.ok) throw new Error(data.error || 'Gagal mengirim klaim.');
+      setResult(data);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Gagal menghubungi server.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(label);
-    setTimeout(() => setCopied(null), 2000);
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '12px 16px',
-    background: '#0a0a0a',
-    border: '1px solid #333',
-    borderRadius: '8px',
-    color: '#ededed',
-    fontSize: '0.95rem',
-    transition: 'all 0.2s ease',
-    outline: 'none',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-  };
-
-  const labelStyle = {
-    display: 'block', 
-    fontSize: '0.85rem', 
-    fontWeight: 500, 
-    color: '#888', 
-    marginBottom: '8px'
-  };
-
-  const focusStyle = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    e.currentTarget.style.borderColor = '#666';
-    e.currentTarget.style.background = '#111';
-  };
-
-  const blurStyle = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    e.currentTarget.style.borderColor = '#333';
-    e.currentTarget.style.background = '#0a0a0a';
-  };
+  }
 
   return (
-    <div className={styles.formWrap} style={{ width: '100%', maxWidth: '520px' }}>
-      <motion.div 
-        className={styles.card}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        style={{
-          background: '#000',
-          border: '1px solid #222',
-          borderRadius: '16px',
-          padding: '40px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)'
-        }}
-      >
-        <div className={styles.titleBlock} style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div className={styles.titleIcon} style={{
-            width: '48px', height: '48px', margin: '0 auto 20px',
-            background: '#111', border: '1px solid #333',
-            borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <FiShield style={{ fontSize: '20px', color: '#fff' }} />
-          </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 600, margin: '0 0 8px', color: '#fff', letterSpacing: '-0.02em' }}>
-            Klaim Garansi
-          </h1>
-          <p style={{ fontSize: '0.9rem', color: '#888', margin: 0, lineHeight: 1.5 }}>
-            Masukkan ID pesanan dan detail kendala untuk meminta peninjauan admin.
-          </p>
-        </div>
+    <div className={styles.page} style={{ minHeight: '100vh', background: '#000', color: '#ededed' }}>
+      <header className={styles.header} style={{ padding: '28px 40px' }}>
+        <Link href="/" className={styles.brand}><span>PP</span> PastiPremium</Link>
+        <Link href="/buyer/lookup" className={styles.backLink}><FiArrowLeft /> Kembali</Link>
+      </header>
+      <main className={styles.main} style={{ padding: '24px 20px 80px' }}>
+        <div className={styles.formWrap} style={{ width: '100%', maxWidth: '680px', margin: '0 auto' }}>
+          <div className={styles.card} style={{ background: '#050505', border: '1px solid #222', borderRadius: '16px', padding: '32px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+              <FiShield style={{ fontSize: '28px', color: '#60a5fa' }} />
+              <h1 style={{ fontSize: '1.6rem', margin: '12px 0 6px' }}>Klaim Garansi</h1>
+              <p style={{ color: '#888', margin: 0 }}>Data akun diambil langsung dari pesanan Anda.</p>
+            </div>
 
-        <AnimatePresence mode="wait">
-          {result ? (
-            <motion.div 
-              key="result"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.3 }}
-            >
-              {result.status === 'auto_replaced' ? (
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #222' }}>
-                    <FiCheckCircle style={{ color: '#22c55e', fontSize: '24px' }} />
-                    <div>
-                      <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 2px' }}>Penggantian Berhasil</h3>
-                      <p style={{ fontSize: '0.85rem', color: '#888', margin: 0 }}>ID: {result.claim_code}</p>
-                    </div>
-                  </div>
-                  
-                  <div className={styles.resultPanel} style={{ background: '#0a0a0a', border: '1px solid #222', borderRadius: '8px', padding: '16px', marginBottom: '24px' }}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email Baru</span>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                        <span style={{ color: '#fff', fontFamily: 'monospace', fontSize: '1rem' }}>{result.new_email}</span>
-                        <button onClick={() => handleCopy(String(result.new_email || ''), 'email')} style={{ background: 'none', border: 'none', color: copied === 'email' ? '#22c55e' : '#666', cursor: 'pointer' }}>
-                          {copied === 'email' ? <FiCheckCircle /> : <FiCopy />}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: '0.75rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Password Baru</span>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                        <span style={{ color: '#fff', fontFamily: 'monospace', fontSize: '1rem' }}>{result.new_password || '---'}</span>
-                        {result.new_password && (
-                          <button onClick={() => handleCopy(String(result.new_password), 'password')} style={{ background: 'none', border: 'none', color: copied === 'password' ? '#22c55e' : '#666', cursor: 'pointer' }}>
-                            {copied === 'password' ? <FiCheckCircle /> : <FiCopy />}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : ['pending', 'manual_review', 'no_backup'].includes(result.status) ? (
-                <div style={{ marginBottom: '24px', textAlign: 'center' }}>
-                  <FiAlertCircle style={{ color: '#eab308', fontSize: '32px', margin: '0 auto 16px' }} />
-                  <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 8px' }}>Menunggu Peninjauan Admin</h3>
-                  <p style={{ fontSize: '0.9rem', color: '#888', margin: '0 0 10px', lineHeight: 1.5 }}>{result.resolution_notes}</p>
-                  <p style={{ fontSize: '0.82rem', color: '#666', margin: '0 0 16px', lineHeight: 1.5 }}>
-                    Pengajuan belum otomatis diterima. Admin akan memeriksa ID pesanan dan memutuskan klaim diterima atau ditolak.
-                  </p>
-                  <div className={styles.resultPanel} style={{ background: '#0a0a0a', border: '1px solid #222', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: '#aaa' }}>
-                    ID Klaim: <strong style={{ color: '#fff' }}>{result.claim_code}</strong>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ marginBottom: '24px', textAlign: 'center' }}>
-                  <FiAlertCircle style={{ color: '#ef4444', fontSize: '32px', margin: '0 auto 16px' }} />
-                  <h3 style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 8px' }}>Klaim Ditolak</h3>
-                  <p style={{ fontSize: '0.9rem', color: '#888', margin: '0', lineHeight: 1.5 }}>
-                    {result.resolution_notes || 'Data kredensial tidak cocok. Pastikan password sesuai dengan data pembelian.'}
-                  </p>
-                </div>
-              )}
+            {!orderNumber && <Notice error text="Buka klaim melalui tombol Ajukan Klaim Garansi pada detail pesanan Anda." />}
+            {error && <Notice error text={error} />}
+            {loadingOrder && <div style={{ textAlign: 'center', padding: '30px' }}><div className="loading-spinner" /></div>}
 
-              <button
-                className={styles.secondaryButton}
-                onClick={() => {
-                  setResult(null);
-                  setShowPassword(false);
-                  setFormData({ ...formData, reported_password: '' });
-                }}
-                style={{ 
-                  width: '100%', padding: '12px', borderRadius: '8px',
-                  background: '#111', color: '#ededed',
-                  border: '1px solid #333', fontSize: '0.95rem', fontWeight: 500,
-                  cursor: 'pointer', transition: 'background 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#222'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#111'}
-              >
-                Kembali
-              </button>
-            </motion.div>
-          ) : (
-            <motion.form 
-              key="form"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              onSubmit={handleSubmit}
-            >
-              {error && (
-                <div style={{ 
-                  background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', 
-                  padding: '12px 16px', borderRadius: '8px', 
-                  color: '#ef4444', fontSize: '0.85rem', 
-                  display: 'flex', gap: '8px', marginBottom: '24px'
-                }}>
-                  <FiAlertCircle style={{ marginTop: '2px', flexShrink: 0 }} />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <div className={styles.infoNotice} style={{
-                background: 'rgba(59,130,246,0.08)',
-                border: '1px solid rgba(59,130,246,0.25)',
-                borderRadius: '8px',
-                padding: '14px 16px',
-                marginBottom: '16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px'
-              }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <FiFileText style={{ color: '#60a5fa', marginTop: '2px', flexShrink: 0 }} />
-                  <div>
-                    <strong style={{ display: 'block', color: '#f5f5f5', fontSize: '0.86rem', marginBottom: '4px' }}>
-                      Harap baca ketentuan sebelum mengajukan klaim
-                    </strong>
-                    <span style={{ color: '#999', fontSize: '0.8rem', lineHeight: 1.5 }}>
-                      Ketentuan garansi sama seperti yang berlaku sebelum membeli. Pastikan kendala Anda memenuhi syarat sebelum mengirim pengajuan.
-                    </span>
-                  </div>
-                </div>
-                <Link
-                  href="/ketentuan"
-                  className={styles.termsLink}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    alignSelf: 'flex-start',
-                    padding: '9px 16px', borderRadius: '8px',
-                    background: '#111', color: '#ededed',
-                    border: '1px solid #333', fontSize: '0.85rem', fontWeight: 600,
-                    textDecoration: 'none', transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#222'; e.currentTarget.style.borderColor = '#555'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = '#111'; e.currentTarget.style.borderColor = '#333'; }}
-                >
-                  <FiFileText /> Baca Ketentuan
-                </Link>
-              </div>
-
-              <div className={styles.reviewNotice} style={{
-                background: 'rgba(234,179,8,0.08)',
-                border: '1px solid rgba(234,179,8,0.22)',
-                borderRadius: '8px',
-                padding: '14px 16px',
-                marginBottom: '24px',
-                display: 'flex',
-                gap: '10px'
-              }}>
-                <FiAlertCircle style={{ color: '#eab308', marginTop: '2px', flexShrink: 0 }} />
-                <div>
-                  <strong style={{ display: 'block', color: '#f5f5f5', fontSize: '0.86rem', marginBottom: '4px' }}>
-                    Klaim akan ditinjau secara manual
-                  </strong>
-                  <span style={{ color: '#999', fontSize: '0.8rem', lineHeight: 1.5 }}>
-                    Admin akan memeriksa ID pesanan dan data pengajuan sesuai ketentuan yang berlaku, lalu memutuskan klaim diterima atau ditolak.
-                  </span>
+            {result ? (
+              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                <FiCheckCircle style={{ color: '#22c55e', fontSize: '42px' }} />
+                <h2>Pengajuan Terkirim</h2>
+                <p style={{ color: '#aaa', lineHeight: 1.6 }}>{result.resolution_notes}</p>
+                <div style={{ background: '#111', border: '1px solid #333', padding: '12px', borderRadius: '8px' }}>
+                  ID Klaim: <strong>{result.claim_code}</strong>
                 </div>
               </div>
-
-              <div className={styles.formFields} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div>
-                  <label style={labelStyle}>ID Pesanan</label>
-                  <input
-                    type="text" required placeholder="Contoh: ORD-20260726-A1B2C3D4"
-                    className={styles.input} style={inputStyle} value={formData.order_number}
-                    onChange={e => setFormData({...formData, order_number: e.target.value.toUpperCase().replace(/\s+/g, '')})}
-                    onFocus={focusStyle} onBlur={blurStyle}
-                  />
-                </div>
+            ) : order ? (
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <section style={{ background: '#0b0b0b', border: '1px solid #252525', borderRadius: '10px', padding: '16px' }}>
+                  <div style={{ color: '#777', fontSize: '0.75rem', textTransform: 'uppercase' }}>Pesanan</div>
+                  <strong style={{ display: 'block', margin: '5px 0' }}>{order.product.name}</strong>
+                  <span style={{ color: '#999', fontFamily: 'monospace', fontSize: '0.85rem' }}>{order.order_number}</span>
+                </section>
 
                 <div>
-                  <label style={labelStyle}>Email / Username Akun</label>
-                  <input
-                    type="text" required placeholder="email@akun.com"
-                    className={styles.input} style={inputStyle} value={formData.reported_email}
-                    onChange={e => setFormData({...formData, reported_email: e.target.value})}
-                    onFocus={focusStyle} onBlur={blurStyle}
-                  />
-                </div>
-
-                <div>
-                  <label style={labelStyle}>Password Asli</label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      placeholder="Masukkan password akun"
-                      className={styles.input} style={{ ...inputStyle, paddingRight: '48px' }}
-                      value={formData.reported_password}
-                      onChange={e => setFormData({ ...formData, reported_password: e.target.value })}
-                      onFocus={focusStyle}
-                      onBlur={blurStyle}
-                    />
-                    <button
-                      className={styles.passwordToggle}
-                      type="button"
-                      onClick={() => setShowPassword(value => !value)}
-                      aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                      title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                      style={{
-                        position: 'absolute',
-                        top: '50%',
-                        right: '12px',
-                        transform: 'translateY(-50%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '28px',
-                        height: '28px',
-                        padding: 0,
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#888',
-                        cursor: 'pointer'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#fff'; }}
-                      onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}
-                    >
-                      {showPassword ? <FiEyeOff /> : <FiEye />}
-                    </button>
-                  </div>
+                  <label style={labelStyle}>Akun yang Bermasalah</label>
+                  <select required style={inputStyle} value={form.assignment_id} onChange={event => setForm({ ...form, assignment_id: event.target.value })}>
+                    {order.assignments.map(assignment => (
+                      <option key={assignment.id} value={assignment.id}>{assignment.stock_account?.account_identifier || `Akun #${assignment.id}`}</option>
+                    ))}
+                  </select>
+                  {selectedAssignment?.warranty_expired_at && (
+                    <small style={{ color: '#888', display: 'block', marginTop: '7px' }}>
+                      Batas garansi: {new Date(selectedAssignment.warranty_expired_at).toLocaleString('id-ID')}
+                    </small>
+                  )}
                 </div>
 
                 <div>
                   <label style={labelStyle}>Jenis Kendala</label>
-                  <select
-                    className={styles.input} style={{ ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8.825L1.175 4 2.238 2.938 6 6.7 9.763 2.937 10.825 4z' fill='%23666'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 16px center' }}
-                    value={formData.issue_type}
-                    onChange={e => setFormData({...formData, issue_type: e.target.value})}
-                    onFocus={focusStyle} onBlur={blurStyle}
-                  >
-                    <option value="password_changed">Password Salah / Diubah</option>
-                    <option value="screen_limit">Limit Screen (Terlalu Banyak Layar)</option>
-                    <option value="suspended">Akun Suspended / Hold</option>
-                    <option value="other">Kendala Lainnya</option>
+                  <select style={inputStyle} value={form.issue_type} onChange={event => setForm({ ...form, issue_type: event.target.value })}>
+                    <option value="password_changed">Password salah atau berubah</option>
+                    <option value="suspended">Akun suspended atau hold</option>
+                    <option value="expired_early">Masa aktif berakhir lebih awal</option>
+                    <option value="other">Kendala lainnya</option>
                   </select>
                 </div>
 
                 <div>
-                  <label style={labelStyle}>Keterangan (Opsional)</label>
-                  <textarea
-                    placeholder="Detail kendala..."
-                    className={styles.input} style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
-                    value={formData.issue_description}
-                    onChange={e => setFormData({...formData, issue_description: e.target.value})}
-                    onFocus={focusStyle} onBlur={blurStyle}
-                  />
+                  <label style={labelStyle}>Keterangan Kendala</label>
+                  <textarea required minLength={10} maxLength={2000} style={{ ...inputStyle, minHeight: '96px', resize: 'vertical' }} value={form.issue_description} onChange={event => setForm({ ...form, issue_description: event.target.value })} placeholder="Jelaskan kendala yang terjadi..." />
                 </div>
-              </div>
 
-              <button
-                className={styles.submitButton}
-                type="submit" disabled={loading}
-                style={{ 
-                  width: '100%', padding: '12px', borderRadius: '8px', marginTop: '32px',
-                  background: loading ? '#333' : '#ededed', 
-                  color: loading ? '#888' : '#000', 
-                  border: 'none', fontSize: '0.95rem', fontWeight: 600,
-                  cursor: loading ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}
-                onMouseEnter={(e) => { if(!loading) e.currentTarget.style.background = '#fff'; }}
-                onMouseLeave={(e) => { if(!loading) e.currentTarget.style.background = '#ededed'; }}
-              >
-                {loading ? 'Mengirim Pengajuan...' : 'Kirim untuk Peninjauan Admin'}
-              </button>
-            </motion.form>
-          )}
-        </AnimatePresence>
-      </motion.div>
+                {isGeminiInvite && (
+                  <section style={{ background: 'rgba(66,133,244,0.08)', border: '1px solid rgba(66,133,244,0.35)', borderRadius: '10px', padding: '16px' }}>
+                    <strong style={{ color: '#8ab4f8' }}>Akun Tujuan Aktivasi Gemini Pro</strong>
+                    <p style={{ color: '#aaa', fontSize: '0.82rem', lineHeight: 1.55 }}>
+                      Garansi produk ini berupa invite Gemini Pro. Masukkan akun Google milik Anda. Jangan pernah memberikan password, OTP, recovery code, atau kode 2FA.
+                    </p>
+                    <label style={labelStyle}>Email Google tujuan</label>
+                    <input required type="email" autoComplete="email" style={inputStyle} value={form.gemini_invite_email} onChange={event => setForm({ ...form, gemini_invite_email: event.target.value })} placeholder="nama@gmail.com" />
+                    <label style={{ ...labelStyle, marginTop: '14px' }}>Konfirmasi email Google</label>
+                    <input required type="email" autoComplete="off" style={inputStyle} value={form.gemini_invite_email_confirmation} onChange={event => setForm({ ...form, gemini_invite_email_confirmation: event.target.value })} placeholder="Ketik ulang email" />
+                  </section>
+                )}
+
+                <section style={{ background: '#0b0b0b', border: '1px solid #292929', borderRadius: '10px', padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}><FiFileText /> <strong>Ketentuan Produk</strong></div>
+                  <div style={{ maxHeight: '260px', overflowY: 'auto', paddingRight: '8px' }}><ProductTermsMarkdown content={terms} /></div>
+                </section>
+
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: '#ccc', fontSize: '0.86rem', lineHeight: 1.5, cursor: 'pointer' }}>
+                  <input required type="checkbox" checked={form.terms_accepted} onChange={event => setForm({ ...form, terms_accepted: event.target.checked })} style={{ marginTop: '4px' }} />
+                  Saya sudah membaca dan menyetujui ketentuan garansi produk ini{isGeminiInvite ? ', termasuk pemenuhan garansi melalui invite Gemini Pro ke email Google di atas' : ''}.
+                </label>
+
+                <button type="submit" disabled={loading || !form.terms_accepted} className={styles.submitButton} style={{ padding: '13px', borderRadius: '8px', border: 0, fontWeight: 700, cursor: loading ? 'wait' : 'pointer' }}>
+                  {loading ? 'Mengirim Pengajuan...' : 'Kirim untuk Peninjauan Admin'}
+                </button>
+              </form>
+            ) : null}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
 
+function Notice({ text, error = false }: { text: string; error?: boolean }) {
+  return (
+    <div style={{ background: error ? 'rgba(239,68,68,0.1)' : '#111', border: `1px solid ${error ? 'rgba(239,68,68,0.3)' : '#333'}`, color: error ? '#f87171' : '#aaa', borderRadius: '8px', padding: '13px', marginBottom: '20px', display: 'flex', gap: '9px' }}>
+      <FiAlertCircle style={{ flexShrink: 0, marginTop: '2px' }} /> {text}
+    </div>
+  );
+}

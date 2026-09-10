@@ -4,6 +4,7 @@ export type AdminStatus = 'active' | 'inactive';
 export type BuyerStatus = 'active' | 'blocked';
 export type AccountType = 'sharing' | 'private';
 export type ProductStatus = 'active' | 'inactive';
+export type WarrantyFulfillmentType = 'standard_replacement' | 'gemini_pro_invite';
 export type CatalogCategory = 'ai_productivity' | 'editing_design' | 'music_audio' | 'streaming_entertainment' | 'other';
 export type StockStatus = 'active' | 'full' | 'inactive' | 'suspended' | 'broken' | 'expired';
 export type PaymentStatus = 'pending_payment' | 'paid' | 'failed' | 'refunded' | 'cancelled';
@@ -52,6 +53,7 @@ export interface Product {
   newcomer_price: number | null;
   duration_days: number;
   warranty_days?: number | null;
+  warranty_fulfillment_type?: WarrantyFulfillmentType;
   default_max_slot: number;
   description: string | null;
   terms?: string | null;

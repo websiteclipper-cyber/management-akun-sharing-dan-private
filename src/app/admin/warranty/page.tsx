@@ -2,6 +2,36 @@
 
 import { useState, useEffect, useMemo } from 'react';
 
+interface WarrantyClaim {
+  id: string | number;
+  claim_code: string;
+  order_id: string | number;
+  reported_email: string;
+  reason?: string | null;
+  issue_type?: string | null;
+  issue_description?: string | null;
+  status: string;
+  admin_notes?: string | null;
+  resolution_notes?: string | null;
+  new_email?: string | null;
+  replacement_backup_id?: string | number | null;
+  replacement_assignment_id?: string | number | null;
+  gemini_invite_email?: string | null;
+  gemini_invite_status?: string | null;
+  terms_accepted_at?: string | null;
+  invite_sent_at?: string | null;
+  created_at: string;
+  orders?: {
+    order_number?: string;
+    buyer_email?: { name?: string | null; phone?: string | null } | null;
+  } | null;
+  products?: {
+    name?: string;
+    warranty_fulfillment_type?: 'standard_replacement' | 'gemini_pro_invite';
+  } | null;
+  backup_accounts?: { account_identifier?: string | null } | null;
+}
+
 function getAdminAuthHeaders(includeJson = false): HeadersInit {
   const token = typeof window === 'undefined' ? '' : localStorage.getItem('admin_token') || '';
   return {
@@ -11,14 +41,14 @@ function getAdminAuthHeaders(includeJson = false): HeadersInit {
 }
 
 export default function AdminWarrantyClaims() {
-  const [claims, setClaims] = useState<any[]>([]);
+  const [claims, setClaims] = useState<WarrantyClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [selectedClaim, setSelectedClaim] = useState<any>(null);
+  const [selectedClaim, setSelectedClaim] = useState<WarrantyClaim | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [updateData, setUpdateData] = useState({
-    status: '', admin_notes: '', resolution_notes: '', new_email: ''
+    status: '', admin_notes: '', resolution_notes: '', new_email: '', gemini_invite_status: ''
   });
   const [savingDecision, setSavingDecision] = useState(false);
   const [updateError, setUpdateError] = useState('');
@@ -70,6 +100,9 @@ export default function AdminWarrantyClaims() {
           status: decisionStatus,
           admin_notes: updateData.admin_notes,
           resolution_notes: updateData.resolution_notes,
+          gemini_invite_status: selectedClaim.products?.warranty_fulfillment_type === 'gemini_pro_invite' && decisionStatus !== 'rejected'
+            ? updateData.gemini_invite_status
+            : undefined,
         })
       });
       const data = await res.json();
@@ -274,6 +307,7 @@ export default function AdminWarrantyClaims() {
                             admin_notes: c.admin_notes || '',
                             resolution_notes: c.resolution_notes || '',
                             new_email: c.new_email || '',
+                            gemini_invite_status: c.gemini_invite_status || 'ready_to_invite',
                           });
                           setUpdateError('');
                           setShowModal(true);
@@ -349,6 +383,20 @@ export default function AdminWarrantyClaims() {
                 </div>
               </div>
 
+              {selectedClaim.products?.warranty_fulfillment_type === 'gemini_pro_invite' && (
+                <div style={{ background: 'rgba(59,130,246,0.08)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(59,130,246,0.28)' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', fontWeight: 700 }}>
+                    Aktivasi Gemini Pro
+                  </div>
+                  <div style={{ fontSize: '0.85rem', display: 'grid', gap: '5px' }}>
+                    <div><span style={{ color: 'var(--text-muted)' }}>Email tujuan:</span> <strong style={{ fontFamily: 'monospace' }}>{selectedClaim.gemini_invite_email || '-'}</strong></div>
+                    <div><span style={{ color: 'var(--text-muted)' }}>Status invite:</span> {selectedClaim.gemini_invite_status || '-'}</div>
+                    <div><span style={{ color: 'var(--text-muted)' }}>Persetujuan ketentuan:</span> {selectedClaim.terms_accepted_at ? new Date(selectedClaim.terms_accepted_at).toLocaleString('id-ID') : '-'}</div>
+                    {selectedClaim.invite_sent_at && <div><span style={{ color: 'var(--text-muted)' }}>Invite dikirim:</span> {new Date(selectedClaim.invite_sent_at).toLocaleString('id-ID')}</div>}
+                  </div>
+                </div>
+              )}
+
               {/* Replacement info */}
               {(selectedClaim.status === 'auto_replaced' || selectedClaim.replacement_backup_id || selectedClaim.replacement_assignment_id) && (
                 <div style={{ background: 'rgba(34,197,94,0.06)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(34,197,94,0.15)' }}>
@@ -385,6 +433,51 @@ export default function AdminWarrantyClaims() {
 
             {/* Edit Form */}
             <form onSubmit={handleUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {selectedClaim.products?.warranty_fulfillment_type === 'gemini_pro_invite' ? (
+                <div className="form-group">
+                  <label className="form-label">Status Aktivasi Gemini</label>
+                  <select
+                    className="form-select"
+                    value={updateData.gemini_invite_status}
+                    onChange={e => {
+                      const value = e.target.value;
+                      const note = value === 'invite_sent'
+                        ? 'Invite Gemini Pro telah dikirim. Silakan periksa email Google tujuan dan terima undangan.'
+                        : value === 'activated'
+                          ? 'Aktivasi Gemini Pro telah dikonfirmasi dan klaim selesai.'
+                          : value === 'failed'
+                            ? 'Invite Gemini Pro gagal diproses. Admin akan menghubungi buyer untuk pemeriksaan data.'
+                            : 'Klaim diterima dan siap diproses untuk pengiriman invite Gemini Pro.';
+                      setUpdateData({ ...updateData, gemini_invite_status: value, status: value === 'activated' ? 'approved' : 'pending', resolution_notes: note });
+                    }}
+                    disabled={selectedClaim.gemini_invite_status === 'activated' || selectedClaim.status === 'rejected'}
+                  >
+                    <option value="ready_to_invite">Siap Diinvite</option>
+                    <option value="invite_sent">Invite Sudah Dikirim</option>
+                    <option value="activated">Gemini Aktif / Selesai</option>
+                    <option value="failed">Invite Gagal</option>
+                  </select>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Fitur ini tidak mengambil stok akun ChatGPT. Pastikan invite dikirim ke email tujuan sebelum memilih Invite Sudah Dikirim.
+                  </p>
+                  {selectedClaim.status !== 'approved' && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      <input
+                        type="checkbox"
+                        checked={updateData.status === 'rejected'}
+                        onChange={e => setUpdateData({
+                          ...updateData,
+                          status: e.target.checked ? 'rejected' : 'pending',
+                          resolution_notes: e.target.checked
+                            ? 'Klaim ditolak setelah peninjauan manual karena tidak memenuhi ketentuan garansi.'
+                            : 'Klaim diterima dan siap diproses untuk pengiriman invite Gemini Pro.',
+                        })}
+                      />
+                      Tolak klaim ini karena tidak memenuhi ketentuan
+                    </label>
+                  )}
+                </div>
+              ) : (
               <div className="form-group">
                 <label className="form-label">Status Klaim</label>
                 <select 
@@ -415,6 +508,7 @@ export default function AdminWarrantyClaims() {
                   <p style={{ fontSize: '0.75rem', color: '#eab308', marginTop: '4px' }}>Keputusan dikunci karena akun pengganti sudah diberikan.</p>
                 )}
               </div>
+              )}
               <div className="form-group">
                 <label className="form-label">Catatan Admin (Internal)</label>
                 <textarea 
@@ -442,8 +536,12 @@ export default function AdminWarrantyClaims() {
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Tutup</button>
                 <button type="submit" className="btn btn-primary" disabled={savingDecision}>
                   {savingDecision
-                    ? (updateData.status === 'approved' ? 'Mengambil & Mengirim Stok...' : 'Menyimpan...')
-                    : (updateData.status === 'approved' ? 'Terima & Kirim dari Stok' : 'Simpan Keputusan')}
+                    ? 'Menyimpan...'
+                    : selectedClaim.products?.warranty_fulfillment_type === 'gemini_pro_invite'
+                      ? 'Simpan Status Invite'
+                      : updateData.status === 'approved'
+                        ? 'Terima & Kirim dari Stok'
+                        : 'Simpan Keputusan'}
                 </button>
               </div>
             </form>

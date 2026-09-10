@@ -516,12 +516,12 @@ function SupportSection({ orderNumber, productName, buyerName }: {
             boxShadow: '0 4px 14px 0 rgba(147, 51, 234, 0.39)',
           }}
         >
-          🛡️ Ganti Otomatis
+          🛡️ Ajukan Klaim Garansi
         </button>
       </div>
 
       <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
-        {t('support_wa_desc')} atau gunakan Ganti Otomatis untuk pergantian instan.
+        {t('support_wa_desc')} atau ajukan klaim garansi untuk ditinjau admin.
       </p>
     </div>
   );
