@@ -319,6 +319,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
     newcomer_price: product?.newcomer_price?.toString() || '',
     duration_days: product?.duration_days?.toString() || '30',
     warranty_days: product?.warranty_days?.toString() || product?.duration_days?.toString() || '30',
+    warranty_fulfillment_type: product?.warranty_fulfillment_type || 'standard_replacement',
     default_max_slot: product?.default_max_slot?.toString() || '4',
     description: product?.description || '',
     terms: product?.terms || '',
@@ -342,6 +343,7 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
       newcomer_price: form.newcomer_price ? parseFloat(form.newcomer_price) : null,
       duration_days: parseInt(form.duration_days),
       warranty_days: parseInt(form.warranty_days),
+      warranty_fulfillment_type: form.warranty_fulfillment_type,
       default_max_slot: parseInt(form.default_max_slot),
       description: form.description || null,
       terms: form.terms || null,
@@ -379,6 +381,23 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
               <label className="form-label">Platform</label>
               <input className="form-input" value={form.platform_name} onChange={e => setForm({...form, platform_name: e.target.value})} placeholder="Netflix" required />
             </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Metode Pemenuhan Garansi</label>
+            <select
+              className="form-select"
+              value={form.warranty_fulfillment_type}
+              onChange={e => setForm({
+                ...form,
+                warranty_fulfillment_type: e.target.value as 'standard_replacement' | 'gemini_pro_invite',
+              })}
+            >
+              <option value="standard_replacement">Penggantian akun dari stok</option>
+              <option value="gemini_pro_invite">Invite akun buyer ke Gemini Pro</option>
+            </select>
+            <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>
+              Pilih Gemini Pro hanya untuk produk ChatGPT khusus yang garansinya berupa invite.
+            </small>
           </div>
           <div className="form-group">
             <label className="form-label">Kategori Katalog</label>
