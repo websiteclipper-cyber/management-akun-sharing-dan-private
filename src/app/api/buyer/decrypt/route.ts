@@ -37,10 +37,11 @@ export async function POST(request: NextRequest) {
     // still checked against the authenticated buyer on every request.
     const { data: assignment, error: assignmentError } = await supabase
       .from('account_assignments')
-      .select('id, orders!inner(buyer_id), stock_accounts!inner(account_secret_encrypted, two_factor_secret_encrypted)')
+      .select('id, expired_at, orders!inner(buyer_id), stock_accounts!inner(account_secret_encrypted, two_factor_secret_encrypted)')
       .eq('id', normalizedAssignmentId)
       .eq('orders.buyer_id', buyer.id)
       .eq('status', 'active')
+      .gt('expired_at', new Date().toISOString())
       .maybeSingle();
 
     if (assignmentError || !assignment) {

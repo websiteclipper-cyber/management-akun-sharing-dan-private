@@ -52,12 +52,14 @@ function PaymentSuccessPage() {
       // Mark local storage to disable newcomer promo in the future for this browser
       localStorage.setItem('pastipremium_newcomer_claimed', '1');
 
-      const assignData = orderData.assignments;
+      const assignData = (orderData.assignments as Array<Record<string, unknown>> | undefined)
+        ?.filter(assignment => assignment.credential_available === true);
 
       if (assignData && assignData.length > 0) {
         setAssignments(assignData);
         setStatus('delivered');
       } else {
+        setAssignments([]);
         setStatus('paid');
       }
     }
