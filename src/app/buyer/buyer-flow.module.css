@@ -232,6 +232,21 @@
   min-width: 0;
 }
 
+.inactiveAssignment {
+  border-color: #dce4ee !important;
+  background: #f8fafc !important;
+}
+
+.inactiveAssignmentNotice {
+  border: 1px solid #dce4ee;
+  border-radius: 12px;
+  background: white;
+  color: #65758b;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  padding: 12px 14px;
+}
+
 .support {
   border-top-color: #dce4ee !important;
 }

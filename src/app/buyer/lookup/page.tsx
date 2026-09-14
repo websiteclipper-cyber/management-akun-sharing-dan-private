@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import { supabase } from '@/lib/supabase';
+import { BuyerOrdersError, fetchBuyerOrders } from '@/lib/buyerOrdersClient';
 import Link from 'next/link';
 import PurchaseInvoice from '@/components/PurchaseInvoice';
 import BuyerCredentialField from '@/components/BuyerCredentialField';
@@ -36,24 +37,29 @@ function BuyerLookupPage() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [loginRequired, setLoginRequired] = useState(false);
+  const ordersRequestInFlight = useRef(false);
+  const automaticRefreshPaused = useRef(false);
+  const loginHref = `/buyer/login?redirect=${encodeURIComponent(`/buyer/lookup${searchParams.toString() ? `?${searchParams.toString()}` : ''}`)}`;
   const assignments = (selectedOrder?.assignments as Array<Record<string, unknown>>) || [];
 
   const loadAllOrders = useCallback(async (silent = false) => {
+    if (ordersRequestInFlight.current || (silent && automaticRefreshPaused.current)) return;
+    ordersRequestInFlight.current = true;
     if (!silent) setLoading(true);
 
     try {
-      const token = localStorage.getItem('buyer_token') || '';
-      const response = await fetch('/api/buyer/orders', {
-        headers: { 'Authorization': `Bearer ${token}` },
-        cache: 'no-store',
-      });
-      if (!response.ok) {
-        if (!silent) setOrders([]);
-        return;
+      const freshOrders = await fetchBuyerOrders();
+      try {
+        const session = localStorage.getItem('buyer_session');
+        setBuyer(session ? JSON.parse(session) : null);
+      } catch {
+        setBuyer(null);
       }
-
-      const data = await response.json();
-      const freshOrders = (data.orders || []) as Array<Record<string, unknown>>;
+      setLoadError('');
+      setLoginRequired(false);
+      automaticRefreshPaused.current = false;
       setOrders(freshOrders);
       setSelectedOrder(current => {
         if (!current) return null;
@@ -62,9 +68,20 @@ function BuyerLookupPage() {
           || freshOrders.find(order => order.order_number === current.order_number)
           || current;
       });
-    } catch {
-      if (!silent) setOrders([]);
+    } catch (loadFailure) {
+      const accessDenied = loadFailure instanceof BuyerOrdersError
+        && (loadFailure.status === 401 || loadFailure.status === 403);
+      setLoadError(loadFailure instanceof BuyerOrdersError
+        ? loadFailure.message
+        : 'Riwayat pesanan gagal dimuat. Periksa koneksi internet lalu coba lagi.');
+      setLoginRequired(loadFailure instanceof BuyerOrdersError && loadFailure.status === 401);
+      if (accessDenied) {
+        automaticRefreshPaused.current = true;
+        setOrders([]);
+        setSelectedOrder(null);
+      }
     } finally {
+      ordersRequestInFlight.current = false;
       if (!silent) setLoading(false);
     }
   }, []);
@@ -77,15 +94,8 @@ function BuyerLookupPage() {
   }
 
   useEffect(() => {
-    const session = localStorage.getItem('buyer_session');
-    if (!session) {
-      router.push('/buyer/login?redirect=/buyer/lookup');
-      return;
-    }
-    const parsed = JSON.parse(session);
-    setBuyer(parsed);
     void loadAllOrders();
-  }, [router, loadAllOrders]);
+  }, [loadAllOrders]);
 
   useEffect(() => {
     const refreshOrders = () => {
@@ -202,6 +212,19 @@ function BuyerLookupPage() {
           {error && <div className="login-error" style={{ marginTop: '8px' }}>{error}</div>}
         </div>
 
+        {loadError && (
+          <div className="login-error" role="alert" style={{ marginBottom: '20px' }}>
+            <p>{loadError}</p>
+            {loginRequired ? (
+              <Link href={loginHref} className="btn btn-primary btn-sm">Masuk kembali</Link>
+            ) : (
+              <button className="btn btn-secondary btn-sm" disabled={loading} onClick={() => void loadAllOrders()}>
+                Coba lagi
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Order Detail View */}
         {selectedOrder && (
           <div className={`status-card ${styles.orderDetail}`} style={{ marginBottom: '20px' }}>
@@ -282,10 +305,15 @@ function BuyerLookupPage() {
                 <h4 style={{ marginBottom: '12px', fontSize: '0.9rem', fontWeight: 700 }}>{t('lookup_account_detail')}</h4>
                 {assignments.map((a, i) => {
                   const stock = a.stock_account as Record<string, unknown>;
+                  const credentialAvailable = a.credential_available === true;
+                  const assignmentStatus = String(a.status || 'expired');
+                  const displayStatus = assignmentStatus === 'active' && !credentialAvailable
+                    ? 'expired'
+                    : assignmentStatus;
                   return (
-                    <div key={i} className="assignment-card">
+                    <div key={String(a.id || i)} className={`assignment-card ${credentialAvailable ? '' : styles.inactiveAssignment}`}>
                       <div className={styles.assignmentHeader} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                        <span className={`badge ${(a.status as string) === 'active' ? 'badge-success' : 'badge-neutral'}`}>{a.status as string}</span>
+                        <span className={`badge ${displayStatus === 'active' ? 'badge-success' : displayStatus === 'replaced' ? 'badge-warning' : 'badge-neutral'}`}>{displayStatus}</span>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                           <span>Expired: {new Date(a.expired_at as string).toLocaleDateString('id-ID')}</span>
                           {Boolean(a.warranty_expired_at) && (
@@ -295,38 +323,48 @@ function BuyerLookupPage() {
                           )}
                         </div>
                       </div>
-                      <div className={`credential-field ${styles.credentialField}`}>
-                        <div>
-                          <div className="credential-label">{t('cred_email')}</div>
-                          <div className="credential-value">{stock?.account_identifier as string}</div>
-                        </div>
-                        <button className="copy-btn" onClick={() => navigator.clipboard.writeText(stock?.account_identifier as string)}>{t('cred_copy')}</button>
-                      </div>
-                      <BuyerCredentialField
-                        assignmentId={Number(a.id)}
-                        label={t('cred_password')}
-                      />
-                      {Boolean(stock?.has_two_factor_secret) && (
-                        <BuyerCredentialField
-                          assignmentId={Number(a.id)}
-                          label="KODE 2FA.LIVE"
-                          credentialType="two_factor"
-                        />
-                      )}
-                      {Boolean(stock?.profile_info) && (
-                        <div className={`credential-field ${styles.credentialField}`}>
-                          <div>
-                            <div className="credential-label">{t('cred_profile')}</div>
-                            <div className="credential-value">{String(stock.profile_info)}</div>
+                      {credentialAvailable ? (
+                        <>
+                          <div className={`credential-field ${styles.credentialField}`}>
+                            <div>
+                              <div className="credential-label">{t('cred_email')}</div>
+                              <div className="credential-value">{stock?.account_identifier as string}</div>
+                            </div>
+                            <button className="copy-btn" onClick={() => navigator.clipboard.writeText(stock?.account_identifier as string)}>{t('cred_copy')}</button>
                           </div>
-                        </div>
-                      )}
-                      {Boolean(stock?.pin_info) && (
-                        <div className={`credential-field ${styles.credentialField}`}>
-                          <div>
-                            <div className="credential-label">{t('cred_pin')}</div>
-                            <div className="credential-value">{String(stock.pin_info)}</div>
-                          </div>
+                          <BuyerCredentialField
+                            assignmentId={Number(a.id)}
+                            label={t('cred_password')}
+                          />
+                          {Boolean(stock?.has_two_factor_secret) && (
+                            <BuyerCredentialField
+                              assignmentId={Number(a.id)}
+                              label="KODE 2FA.LIVE"
+                              credentialType="two_factor"
+                            />
+                          )}
+                          {Boolean(stock?.profile_info) && (
+                            <div className={`credential-field ${styles.credentialField}`}>
+                              <div>
+                                <div className="credential-label">{t('cred_profile')}</div>
+                                <div className="credential-value">{String(stock.profile_info)}</div>
+                              </div>
+                            </div>
+                          )}
+                          {Boolean(stock?.pin_info) && (
+                            <div className={`credential-field ${styles.credentialField}`}>
+                              <div>
+                                <div className="credential-label">{t('cred_pin')}</div>
+                                <div className="credential-value">{String(stock.pin_info)}</div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className={styles.inactiveAssignmentNotice}>
+                          {displayStatus === 'replaced'
+                            ? 'Akun ini telah diganti. Riwayat penugasan tetap disimpan, tetapi kredensial lama tidak lagi dapat dibuka.'
+                            : 'Masa akses akun ini sudah berakhir. Riwayat penugasan tetap disimpan, tetapi kredensial tidak lagi dapat dibuka.'}
                         </div>
                       )}
                     </div>
@@ -352,6 +390,11 @@ function BuyerLookupPage() {
           <div className={`status-card ${styles.ordersCard}`}>
             {loading ? (
               <div className="loading-page"><div className="loading-spinner" /></div>
+            ) : orders.length === 0 && loadError ? (
+              <div className="empty-state">
+                <h4>Riwayat pesanan belum dapat ditampilkan</h4>
+                <p>Data belum berhasil dimuat. Pesan ini tidak berarti pesanan Anda terhapus.</p>
+              </div>
             ) : orders.length === 0 ? (
               <div className="empty-state">
                 <div className="icon">🛍️</div>

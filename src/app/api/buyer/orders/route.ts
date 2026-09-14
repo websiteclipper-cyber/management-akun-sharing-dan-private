@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getBuyerAccessFromRequest } from '@/lib/auth';
 import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
+import { serializeBuyerAssignment } from '@/lib/buyerAssignmentView';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
       )
     `)
     .in('order_id', orderIds)
-    .eq('status', 'active');
+    .order('created_at', { ascending: false });
 
   if (assignmentsError) {
     return NextResponse.json({ error: 'Failed to load assignments' }, { status: 500 });
@@ -71,17 +72,7 @@ export async function GET(request: NextRequest) {
   const assignmentsByOrder = new Map<number, typeof assignments>();
   for (const assignment of assignments || []) {
     const existing = assignmentsByOrder.get(assignment.order_id) || [];
-    const stockAccount = Array.isArray(assignment.stock_account)
-      ? assignment.stock_account[0]
-      : assignment.stock_account;
-    const { two_factor_secret_encrypted: twoFactorSecret, ...publicStockAccount } = stockAccount || {};
-    existing.push({
-      ...assignment,
-      stock_account: {
-        ...publicStockAccount,
-        has_two_factor_secret: Boolean(twoFactorSecret),
-      },
-    });
+    existing.push(serializeBuyerAssignment(assignment));
     assignmentsByOrder.set(assignment.order_id, existing);
   }
 

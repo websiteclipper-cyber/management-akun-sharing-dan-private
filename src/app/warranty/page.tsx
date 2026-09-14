@@ -9,6 +9,7 @@ import styles from '../aftersales.module.css';
 
 interface AssignmentSummary {
   id: number;
+  status: string;
   expired_at: string | null;
   warranty_expired_at: string | null;
   stock_account: { account_identifier?: string } | null;
@@ -67,9 +68,13 @@ function WarrantyForm() {
         if (!response.ok) throw new Error(data.error || 'Gagal memuat pesanan.');
         const selectedOrder = data.orders?.[0] as OrderSummary | undefined;
         if (!selectedOrder) throw new Error('Pesanan tidak ditemukan pada akun buyer ini.');
-        if (!selectedOrder.assignments?.length) throw new Error('Pesanan belum memiliki akun aktif yang dapat diklaim.');
-        setOrder(selectedOrder);
-        setForm(current => ({ ...current, assignment_id: String(selectedOrder.assignments[0].id) }));
+        const claimableAssignments = (selectedOrder.assignments || []).filter(assignment =>
+          ['active', 'replaced'].includes(assignment.status)
+          && (!assignment.warranty_expired_at || new Date(assignment.warranty_expired_at).getTime() >= Date.now())
+        );
+        if (!claimableAssignments.length) throw new Error('Pesanan belum memiliki akun yang dapat diklaim.');
+        setOrder({ ...selectedOrder, assignments: claimableAssignments });
+        setForm(current => ({ ...current, assignment_id: String(claimableAssignments[0].id) }));
       })
       .catch(fetchError => setError(fetchError instanceof Error ? fetchError.message : 'Gagal memuat pesanan.'))
       .finally(() => setLoadingOrder(false));
