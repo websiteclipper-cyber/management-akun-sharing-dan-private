@@ -1,0 +1,93 @@
+.root {
+  min-width: 0;
+  margin: 0 0 24px;
+  scroll-margin-top: 90px;
+  color: var(--text-primary);
+}
+
+.heading {
+  margin-bottom: 12px;
+}
+
+.heading > span {
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.heading p {
+  margin: 5px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.section {
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.section + .section {
+  margin-top: 8px;
+}
+
+.section > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.5;
+  list-style: none;
+  cursor: pointer;
+}
+
+.section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.section > summary:hover {
+  background: var(--bg-secondary);
+}
+
+.section > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.section > summary svg {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  color: var(--accent);
+}
+
+.chevron {
+  margin-left: auto;
+}
+
+.section[open] > summary .chevron {
+  transform: rotate(180deg);
+}
+
+.terms {
+  background: var(--accent-soft);
+}
+
+.content {
+  padding: 16px 14px;
+  border-top: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}

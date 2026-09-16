@@ -10,10 +10,11 @@ import { CATALOG_CATEGORIES, getProductCatalogCategory } from '@/lib/catalog-cat
 import { normalizeWhatsAppGroupLink, normalizeWhatsAppPhone } from '@/lib/phone';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import HelpPopup from '@/components/HelpPopup';
+import ProductInformation from '@/components/ProductInformation';
 import { useLocale } from '@/lib/locale-context';
 import { SiNetflix, SiSpotify, SiYoutube, SiApple, SiCanva, SiClaude, SiGooglegemini, SiNotion } from 'react-icons/si';
 import { BsDisplay, BsStars } from 'react-icons/bs';
-import { FiArrowRight, FiCheck, FiCreditCard, FiHeadphones, FiInfo, FiMonitor, FiShield, FiX, FiZap } from 'react-icons/fi';
+import { FiArrowRight, FiCheck, FiCreditCard, FiHeadphones, FiMonitor, FiShield, FiZap } from 'react-icons/fi';
 import { TbBrandOpenai, TbBrandDisney, TbBrandAmazon, TbRobot, TbScissors, TbPhotoVideo } from 'react-icons/tb';
 import styles from './HomePageClient.module.css';
 
@@ -208,7 +209,6 @@ export default function HomePage({
   const [helpLoading, setHelpLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(initialLeaderboard);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [promosReady, setPromosReady] = useState(false);
 
   async function loadProducts() {
@@ -1146,30 +1146,11 @@ export default function HomePage({
                           marginBottom: '14px', lineHeight: 1.3, letterSpacing: 0
                         }}>{product.name}</h3>
 
-                        {product.description && (
-                          <div style={{ marginBottom: '24px' }}>
-                            <p
-                              className="product-description-preview"
-                              style={{
-                                fontSize: '0.9rem',
-                                color: C_TEXT_MUTED,
-                                lineHeight: 1.55,
-                                margin: '0 0 12px',
-                              }}
-                            >
-                              {product.description}
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => setDetailProduct(product)}
-                              className="product-detail-button"
-                              aria-label={`Lihat detail ${product.name}`}
-                            >
-                              <FiInfo aria-hidden="true" focusable="false" />
-                              Lihat detail
-                            </button>
-                          </div>
-                        )}
+                        <ProductInformation
+                          productName={product.name}
+                          description={product.description}
+                          terms={product.terms}
+                        />
 
                         <div style={{
                           display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
@@ -1259,65 +1240,6 @@ export default function HomePage({
       </section>
       </main>
 
-      <>
-        {detailProduct && (
-          <div
-            className="product-detail-overlay"
-            onClick={() => setDetailProduct(null)}
-          >
-            <div
-              className="product-detail-modal"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="product-detail-title"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                className="product-detail-close"
-                onClick={() => setDetailProduct(null)}
-                aria-label="Tutup detail produk"
-              >
-                <FiX aria-hidden="true" focusable="false" />
-              </button>
-
-              <div className="product-detail-kicker">{detailProduct.platform_name}</div>
-              <h3 id="product-detail-title" className="product-detail-title">{detailProduct.name}</h3>
-              <div className="product-detail-content">
-                {detailProduct.description}
-              </div>
-
-              <div className="product-detail-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setDetailProduct(null)}
-                >
-                  Tutup
-                </button>
-                {detailProduct.id < 0 ? (
-                  <button type="button" className={`btn ${styles.demoButton}`} disabled>
-                    Produk Demo
-                  </button>
-                ) : !isProductUnavailable(detailProduct) ? (
-                  <Link
-                    href={`/order/${detailProduct.id}`}
-                    className="btn btn-primary"
-                    onClick={() => setDetailProduct(null)}
-                  >
-                    {t('choose_plan')}
-                  </Link>
-                ) : (
-                  <button type="button" className="btn" disabled>
-                    SOLD OUT
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </>
-
       <HelpPopup
         open={helpOpen}
         loading={helpLoading}
@@ -1406,115 +1328,6 @@ export default function HomePage({
           box-shadow: var(--shadow-lg) !important;
         }
 
-        .product-description-preview {
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .product-detail-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          border: 1px solid var(--border-primary);
-          border-radius: 10px;
-          background: var(--bg-secondary);
-          color: var(--accent);
-          padding: 8px 11px;
-          font: inherit;
-          font-size: 0.82rem;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .product-detail-button:hover {
-          background: var(--accent-soft);
-          border-color: rgba(37, 99, 235, 0.25);
-          color: var(--accent-hover);
-        }
-
-        .product-detail-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 1200;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          background: rgba(15, 23, 42, 0.56);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-        }
-
-        .product-detail-modal {
-          position: relative;
-          width: min(100%, 620px);
-          max-height: min(82vh, 720px);
-          overflow: auto;
-          border: 1px solid var(--border-primary);
-          border-radius: var(--radius-2xl);
-          background: var(--bg-card);
-          box-shadow: var(--shadow-lg);
-          padding: 30px;
-        }
-
-        .product-detail-close {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          width: 36px;
-          height: 36px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid var(--border-primary);
-          border-radius: 999px;
-          background: var(--bg-secondary);
-          color: var(--text-secondary);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .product-detail-close:hover {
-          color: var(--text-primary);
-          background: var(--bg-card-hover);
-        }
-
-        .product-detail-kicker {
-          color: var(--text-muted);
-          font-size: 0.74rem;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          margin-bottom: 8px;
-          padding-right: 48px;
-        }
-
-        .product-detail-title {
-          color: var(--text-primary);
-          font-size: 1.45rem;
-          font-weight: 800;
-          line-height: 1.25;
-          margin: 0 48px 18px 0;
-        }
-
-        .product-detail-content {
-          white-space: pre-line;
-          color: var(--text-secondary);
-          font-size: 0.94rem;
-          line-height: 1.72;
-        }
-
-        .product-detail-actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: 12px;
-          margin-top: 26px;
-          flex-wrap: wrap;
-        }
-
         @media (max-width: 560px) {
           .platform-card {
           appearance: none;
@@ -1535,34 +1348,6 @@ export default function HomePage({
           box-shadow: var(--shadow-lg) !important;
         }
 
-        .product-description-preview {
-            -webkit-line-clamp: 2;
-          }
-
-          .product-detail-overlay {
-            align-items: flex-end;
-            padding: 12px;
-          }
-
-          .product-detail-modal {
-            max-height: 86vh;
-            border-radius: 20px;
-            padding: 24px 20px 20px;
-          }
-
-          .product-detail-title {
-            font-size: 1.2rem;
-            margin-right: 42px;
-          }
-
-          .product-detail-actions {
-            display: grid;
-            grid-template-columns: 1fr;
-          }
-
-          .product-detail-actions .btn {
-            width: 100%;
-          }
         }
       `}</style>
     </div>
