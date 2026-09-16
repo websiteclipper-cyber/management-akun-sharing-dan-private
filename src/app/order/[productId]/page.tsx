@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/types';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
-import ProductTermsMarkdown from '@/components/ProductTermsMarkdown';
+import ProductInformation from '@/components/ProductInformation';
 import { FiCheck, FiLock, FiShield } from 'react-icons/fi';
 import styles from '../purchase-flow.module.css';
 
@@ -581,6 +581,15 @@ export default function OrderPage() {
               </div>
             </div>
 
+            <ProductInformation
+              key={product.id}
+              id="product-information"
+              productName={product.name}
+              description={product.description}
+              terms={product.terms}
+              expanded
+            />
+
             {/* Buyer Info */}
             <div className={`buyer-info-card ${styles.infoCard}`} style={{ background: 'var(--accent-soft)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(0,122,255,0.2)', padding: '16px', marginBottom: '20px' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)', marginBottom: '12px' }}>
@@ -820,24 +829,6 @@ export default function OrderPage() {
 
             {error && <div className="login-error">{error}</div>}
 
-            {/* ===== CUSTOM PRODUCT TERMS ===== */}
-            {product.terms && (
-              <div className={styles.productTerms} style={{
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.05))',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid rgba(59, 130, 246, 0.22)',
-                padding: '18px',
-                marginBottom: '20px',
-                color: 'var(--text-primary)',
-                animation: 'fadeIn 0.3s ease',
-              }}>
-                <h4 style={{ color: 'var(--accent)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
-                  <span>📋</span> Ketentuan & Catatan Khusus {product.name}
-                </h4>
-                <ProductTermsMarkdown content={product.terms} />
-              </div>
-            )}
-
             {/* ===== TERMS AND CONDITIONS ===== */}
             <div className={styles.termsCard} style={{
               background: 'linear-gradient(145deg, rgba(255, 59, 48, 0.08), rgba(255, 149, 0, 0.04))',
@@ -878,6 +869,9 @@ export default function OrderPage() {
                 border: `1px solid ${agreed ? 'rgba(34, 197, 94, 0.35)' : 'var(--border-primary)'}`,
                 transition: 'all 0.2s ease',
               }}>
+                <a href="#product-information" className={styles.reviewProductTerms}>
+                  Baca kembali deskripsi &amp; ketentuan {product.name}
+                </a>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.87rem', color: agreed ? 'var(--brand-success)' : 'var(--text-primary)' }}>
                   <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} style={{ width: '20px', height: '20px', accentColor: 'var(--brand-success)', flexShrink: 0 }} />
                   {agreed ? 'Saya sudah membaca dan menyetujui ketentuan' : 'Saya setuju dengan seluruh ketentuan di atas'}

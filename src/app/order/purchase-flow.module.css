@@ -58,6 +58,16 @@
   max-width: 680px !important;
 }
 
+.reviewProductTerms {
+  display: inline-block;
+  margin-bottom: 14px;
+  color: var(--flow-blue);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .paymentCard {
   max-width: 570px !important;
 }
