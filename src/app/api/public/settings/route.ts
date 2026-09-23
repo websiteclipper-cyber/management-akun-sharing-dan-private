@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
+import { DEFAULT_MAINTENANCE_ANNOUNCEMENT } from '@/lib/maintenance';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export async function GET() {
       .in('key', [
         'support_whatsapp',
         'maintenance_mode',
+        'maintenance_announcement',
         'maintenance_whatsapp_group',
         'global_promo_active',
         'global_promo_platform',
@@ -29,6 +31,7 @@ export async function GET() {
       return NextResponse.json({
         support_whatsapp: '082244046330',
         maintenance_mode: 'false',
+        maintenance_announcement: DEFAULT_MAINTENANCE_ANNOUNCEMENT,
         maintenance_whatsapp_group: '',
       });
     }
@@ -38,6 +41,7 @@ export async function GET() {
     // Set defaults
     settings.support_whatsapp = '082244046330';
     settings.maintenance_mode = 'false';
+    settings.maintenance_announcement = DEFAULT_MAINTENANCE_ANNOUNCEMENT;
     settings.maintenance_whatsapp_group = '';
     
     // Override with DB values
@@ -53,6 +57,7 @@ export async function GET() {
     return NextResponse.json({
       support_whatsapp: '082244046330',
       maintenance_mode: 'false',
+      maintenance_announcement: DEFAULT_MAINTENANCE_ANNOUNCEMENT,
       maintenance_whatsapp_group: '',
     });
   }

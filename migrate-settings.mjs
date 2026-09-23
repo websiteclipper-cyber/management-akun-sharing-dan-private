@@ -30,6 +30,11 @@ async function migrate() {
   const defaults = [
     { key: 'support_whatsapp', value: '082244046330', label: 'Nomor WhatsApp Support' },
     { key: 'maintenance_mode', value: 'false', label: 'Mode Maintenance Website' },
+    {
+      key: 'maintenance_announcement',
+      value: 'Saat ini, akun WhatsApp Admin Pastipremium sedang dalam proses peninjauan oleh pihak WhatsApp. Jika Anda sudah mengirim pesan ke nomor sebelumnya, mohon kirim ulang pesan tersebut ke nomor terbaru melalui tombol di bawah ini. Riwayat chat pada nomor sebelumnya untuk sementara belum dapat kami akses.',
+      label: 'Pengumuman Penting Maintenance',
+    },
     { key: 'maintenance_whatsapp_group', value: '', label: 'Link Grup WhatsApp Maintenance' },
   ];
 
