@@ -15,6 +15,7 @@ interface PublicSettings {
 }
 
 const DEFAULT_SUPPORT_WHATSAPP = '082244046330';
+const MAINTENANCE_CHECK_TIMEOUT_MS = 5_000;
 
 export default function MaintenanceGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -28,6 +29,11 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
     if (isAdminRoute) return;
 
     const controller = new AbortController();
+    let active = true;
+    const timeoutId = window.setTimeout(
+      () => controller.abort(),
+      MAINTENANCE_CHECK_TIMEOUT_MS,
+    );
 
     async function checkMaintenanceMode() {
       try {
@@ -39,19 +45,26 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
         if (!response.ok) throw new Error('Tidak dapat memuat status website');
 
         const settings = await response.json() as PublicSettings;
+        if (!active) return;
         setSupportWhatsapp(settings.support_whatsapp || DEFAULT_SUPPORT_WHATSAPP);
         setMaintenanceAnnouncement(settings.maintenance_announcement || '');
         setMaintenanceGroupLink(settings.maintenance_whatsapp_group || '');
         setStatus(settings.maintenance_mode === 'true' ? 'maintenance' : 'open');
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
+      } catch {
+        if (!active) return;
         // Fail open so a temporary settings error never locks visitors out.
         setStatus('open');
+      } finally {
+        window.clearTimeout(timeoutId);
       }
     }
 
     void checkMaintenanceMode();
-    return () => controller.abort();
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [isAdminRoute]);
 
   if (isAdminRoute || status === 'open') return <>{children}</>;

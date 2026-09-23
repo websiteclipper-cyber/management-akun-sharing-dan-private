@@ -14,6 +14,7 @@ function setup(responses, session = { access_token: 'supabase-session' }) {
   const requests = [];
   let sessionReads = 0;
   const context = {
+    AbortSignal,
     exports: {},
     require: () => ({
       supabase: { auth: { getSession: async () => {

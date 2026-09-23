@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
 import {
@@ -116,6 +117,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Gagal menyimpan pengaturan' }, { status: 500 });
     }
 
+    revalidateTag('public-home-settings', { expire: 0 });
     return NextResponse.json({ success: true, message: 'Settings berhasil disimpan!' });
   } catch (err) {
     return NextResponse.json({ error: 'Server error: ' + (err as Error).message }, { status: 500 });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { getAdminFromRequest } from '@/lib/auth';
 
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    revalidateTag('public-home-leaderboard', { expire: 0 });
     return NextResponse.json(data);
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -125,6 +127,7 @@ export async function PUT(request: NextRequest) {
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    revalidateTag('public-home-leaderboard', { expire: 0 });
     return NextResponse.json(data);
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -200,6 +203,7 @@ export async function PATCH(request: NextRequest) {
         updated_at: now,
       }, { onConflict: 'key' });
 
+    revalidateTag('public-home-leaderboard', { expire: 0 });
     return NextResponse.json({
       success: true,
       message: `Berhasil reset ${randomized.length} mitra! Range: Rp ${minCommission.toLocaleString()} - Rp ${maxCommission.toLocaleString()}`,
@@ -228,6 +232,7 @@ export async function DELETE(request: NextRequest) {
       .eq('id', Number(id));
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    revalidateTag('public-home-leaderboard', { expire: 0 });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

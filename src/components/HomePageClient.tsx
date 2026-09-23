@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -192,6 +192,7 @@ export default function HomePage({
   const [promos, setPromos] = useState<Promo[]>(initialPromos);
   const [loading, setLoading] = useState(false);
   const [catalogError, setCatalogError] = useState(initialCatalogError);
+  const catalogRequestInFlight = useRef(false);
   const [buyer, setBuyer] = useState<BuyerSession | null>(() => {
     if (typeof window === 'undefined') return null;
     const session = localStorage.getItem('buyer_session');
@@ -207,22 +208,29 @@ export default function HomePage({
   const [supportGroupLink, setSupportGroupLink] = useState(initialSettings.maintenance_whatsapp_group || '');
   const [helpOpen, setHelpOpen] = useState(false);
   const [helpLoading, setHelpLoading] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(initialLeaderboard);
+  const leaderboard = initialLeaderboard;
   const [menuOpen, setMenuOpen] = useState(false);
   const [promosReady, setPromosReady] = useState(false);
 
   async function loadProducts() {
+    if (catalogRequestInFlight.current) return;
+    catalogRequestInFlight.current = true;
     setLoading(true);
     setCatalogError(false);
 
     try {
       const response = await fetch('/api/public/catalog', {
         cache: 'no-store',
-        signal: AbortSignal.timeout(12_000),
+        // Allow the server's 15-second catalog deadline plus cold-start/network
+        // overhead, while keeping the retry bounded during an outage.
+        signal: AbortSignal.timeout(25_000),
       });
       if (!response.ok) throw new Error('Unable to load catalog.');
 
       const catalog = await response.json();
+      if (catalog.error || !Array.isArray(catalog.products) || !Array.isArray(catalog.promos)) {
+        throw new Error('Invalid catalog response.');
+      }
       setProducts(catalog.products || []);
       setPromos(catalog.promos || []);
     } catch {
@@ -230,6 +238,7 @@ export default function HomePage({
       setPromos([]);
       setCatalogError(true);
     } finally {
+      catalogRequestInFlight.current = false;
       setLoading(false);
     }
   }
@@ -248,11 +257,6 @@ export default function HomePage({
         localStorage.removeItem('ref_code_ts');
       }
     }
-
-    fetch('/api/public/leaderboard')
-      .then(r => r.json())
-      .then(d => setLeaderboard(d.entries || []))
-      .catch(() => {});
 
     return () => window.clearTimeout(promoTimer);
   }, []);
