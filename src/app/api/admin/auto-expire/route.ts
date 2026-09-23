@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { sendTelegramNotification } from '@/lib/telegram';
 import { getAdminFromRequest } from '@/lib/auth';
+import { resetDailyLeaderboard } from '@/lib/leaderboard-reset';
 
 // This endpoint can be called by:
 // 1. Vercel Cron (vercel.json cron schedule)
@@ -33,6 +34,13 @@ export async function POST(request: NextRequest) {
     }
 
     const result = data?.[0] || { expired_count: 0, updated_slots: 0, details: [] };
+
+    try {
+      await resetDailyLeaderboard();
+    } catch (error) {
+      // A cosmetic leaderboard failure must not discard the expiry result.
+      console.error('Daily leaderboard reset failed:', error);
+    }
 
     // Send Telegram notification if there were expirations
     if (result.expired_count > 0) {

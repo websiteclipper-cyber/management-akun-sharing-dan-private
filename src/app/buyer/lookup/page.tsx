@@ -41,11 +41,13 @@ function BuyerLookupPage() {
   const [loginRequired, setLoginRequired] = useState(false);
   const ordersRequestInFlight = useRef(false);
   const automaticRefreshPaused = useRef(false);
+  const nextAutomaticRefreshAt = useRef(0);
   const loginHref = `/buyer/login?redirect=${encodeURIComponent(`/buyer/lookup${searchParams.toString() ? `?${searchParams.toString()}` : ''}`)}`;
   const assignments = (selectedOrder?.assignments as Array<Record<string, unknown>>) || [];
 
   const loadAllOrders = useCallback(async (silent = false) => {
     if (ordersRequestInFlight.current || (silent && automaticRefreshPaused.current)) return;
+    if (silent && Date.now() < nextAutomaticRefreshAt.current) return;
     ordersRequestInFlight.current = true;
     if (!silent) setLoading(true);
 
@@ -81,6 +83,7 @@ function BuyerLookupPage() {
         setSelectedOrder(null);
       }
     } finally {
+      nextAutomaticRefreshAt.current = Date.now() + 60_000;
       ordersRequestInFlight.current = false;
       if (!silent) setLoading(false);
     }
@@ -107,12 +110,10 @@ function BuyerLookupPage() {
       }
     };
 
-    const interval = window.setInterval(refreshOrders, 5000);
     window.addEventListener('focus', refreshOrders);
     document.addEventListener('visibilitychange', refreshOrders);
 
     return () => {
-      window.clearInterval(interval);
       window.removeEventListener('focus', refreshOrders);
       document.removeEventListener('visibilitychange', refreshOrders);
     };

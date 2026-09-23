@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 import PurchaseInvoice from '@/components/PurchaseInvoice';
 import BuyerCredentialField from '@/components/BuyerCredentialField';
 import { FiCheck, FiCheckCircle } from 'react-icons/fi';
+import { getRetryAfterMs, PollingError, startPolling } from '@/lib/polling';
 import styles from '../purchase-flow.module.css';
 
 export default function PaymentSuccessWrapper() {
@@ -28,94 +29,91 @@ function PaymentSuccessPage() {
   const [assignments, setAssignments] = useState<Array<Record<string, unknown>>>([]);
   const [pollCount, setPollCount] = useState(0);
   const [showManualCheck, setShowManualCheck] = useState(false);
+  const [automaticCheckStopped, setAutomaticCheckStopped] = useState(false);
 
-  const checkOrderStatus = useCallback(async () => {
-    if (!orderNumber) return;
-
-    const token = localStorage.getItem('buyer_token') || '';
-    const response = await fetch(`/api/buyer/orders?order=${encodeURIComponent(orderNumber)}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    const data = response.ok ? await response.json() : null;
-    const orderData = data?.orders?.[0];
-
-    if (!orderData) {
-      setStatus('error');
-      return;
-    }
-
-    setOrder(orderData);
-    setProduct(orderData.product as Record<string, unknown>);
-
-    // Check if paid or delivered
-    if (orderData.payment_status === 'paid' || orderData.order_status === 'delivered' || orderData.order_status === 'completed') {
-      // Mark local storage to disable newcomer promo in the future for this browser
-      localStorage.setItem('pastipremium_newcomer_claimed', '1');
-
-      const assignData = (orderData.assignments as Array<Record<string, unknown>> | undefined)
-        ?.filter(assignment => assignment.credential_available === true);
-
-      if (assignData && assignData.length > 0) {
-        setAssignments(assignData);
-        setStatus('delivered');
-      } else {
-        setAssignments([]);
-        setStatus('paid');
-      }
-    }
-  }, [orderNumber]);
-
-  // Active fallback: query KlikQRIS directly through our server API.
-  const checkKlikQrisDirectly = useCallback(async () => {
-    if (!orderNumber) return;
-    try {
-      const res = await fetch('/api/public/check-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
-        },
-        body: JSON.stringify({ order_number: orderNumber }),
-      });
-      const data = await res.json();
-      if (res.status === 401) {
-        router.replace(`/buyer/login?redirect=${encodeURIComponent(`/order/success?order=${orderNumber}`)}`);
-        return;
-      }
-      if (data.status === 'paid' || data.synced) {
-        // Payment confirmed! Re-check order status from DB
-        await checkOrderStatus();
-      }
-    } catch {
-      // Silently fail — will retry on next poll
-    }
-  }, [orderNumber, checkOrderStatus, router]);
-
-  // Poll every 3 seconds for status update
   useEffect(() => {
     if (!orderNumber) {
       router.push('/');
       return;
     }
 
-    // Initial check
-    const initialCheckTimeout = setTimeout(() => {
-      void checkOrderStatus();
-    }, 0);
-
-    const interval = setInterval(() => {
-      if (status === 'waiting' || status === 'paid') {
-        setPollCount(prev => {
-          const newCount = prev + 1;
-          // Every 5th poll (every ~15s), also check the KlikQRIS API.
-          if (newCount % 5 === 0 && status === 'waiting') {
-            checkKlikQrisDirectly();
-          }
-          return newCount;
-        });
-        checkOrderStatus();
+    let nextGatewayCheck = Date.now() + 60_000;
+    const loginHref = `/buyer/login?redirect=${encodeURIComponent(`/order/success?order=${orderNumber}`)}`;
+    const poller = startPolling(async signal => {
+      const headers = { Authorization: `Bearer ${localStorage.getItem('buyer_token') || ''}` };
+      const response = await fetch(`/api/buyer/orders?order=${encodeURIComponent(orderNumber)}`, {
+        headers,
+        cache: 'no-store',
+        signal,
+      });
+      if (signal.aborted) return;
+      if (response.status === 401) {
+        router.replace(loginHref);
+        return false;
       }
-    }, 3000);
+      if (response.status === 429 || response.status >= 500) {
+        throw new PollingError('Order service unavailable', getRetryAfterMs(response));
+      }
+      const data = response.ok ? await response.json() : null;
+      if (signal.aborted) return false;
+      const orderData = data?.orders?.[0];
+      if (!orderData) {
+        setStatus('error');
+        return false;
+      }
+      setPollCount(count => count + 1);
+      setOrder(orderData);
+      setProduct(orderData.product as Record<string, unknown>);
+
+      if (orderData.payment_status === 'paid' || ['delivered', 'completed'].includes(orderData.order_status)) {
+        localStorage.setItem('pastipremium_newcomer_claimed', '1');
+        const availableAssignments = ((orderData.assignments || []) as Array<Record<string, unknown>>)
+          .filter(assignment => assignment.credential_available === true);
+        setAssignments(availableAssignments);
+        setStatus(availableAssignments.length ? 'delivered' : 'paid');
+        if (availableAssignments.length) return false;
+        return;
+      }
+      if (['failed', 'expired'].includes(orderData.payment_status) || orderData.order_status === 'cancelled') {
+        setStatus('error');
+        return false;
+      }
+
+      // Webhooks are primary. Only ask the payment provider once per minute
+      // while still unpaid, and never overlap it with the order request.
+      if (Date.now() >= nextGatewayCheck) {
+        nextGatewayCheck = Date.now() + 60_000;
+        const paymentResponse = await fetch('/api/public/check-payment', {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_number: orderNumber }),
+          signal,
+        });
+        if (signal.aborted) return;
+        if (paymentResponse.status === 401) {
+          router.replace(loginHref);
+          return false;
+        }
+        if (paymentResponse.status === 429 || paymentResponse.status >= 500) {
+          throw new PollingError('Payment service unavailable', getRetryAfterMs(paymentResponse));
+        }
+        const result = await paymentResponse.json();
+        if (signal.aborted) return false;
+        if (!paymentResponse.ok || result.status === 'expired') {
+          setStatus('error');
+          return false;
+        }
+        if (result.status === 'paid' || result.synced) setStatus('paid');
+      }
+    }, {
+      intervalMs: 15_000,
+      maxDurationMs: 5 * 60_000,
+      isVisible: () => document.visibilityState === 'visible',
+      onExpire: () => {
+        setAutomaticCheckStopped(true);
+        setShowManualCheck(true);
+      },
+    });
 
     // Show manual check option after 60 seconds
     const manualCheckTimeout = setTimeout(() => {
@@ -123,11 +121,10 @@ function PaymentSuccessPage() {
     }, 60000);
 
     return () => {
-      clearTimeout(initialCheckTimeout);
-      clearInterval(interval);
+      poller.stop();
       clearTimeout(manualCheckTimeout);
     };
-  }, [orderNumber, status, checkOrderStatus, checkKlikQrisDirectly, router]);
+  }, [orderNumber, router]);
 
   if (!orderNumber) return null;
 
@@ -154,7 +151,7 @@ function PaymentSuccessPage() {
             <h2 style={{ marginBottom: '8px', fontSize: '1.3rem' }}>{t('success_processing')}</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.9rem' }}>
               {t('success_waiting')}
-              <br />{t('success_auto_update')}
+              <br />{automaticCheckStopped ? 'Pengecekan otomatis dijeda. Buka pesanan untuk memeriksa kembali.' : t('success_auto_update')}
             </p>
 
             {/* Order info */}
@@ -219,7 +216,9 @@ function PaymentSuccessPage() {
                 productName={(product?.name as string) || '-'}
               />
             )}
-            <div className="loading-spinner" style={{ margin: '0 auto 20px' }} />
+            {automaticCheckStopped
+              ? <p>Pengecekan otomatis dijeda. Buka pesanan untuk memeriksa kembali.</p>
+              : <div className="loading-spinner" style={{ margin: '0 auto 20px' }} />}
             <Link href={`/buyer/lookup?order=${orderNumber}`} className="btn btn-primary">
               {t('success_view_orders')}
             </Link>

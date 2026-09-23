@@ -14,6 +14,7 @@ export async function fetchBuyerOrders(): Promise<Array<Record<string, unknown>>
   const requestOrders = (token: string) => fetch('/api/buyer/orders', {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
+    signal: AbortSignal.timeout(15_000),
   });
 
   let response = await requestOrders(localStorage.getItem('buyer_token') || '');
@@ -29,6 +30,7 @@ export async function fetchBuyerOrders(): Promise<Array<Record<string, unknown>>
       method: 'POST',
       headers: { Authorization: `Bearer ${session.access_token}` },
       cache: 'no-store',
+      signal: AbortSignal.timeout(15_000),
     });
     const refreshed = await exchange.json();
     if (!exchange.ok) {

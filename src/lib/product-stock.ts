@@ -10,6 +10,7 @@ interface StockCapacityRow {
 }
 
 const STOCK_PAGE_SIZE = 1000;
+const STOCK_QUERY_TIMEOUT_MS = 5_000;
 
 function toNonNegativeInteger(value: number | null): number {
   const numericValue = Number(value || 0);
@@ -47,6 +48,7 @@ export function calculateAvailableStock(
 
 export async function getAvailableStockByProductIds(
   productIds: number[],
+  signal: AbortSignal = AbortSignal.timeout(STOCK_QUERY_TIMEOUT_MS),
 ): Promise<Map<number, number>> {
   const uniqueProductIds = [...new Set(
     productIds.filter((productId) => Number.isInteger(productId) && productId > 0),
@@ -64,7 +66,8 @@ export async function getAvailableStockByProductIds(
       .in('product_id', uniqueProductIds)
       .eq('status', 'active')
       .order('id', { ascending: true })
-      .range(from, from + STOCK_PAGE_SIZE - 1);
+      .range(from, from + STOCK_PAGE_SIZE - 1)
+      .abortSignal(signal);
 
     if (error) {
       throw new Error(`Gagal membaca stok produk: ${error.message}`);

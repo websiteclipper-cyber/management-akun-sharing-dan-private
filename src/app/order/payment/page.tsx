@@ -1,9 +1,10 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { FiCheck, FiClock, FiLock } from 'react-icons/fi';
+import { getRetryAfterMs, PollingError, startPolling } from '@/lib/polling';
 import styles from '../purchase-flow.module.css';
 
 interface PaymentData {
@@ -41,36 +42,7 @@ function KlikQrisPaymentPage() {
   const [checking, setChecking] = useState(false);
   const [status, setStatus] = useState<'pending' | 'expired' | 'error'>('pending');
   const [error, setError] = useState('');
-
-  const checkPayment = useCallback(async () => {
-    if (!orderNumber || checking || status !== 'pending') return;
-    setChecking(true);
-    try {
-      const response = await fetch('/api/public/check-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
-        },
-        body: JSON.stringify({ order_number: orderNumber }),
-      });
-      const result = await response.json();
-
-      if (response.status === 401) {
-        router.replace(`/buyer/login?redirect=${encodeURIComponent(`/order/payment?order=${orderNumber}`)}`);
-        return;
-      }
-      if (result.status === 'paid' || result.synced) {
-        router.replace(`/order/success?order=${encodeURIComponent(orderNumber)}`);
-      } else if (result.status === 'expired') {
-        setStatus('expired');
-      }
-    } catch {
-      // Webhook may still complete the order; the next poll will retry.
-    } finally {
-      setChecking(false);
-    }
-  }, [checking, orderNumber, router, status]);
+  const paymentPoller = useRef<ReturnType<typeof startPolling> | null>(null);
 
   useEffect(() => {
     if (!orderNumber) {
@@ -79,6 +51,8 @@ function KlikQrisPaymentPage() {
     }
 
     let cancelled = false;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 20_000);
     async function createOrLoadPayment() {
       try {
         const response = await fetch('/api/public/klikqris/create', {
@@ -88,8 +62,10 @@ function KlikQrisPaymentPage() {
             'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
           },
           body: JSON.stringify({ order_number: orderNumber }),
+          signal: controller.signal,
         });
         const result = await response.json();
+        if (cancelled) return;
         if (response.status === 401) {
           router.replace(`/buyer/login?redirect=${encodeURIComponent(`/order/payment?order=${orderNumber}`)}`);
           return;
@@ -108,19 +84,78 @@ function KlikQrisPaymentPage() {
           setStatus('error');
         }
       } finally {
+        window.clearTimeout(timeout);
         if (!cancelled) setLoading(false);
       }
     }
 
     createOrLoadPayment();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
   }, [orderNumber, router]);
 
   useEffect(() => {
     if (!payment || status !== 'pending') return;
-    const interval = window.setInterval(checkPayment, 5000);
-    return () => window.clearInterval(interval);
-  }, [checkPayment, payment, status]);
+    let active = true;
+    const poller = startPolling(async signal => {
+      setChecking(true);
+      try {
+        const response = await fetch('/api/public/check-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('buyer_token') || ''}`,
+          },
+          body: JSON.stringify({ order_number: orderNumber }),
+          signal,
+        });
+        if (!active || signal.aborted) return;
+        if (response.status === 401) {
+          router.replace(`/buyer/login?redirect=${encodeURIComponent(`/order/payment?order=${orderNumber}`)}`);
+          return false;
+        }
+        if (response.status === 429 || response.status >= 500) {
+          throw new PollingError('Payment service unavailable', getRetryAfterMs(response));
+        }
+        const result = await response.json();
+        if (!active || signal.aborted) return false;
+        if (!response.ok) {
+          setError(result.error || 'Gagal mengecek pembayaran.');
+          setStatus('error');
+          return false;
+        }
+        if (result.status === 'paid' || result.synced) {
+          router.replace(`/order/success?order=${encodeURIComponent(orderNumber)}`);
+          return false;
+        }
+        if (result.status === 'expired') {
+          setStatus('expired');
+          return false;
+        }
+      } finally {
+        if (active) setChecking(false);
+      }
+    }, {
+      intervalMs: 15_000,
+      initialDelayMs: 15_000,
+      maxDurationMs: 30 * 60_000,
+      isVisible: () => document.visibilityState === 'visible',
+      onExpire: () => {
+        setChecking(false);
+        setError('Pengecekan otomatis dijeda. Buka pesanan untuk memeriksa status pembayaran kembali.');
+        setStatus('error');
+      },
+    });
+    paymentPoller.current = poller;
+    return () => {
+      active = false;
+      poller.stop();
+      paymentPoller.current = null;
+    };
+  }, [orderNumber, payment, router, status]);
 
   if (loading) return <LoadingPage />;
 
@@ -191,11 +226,11 @@ function KlikQrisPaymentPage() {
                 <div><span>3</span><p><strong>Tunggu konfirmasi</strong><small>Status diperiksa secara otomatis.</small></p></div>
               </div>
 
-              <button className={`btn btn-primary ${styles.payButton}`} onClick={checkPayment} disabled={checking} style={{ width: '100%', justifyContent: 'center' }}>
+              <button className={`btn btn-primary ${styles.payButton}`} onClick={() => void paymentPoller.current?.refresh()} disabled={checking} style={{ width: '100%', justifyContent: 'center' }}>
                 {checking ? 'Mengecek pembayaran...' : 'Saya Sudah Bayar'}
               </button>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '10px' }}>
-                Status juga diperiksa otomatis setiap 5 detik.
+                Status diperiksa otomatis setiap 15 detik saat tab aktif. Jika layanan sibuk, pengecekan dijeda sementara.
               </p>
               <div className={styles.securityNote}><FiLock aria-hidden="true" /> Transaksi diproses dengan aman</div>
             </div>
