@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import {
+  DEFAULT_MAINTENANCE_ANNOUNCEMENT,
+  MAX_MAINTENANCE_ANNOUNCEMENT_LENGTH,
+} from '@/lib/maintenance';
 import { normalizeWhatsAppGroupLink } from '@/lib/phone';
 
 interface Setting {
@@ -11,80 +15,92 @@ interface Setting {
   updated_at?: string;
 }
 
+interface PromoOption {
+  id: string;
+  promo_label: string;
+  original_price: number;
+  promo_price: number;
+  product?: {
+    name: string;
+    platform_name: string;
+  } | null;
+}
+
+function getDefaults(): Setting[] {
+  return [
+    { key: 'support_whatsapp', value: '082244046330', label: 'Nomor WhatsApp Support' },
+    { key: 'maintenance_mode', value: 'false', label: 'Mode Maintenance Website' },
+    {
+      key: 'maintenance_announcement',
+      value: DEFAULT_MAINTENANCE_ANNOUNCEMENT,
+      label: 'Pengumuman Penting Maintenance',
+    },
+    { key: 'maintenance_whatsapp_group', value: '', label: 'Link Grup WhatsApp Maintenance' },
+    { key: 'leaderboard_min_commission', value: '50000', label: 'Leaderboard Min Komisi (Rp)' },
+    { key: 'leaderboard_max_commission', value: '500000', label: 'Leaderboard Max Komisi (Rp)' },
+    { key: 'global_promo_active', value: 'false', label: 'Aktifkan Global Promo Popup' },
+    { key: 'global_promo_platform', value: 'CHATGPT', label: 'Platform Icon Global Promo' },
+    { key: 'global_promo_title', value: 'Promo Spesial', label: 'Judul Global Promo' },
+    { key: 'global_promo_subtitle', value: 'ChatGPT Pro', label: 'Sub-judul Global Promo' },
+    { key: 'global_promo_badge', value: 'FULL GARANSI', label: 'Badge Global Promo' },
+    { key: 'global_promo_normal_price', value: '5000000', label: 'Harga Normal Global Promo' },
+    { key: 'global_promo_price', value: '100000', label: 'Harga Diskon Global Promo' },
+    { key: 'global_promo_btn_text', value: 'AMBIL PROMO SEKARANG', label: 'Teks Tombol Global Promo' },
+    { key: 'global_promo_btn_link', value: '#katalog', label: 'Link Tombol Global Promo' },
+  ];
+}
+
+function ensureDefaults(existing: Setting[]): Setting[] {
+  const defaults = getDefaults();
+  const supportedSettings = existing.filter(setting => setting.key !== 'warranty_auto_replace');
+  const keys = supportedSettings.map(setting => setting.key);
+  const merged = [...supportedSettings];
+  for (const defaultSetting of defaults) {
+    if (!keys.includes(defaultSetting.key)) {
+      merged.push(defaultSetting);
+    }
+  }
+  return merged;
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Setting[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [promos, setPromos] = useState<any[]>([]);
+  const [promos, setPromos] = useState<PromoOption[]>([]);
 
-  useEffect(() => { 
-    loadSettings(); 
-    loadPromos();
-  }, []);
+  useEffect(() => {
+    async function loadPromos() {
+      const { data } = await supabase
+        .from('promos')
+        .select('*, product:products(name, platform_name)')
+        .eq('is_active', true);
+      if (data) setPromos(data as unknown as PromoOption[]);
+    }
 
-  async function loadPromos() {
-    const { data } = await supabase
-      .from('promos')
-      .select('*, product:products(name, platform_name)')
-      .eq('is_active', true);
-    if (data) setPromos(data);
-  }
+    async function loadSettings() {
+      try {
+        const token = localStorage.getItem('admin_token') || '';
+        const res = await fetch('/api/admin/settings', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
 
-  async function loadSettings() {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('admin_token') || '';
-      const res = await fetch('/api/admin/settings', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      
-      if (data.settings && data.settings.length > 0) {
-        // Merge with defaults to ensure all keys exist
-        const merged = ensureDefaults(data.settings);
-        setSettings(merged);
-      } else {
-        // Set defaults if empty
+        if (data.settings && data.settings.length > 0) {
+          setSettings(ensureDefaults(data.settings));
+        } else {
+          setSettings(getDefaults());
+        }
+      } catch {
         setSettings(getDefaults());
       }
-    } catch {
-      setSettings(getDefaults());
+      setLoading(false);
     }
-    setLoading(false);
-  }
 
-  function getDefaults(): Setting[] {
-    return [
-      { key: 'support_whatsapp', value: '082244046330', label: 'Nomor WhatsApp Support' },
-      { key: 'maintenance_mode', value: 'false', label: 'Mode Maintenance Website' },
-      { key: 'maintenance_whatsapp_group', value: '', label: 'Link Grup WhatsApp Maintenance' },
-      { key: 'leaderboard_min_commission', value: '50000', label: 'Leaderboard Min Komisi (Rp)' },
-      { key: 'leaderboard_max_commission', value: '500000', label: 'Leaderboard Max Komisi (Rp)' },
-      { key: 'global_promo_active', value: 'false', label: 'Aktifkan Global Promo Popup' },
-      { key: 'global_promo_platform', value: 'CHATGPT', label: 'Platform Icon Global Promo' },
-      { key: 'global_promo_title', value: 'Promo Spesial', label: 'Judul Global Promo' },
-      { key: 'global_promo_subtitle', value: 'ChatGPT Pro', label: 'Sub-judul Global Promo' },
-      { key: 'global_promo_badge', value: 'FULL GARANSI', label: 'Badge Global Promo' },
-      { key: 'global_promo_normal_price', value: '5000000', label: 'Harga Normal Global Promo' },
-      { key: 'global_promo_price', value: '100000', label: 'Harga Diskon Global Promo' },
-      { key: 'global_promo_btn_text', value: 'AMBIL PROMO SEKARANG', label: 'Teks Tombol Global Promo' },
-      { key: 'global_promo_btn_link', value: '#katalog', label: 'Link Tombol Global Promo' },
-    ];
-  }
-
-  function ensureDefaults(existing: Setting[]): Setting[] {
-    const defaults = getDefaults();
-    const supportedSettings = existing.filter(setting => setting.key !== 'warranty_auto_replace');
-    const keys = supportedSettings.map(setting => setting.key);
-    const merged = [...supportedSettings];
-    for (const defaultSetting of defaults) {
-      if (!keys.includes(defaultSetting.key)) {
-        merged.push(defaultSetting);
-      }
-    }
-    return merged;
-  }
+    void loadSettings();
+    void loadPromos();
+  }, []);
 
   function updateSetting(key: string, value: string) {
     setSettings(prev =>
@@ -128,6 +144,7 @@ export default function SettingsPage() {
 
   const waNumber = settings.find(s => s.key === 'support_whatsapp')?.value || '';
   const maintenanceActive = settings.find(s => s.key === 'maintenance_mode')?.value === 'true';
+  const maintenanceAnnouncement = settings.find(s => s.key === 'maintenance_announcement')?.value || '';
   const maintenanceGroupLink = settings.find(s => s.key === 'maintenance_whatsapp_group')?.value || '';
   const normalizedMaintenanceGroupLink = normalizeWhatsAppGroupLink(maintenanceGroupLink);
   const maintenanceGroupLinkValid = !maintenanceGroupLink || Boolean(normalizedMaintenanceGroupLink);
@@ -228,6 +245,31 @@ export default function SettingsPage() {
                 {maintenanceActive
                   ? '⚠️ Setelah disimpan, pengunjung akan melihat keterangan bahwa website sedang dalam pemeliharaan dan tombol chat ke nomor WhatsApp Support.'
                   : 'Website berjalan normal. Aktifkan sakelar ini lalu simpan pengaturan saat Anda ingin menutup akses pengunjung sementara.'}
+              </div>
+
+              <div className="form-group" style={{ marginTop: '18px', marginBottom: 0 }}>
+                <label className="form-label" htmlFor="maintenance-announcement">
+                  Pengumuman Penting (Opsional)
+                </label>
+                <textarea
+                  id="maintenance-announcement"
+                  className="form-input"
+                  rows={6}
+                  maxLength={MAX_MAINTENANCE_ANNOUNCEMENT_LENGTH}
+                  value={maintenanceAnnouncement}
+                  onChange={e => updateSetting('maintenance_announcement', e.target.value)}
+                  placeholder="Tulis informasi penting yang perlu diketahui pengunjung saat maintenance..."
+                  style={{ minHeight: '132px', resize: 'vertical', lineHeight: 1.6 }}
+                />
+                <p style={{
+                  display: 'flex', justifyContent: 'space-between', gap: '12px',
+                  fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0,
+                }}>
+                  <span>Kosongkan kolom ini jika tidak ada pengumuman yang perlu ditampilkan.</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>
+                    {maintenanceAnnouncement.length}/{MAX_MAINTENANCE_ANNOUNCEMENT_LENGTH}
+                  </span>
+                </p>
               </div>
 
               <div className="form-group" style={{ marginTop: '18px', marginBottom: 0 }}>

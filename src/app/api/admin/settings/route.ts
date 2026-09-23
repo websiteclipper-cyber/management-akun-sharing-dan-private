@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
+import {
+  DEFAULT_MAINTENANCE_ANNOUNCEMENT,
+  MAX_MAINTENANCE_ANNOUNCEMENT_LENGTH,
+} from '@/lib/maintenance';
 import { normalizeWhatsAppGroupLink } from '@/lib/phone';
 
 // Ensure site_settings table exists
@@ -16,6 +20,7 @@ async function ensureTable() {
       INSERT INTO site_settings (key, value, label) VALUES
         ('support_whatsapp', '082244046330', 'Nomor WhatsApp Support'),
         ('maintenance_mode', 'false', 'Mode Maintenance Website'),
+        ('maintenance_announcement', '${DEFAULT_MAINTENANCE_ANNOUNCEMENT}', 'Pengumuman Penting Maintenance'),
         ('maintenance_whatsapp_group', '', 'Link Grup WhatsApp Maintenance')
       ON CONFLICT (key) DO NOTHING;
     `
@@ -82,6 +87,13 @@ export async function POST(request: Request) {
 
     if (payload.length === 0) {
       return NextResponse.json({ error: 'Tidak ada pengaturan yang dapat disimpan' }, { status: 400 });
+    }
+
+    const announcementSetting = payload.find(s => s.key === 'maintenance_announcement');
+    if (announcementSetting && announcementSetting.value.length > MAX_MAINTENANCE_ANNOUNCEMENT_LENGTH) {
+      return NextResponse.json({
+        error: `Pengumuman maintenance maksimal ${MAX_MAINTENANCE_ANNOUNCEMENT_LENGTH} karakter`,
+      }, { status: 400 });
     }
 
     const groupSetting = payload.find(s => s.key === 'maintenance_whatsapp_group');

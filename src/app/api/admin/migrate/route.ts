@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
+import { DEFAULT_MAINTENANCE_ANNOUNCEMENT } from '@/lib/maintenance';
 
 /**
  * One-time migration endpoint to add hybrid commission columns
@@ -115,7 +116,10 @@ export async function POST(request: Request) {
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
         INSERT INTO site_settings (key, value, label) VALUES
-          ('support_whatsapp', '082244046330', 'Nomor WhatsApp Support')
+          ('support_whatsapp', '082244046330', 'Nomor WhatsApp Support'),
+          ('maintenance_mode', 'false', 'Mode Maintenance Website'),
+          ('maintenance_announcement', '${DEFAULT_MAINTENANCE_ANNOUNCEMENT}', 'Pengumuman Penting Maintenance'),
+          ('maintenance_whatsapp_group', '', 'Link Grup WhatsApp Maintenance')
         ON CONFLICT (key) DO NOTHING;
       `
     });

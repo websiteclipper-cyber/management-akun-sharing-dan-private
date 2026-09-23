@@ -8,6 +8,7 @@ import styles from './MaintenanceGate.module.css';
 type GateStatus = 'checking' | 'open' | 'maintenance';
 
 interface PublicSettings {
+  maintenance_announcement?: string;
   maintenance_mode?: string;
   maintenance_whatsapp_group?: string;
   support_whatsapp?: string;
@@ -20,6 +21,7 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
   const isAdminRoute = pathname.startsWith('/admin');
   const [status, setStatus] = useState<GateStatus>('checking');
   const [supportWhatsapp, setSupportWhatsapp] = useState(DEFAULT_SUPPORT_WHATSAPP);
+  const [maintenanceAnnouncement, setMaintenanceAnnouncement] = useState('');
   const [maintenanceGroupLink, setMaintenanceGroupLink] = useState('');
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
 
         const settings = await response.json() as PublicSettings;
         setSupportWhatsapp(settings.support_whatsapp || DEFAULT_SUPPORT_WHATSAPP);
+        setMaintenanceAnnouncement(settings.maintenance_announcement || '');
         setMaintenanceGroupLink(settings.maintenance_whatsapp_group || '');
         setStatus(settings.maintenance_mode === 'true' ? 'maintenance' : 'open');
       } catch (error) {
@@ -68,6 +71,7 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
   const message = 'Halo Admin pastipremium.my.id, saya ingin menanyakan informasi terkait maintenance website.';
   const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   const whatsappGroupUrl = normalizeWhatsAppGroupLink(maintenanceGroupLink);
+  const announcement = maintenanceAnnouncement.trim();
 
   return (
     <main className={styles.page}>
@@ -92,6 +96,20 @@ export default function MaintenanceGate({ children }: { children: React.ReactNod
           Kami sedang melakukan peningkatan agar layanan menjadi lebih baik.
           Silakan coba kembali beberapa saat lagi.
         </p>
+
+        {announcement && (
+          <aside
+            className={styles.announcement}
+            role="alert"
+            aria-labelledby="maintenance-announcement-title"
+          >
+            <span className={styles.announcementIcon} aria-hidden="true">!</span>
+            <div className={styles.announcementContent}>
+              <h2 id="maintenance-announcement-title">Pengumuman Penting</h2>
+              <p>{announcement}</p>
+            </div>
+          </aside>
+        )}
 
         <div className={styles.infoBox}>
           <span className={styles.infoIcon} aria-hidden="true">i</span>
