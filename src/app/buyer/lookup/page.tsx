@@ -9,6 +9,7 @@ import Link from 'next/link';
 import PurchaseInvoice from '@/components/PurchaseInvoice';
 import BuyerCredentialField from '@/components/BuyerCredentialField';
 import BuyerUsageTutorial from '@/components/BuyerUsageTutorial';
+import type { Product } from '@/lib/types';
 import { FiArrowLeft, FiSearch, FiShield, FiUser } from 'react-icons/fi';
 import styles from '../buyer-flow.module.css';
 
@@ -373,7 +374,7 @@ function BuyerLookupPage() {
                   );
                 })}
                 {assignments.some(assignment => assignment.credential_available === true) && (
-                  <BuyerUsageTutorial key={String(selectedOrder.id)} />
+                  <BuyerUsageTutorial product={selectedOrder.product as Product | null} />
                 )}
               </div>
             )}

@@ -3,7 +3,6 @@ import type { Product } from '@/lib/types';
 import { getServiceClient } from '@/lib/supabase';
 import { getAvailableStockByProductIds } from '@/lib/product-stock';
 import { DEFAULT_MAINTENANCE_ANNOUNCEMENT } from '@/lib/maintenance';
-import { CREDENTIAL_TUTORIAL_DEFAULTS } from '@/lib/credential-tutorial';
 
 export interface PublicPromo {
   id: string;
@@ -34,7 +33,6 @@ const PUBLIC_SETTING_KEYS = [
   'maintenance_mode',
   'maintenance_announcement',
   'maintenance_whatsapp_group',
-  ...Object.keys(CREDENTIAL_TUTORIAL_DEFAULTS),
   'global_promo_active',
   'global_promo_platform',
   'global_promo_title',
@@ -112,7 +110,6 @@ async function queryPublicSettings(): Promise<Record<string, string>> {
     maintenance_mode: 'false',
     maintenance_announcement: DEFAULT_MAINTENANCE_ANNOUNCEMENT,
     maintenance_whatsapp_group: '',
-    ...CREDENTIAL_TUTORIAL_DEFAULTS,
   };
 
   try {

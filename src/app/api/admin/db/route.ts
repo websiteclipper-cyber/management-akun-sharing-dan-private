@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
 import { readJsonBody } from '@/lib/publicApiSecurity';
+import { validateProductCredentialTutorial } from '@/lib/credential-tutorial';
 
 const MAX_SELECT_ROWS = 5000;
 const SUPER_ADMIN_WRITE_TABLES = new Set([
@@ -73,6 +74,16 @@ export async function POST(request: Request) {
     }
     if (table === 'audit_logs' && operation !== 'select') {
       return NextResponse.json({ error: 'Audit logs are immutable' }, { status: 403 });
+    }
+
+    if (table === 'products' && (operation === 'insert' || operation === 'update') && data) {
+      for (const row of Array.isArray(data) ? data : [data]) {
+        if (!row || typeof row !== 'object' || Array.isArray(row)) {
+          return NextResponse.json({ error: 'Data produk tidak valid' }, { status: 400 });
+        }
+        const tutorialError = validateProductCredentialTutorial(row);
+        if (tutorialError) return NextResponse.json({ error: tutorialError }, { status: 400 });
+      }
     }
 
     switch (operation) {

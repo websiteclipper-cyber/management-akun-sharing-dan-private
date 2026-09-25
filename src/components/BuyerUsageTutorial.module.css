@@ -38,17 +38,6 @@
   border-radius: var(--radius-md);
 }
 
-.notice {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 16px;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  text-align: left;
-}
-
 @media (max-width: 480px) {
   .card {
     padding: 16px;
