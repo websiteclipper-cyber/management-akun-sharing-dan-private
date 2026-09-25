@@ -1,3 +1,5 @@
+import type { ProductCredentialTutorial } from '@/lib/credential-tutorial';
+
 // ===== ENUMS =====
 export type AdminRole = 'super_admin' | 'staff_admin';
 export type AdminStatus = 'active' | 'inactive';
@@ -42,7 +44,7 @@ export interface Buyer {
   updated_at: string;
 }
 
-export interface Product {
+export interface Product extends ProductCredentialTutorial {
   id: number;
   code: string;
   name: string;

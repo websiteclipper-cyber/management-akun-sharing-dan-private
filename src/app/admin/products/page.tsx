@@ -4,6 +4,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { adminUpdate, adminInsert, adminDelete, adminSelect } from '@/lib/adminApi';
 import { Product } from '@/lib/types';
 import ProductTermsMarkdown from '@/components/ProductTermsMarkdown';
+import BuyerUsageTutorial from '@/components/BuyerUsageTutorial';
+import {
+  DEFAULT_CREDENTIAL_TUTORIAL_TITLE,
+  MAX_CREDENTIAL_TUTORIAL_TITLE_LENGTH,
+  MAX_CREDENTIAL_TUTORIAL_CONTENT_LENGTH,
+} from '@/lib/credential-tutorial';
 import {
   CATALOG_CATEGORIES,
   CatalogCategoryId,
@@ -323,6 +329,9 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
     default_max_slot: product?.default_max_slot?.toString() || '4',
     description: product?.description || '',
     terms: product?.terms || '',
+    credential_tutorial_enabled: product?.credential_tutorial_enabled ?? true,
+    credential_tutorial_title: product?.credential_tutorial_title ?? DEFAULT_CREDENTIAL_TUTORIAL_TITLE,
+    credential_tutorial_content: product?.credential_tutorial_content ?? '',
     status: product?.status || 'active',
   });
   const [saving, setSaving] = useState(false);
@@ -347,6 +356,9 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
       default_max_slot: parseInt(form.default_max_slot),
       description: form.description || null,
       terms: form.terms || null,
+      credential_tutorial_enabled: form.credential_tutorial_enabled,
+      credential_tutorial_title: form.credential_tutorial_title.trim() || null,
+      credential_tutorial_content: form.credential_tutorial_content.trim() || null,
       status: form.status,
       updated_at: new Date().toISOString(),
     };
@@ -482,6 +494,59 @@ function ProductForm({ product, isCopy, onClose, onSave }: { product: Product | 
               </div>
             )}
           </div>
+          <fieldset style={{ border: '1px solid var(--border-secondary)', borderRadius: 'var(--radius-md)', padding: '16px', margin: '0 0 20px', minWidth: 0 }}>
+            <legend style={{ fontSize: '0.95rem', fontWeight: 700, padding: '0 6px' }}>Tutorial Pemakaian Produk</legend>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: 1.6, marginBottom: '16px' }}>
+              Panduan khusus untuk produk ini. Ditampilkan di bawah data akun pada Pesanan Saya dan halaman setelah pembayaran saat akun sudah tersedia.
+            </p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.85rem', marginBottom: '16px' }}>
+              <input
+                type="checkbox"
+                checked={form.credential_tutorial_enabled}
+                onChange={e => setForm({ ...form, credential_tutorial_enabled: e.target.checked })}
+              />
+              Tampilkan tutorial produk ini ke pembeli
+            </label>
+            <div className="form-group">
+              <label className="form-label" htmlFor="product-tutorial-title">Judul Tutorial</label>
+              <input
+                id="product-tutorial-title"
+                className="form-input"
+                value={form.credential_tutorial_title}
+                maxLength={MAX_CREDENTIAL_TUTORIAL_TITLE_LENGTH}
+                placeholder={DEFAULT_CREDENTIAL_TUTORIAL_TITLE}
+                onChange={e => setForm({ ...form, credential_tutorial_title: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="product-tutorial-content">Langkah-langkah Pemakaian</label>
+              <textarea
+                id="product-tutorial-content"
+                className="form-textarea"
+                rows={10}
+                maxLength={MAX_CREDENTIAL_TUTORIAL_CONTENT_LENGTH}
+                value={form.credential_tutorial_content}
+                onChange={e => setForm({ ...form, credential_tutorial_content: e.target.value })}
+                placeholder={'1. Buka aplikasi atau situs produk ini.\n2. Ikuti cara login atau aktivasi sesuai produk.\n3. Tambahkan petunjuk password, 2FA, profil, atau PIN jika diperlukan.'}
+                aria-describedby="product-tutorial-help"
+                style={{ minHeight: '200px', lineHeight: 1.7 }}
+              />
+              <small id="product-tutorial-help" style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: 1.6 }}>
+                Mendukung langkah bernomor, **teks tebal**, dan [teks link](https://contoh.com). Kosongkan isi untuk menyembunyikan tutorial produk ini.
+              </small>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textAlign: 'right', marginTop: '4px' }}>
+                {form.credential_tutorial_content.length}/{MAX_CREDENTIAL_TUTORIAL_CONTENT_LENGTH} karakter
+              </p>
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700 }}>PRATINJAU TAMPILAN PEMBELI</div>
+            {form.credential_tutorial_enabled && form.credential_tutorial_content.trim() ? (
+              <BuyerUsageTutorial product={form} />
+            ) : (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '12px' }}>
+                Tutorial disembunyikan karena {form.credential_tutorial_enabled ? 'isi masih kosong' : 'belum diaktifkan'}.
+              </p>
+            )}
+          </fieldset>
           <div className="form-group">
             <label className="form-label">Status</label>
             <select className="form-select" value={form.status} onChange={e => setForm({...form, status: e.target.value as 'active' | 'inactive'})}>

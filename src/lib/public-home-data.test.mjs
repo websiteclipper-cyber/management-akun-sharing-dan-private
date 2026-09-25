@@ -9,12 +9,6 @@ const { outputText } = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2017 } },
 );
 
-const tutorialContext = { exports: {} };
-vm.runInNewContext(ts.transpileModule(
-  readFileSync(new URL('./credential-tutorial.ts', import.meta.url), 'utf8'),
-  { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2017 } },
-).outputText, tutorialContext);
-
 function setup() {
   let failure;
   let queryCount = 0;
@@ -76,7 +70,6 @@ function setup() {
         },
       };
       if (name === '@/lib/maintenance') return { DEFAULT_MAINTENANCE_ANNOUNCEMENT: '' };
-      if (name === '@/lib/credential-tutorial') return tutorialContext.exports;
       throw new Error(`Unexpected import: ${name}`);
     },
   };
@@ -134,35 +127,23 @@ test('a genuinely empty catalog is valid and cached, and all queries share one d
   assert.ok(client.signals.every(signal => signal === client.signals[0]));
 });
 
-test('buyer settings include admin tutorial changes after revalidation without exposing private settings', async () => {
+test('public settings exclude legacy global tutorials and private settings', async () => {
   const client = setup();
   const initial = await client.getSettings();
-  assert.equal(initial.credential_tutorial_enabled, 'true');
-  assert.ok(initial.credential_tutorial_content.includes('2FA.LIVE'));
+  assert.equal(Object.hasOwn(initial, 'credential_tutorial_content'), false);
 
-  const content = '1. Buka layanan.\n2. Ikuti [panduan](https://example.com).';
   client.setSettings([
+    { key: 'support_whatsapp', value: '081234567890' },
     { key: 'credential_tutorial_enabled', value: 'true' },
     { key: 'credential_tutorial_title', value: 'Panduan Login dari Admin' },
-    { key: 'credential_tutorial_content', value: content },
+    { key: 'credential_tutorial_content', value: 'Tutorial global lama' },
     { key: 'leaderboard_min_commission', value: '50000' },
   ]);
   await client.refreshSettings();
   const saved = await client.getSettings();
-  assert.equal(saved.credential_tutorial_title, 'Panduan Login dari Admin');
-  assert.equal(saved.credential_tutorial_content, content);
+  assert.equal(saved.support_whatsapp, '081234567890');
+  assert.equal(Object.hasOwn(saved, 'credential_tutorial_enabled'), false);
+  assert.equal(Object.hasOwn(saved, 'credential_tutorial_title'), false);
+  assert.equal(Object.hasOwn(saved, 'credential_tutorial_content'), false);
   assert.equal(Object.hasOwn(saved, 'leaderboard_min_commission'), false);
-});
-
-test('disabled and deliberately empty tutorials do not get replaced by default instructions', async () => {
-  const client = setup();
-  client.setSettings([
-    { key: 'credential_tutorial_enabled', value: 'false' },
-    { key: 'credential_tutorial_title', value: '' },
-    { key: 'credential_tutorial_content', value: '' },
-  ]);
-  const settings = await client.getSettings();
-  assert.equal(settings.credential_tutorial_enabled, 'false');
-  assert.equal(settings.credential_tutorial_title, '');
-  assert.equal(settings.credential_tutorial_content, '');
 });

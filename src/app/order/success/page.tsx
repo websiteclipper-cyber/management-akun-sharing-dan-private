@@ -7,6 +7,7 @@ import Link from 'next/link';
 import PurchaseInvoice from '@/components/PurchaseInvoice';
 import BuyerCredentialField from '@/components/BuyerCredentialField';
 import BuyerUsageTutorial from '@/components/BuyerUsageTutorial';
+import type { Product } from '@/lib/types';
 import { FiCheck, FiCheckCircle } from 'react-icons/fi';
 import { getRetryAfterMs, PollingError, startPolling } from '@/lib/polling';
 import styles from '../purchase-flow.module.css';
@@ -26,7 +27,7 @@ function PaymentSuccessPage() {
 
   const [status, setStatus] = useState<'waiting' | 'paid' | 'delivered' | 'error'>('waiting');
   const [order, setOrder] = useState<Record<string, unknown> | null>(null);
-  const [product, setProduct] = useState<Record<string, unknown> | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [assignments, setAssignments] = useState<Array<Record<string, unknown>>>([]);
   const [pollCount, setPollCount] = useState(0);
   const [showManualCheck, setShowManualCheck] = useState(false);
@@ -64,7 +65,7 @@ function PaymentSuccessPage() {
       }
       setPollCount(count => count + 1);
       setOrder(orderData);
-      setProduct(orderData.product as Record<string, unknown>);
+      setProduct(orderData.product as Product);
 
       if (orderData.payment_status === 'paid' || ['delivered', 'completed'].includes(orderData.order_status)) {
         localStorage.setItem('pastipremium_newcomer_claimed', '1');
@@ -333,7 +334,7 @@ function PaymentSuccessPage() {
                     </div>
                   );
                 })}
-                <BuyerUsageTutorial key={orderNumber} />
+                <BuyerUsageTutorial product={product} />
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
