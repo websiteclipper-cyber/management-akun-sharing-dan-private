@@ -9,18 +9,29 @@ const { outputText } = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2017 } },
 );
 
+const tutorialContext = { exports: {} };
+vm.runInNewContext(ts.transpileModule(
+  readFileSync(new URL('./credential-tutorial.ts', import.meta.url), 'utf8'),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2017 } },
+).outputText, tutorialContext);
+
 function setup() {
   let failure;
   let queryCount = 0;
   let products = [{ id: 1, name: 'Existing product', status: 'active' }];
+  let settings = [];
   const caches = new Map();
   const signals = [];
   const service = {
     from(table) {
       queryCount++;
+      let allowedKeys;
       const query = {
         select: () => query,
-        in: () => query,
+        in: (column, values) => {
+          if (column === 'key') allowedKeys = values;
+          return query;
+        },
         order: () => query,
         eq: () => query,
         lte: () => query,
@@ -28,7 +39,9 @@ function setup() {
         abortSignal: signal => { signals.push(signal); return query; },
         then(resolve, reject) {
           return Promise.resolve({
-            data: table === 'products' ? products : [],
+            data: table === 'products' ? products : table === 'site_settings'
+              ? settings.filter(row => !allowedKeys || allowedKeys.includes(row.key))
+              : [],
             error: failure === table ? new Error('Database unavailable') : null,
           }).then(resolve, reject);
         },
@@ -63,12 +76,16 @@ function setup() {
         },
       };
       if (name === '@/lib/maintenance') return { DEFAULT_MAINTENANCE_ANNOUNCEMENT: '' };
+      if (name === '@/lib/credential-tutorial') return tutorialContext.exports;
       throw new Error(`Unexpected import: ${name}`);
     },
   };
   vm.runInNewContext(outputText, context);
   return {
     getCatalog: context.exports.getPublicCatalog,
+    getSettings: context.exports.getPublicSettings,
+    setSettings: rows => { settings = rows; },
+    refreshSettings: () => caches.get('public-home-settings').refresh(),
     fail: stage => { failure = stage; },
     empty: () => { products = []; },
     queryCount: () => queryCount,
@@ -115,4 +132,37 @@ test('a genuinely empty catalog is valid and cached, and all queries share one d
   assert.equal(client.signals.length, 3);
   assert.ok(client.signals[0] instanceof AbortSignal);
   assert.ok(client.signals.every(signal => signal === client.signals[0]));
+});
+
+test('buyer settings include admin tutorial changes after revalidation without exposing private settings', async () => {
+  const client = setup();
+  const initial = await client.getSettings();
+  assert.equal(initial.credential_tutorial_enabled, 'true');
+  assert.ok(initial.credential_tutorial_content.includes('2FA.LIVE'));
+
+  const content = '1. Buka layanan.\n2. Ikuti [panduan](https://example.com).';
+  client.setSettings([
+    { key: 'credential_tutorial_enabled', value: 'true' },
+    { key: 'credential_tutorial_title', value: 'Panduan Login dari Admin' },
+    { key: 'credential_tutorial_content', value: content },
+    { key: 'leaderboard_min_commission', value: '50000' },
+  ]);
+  await client.refreshSettings();
+  const saved = await client.getSettings();
+  assert.equal(saved.credential_tutorial_title, 'Panduan Login dari Admin');
+  assert.equal(saved.credential_tutorial_content, content);
+  assert.equal(Object.hasOwn(saved, 'leaderboard_min_commission'), false);
+});
+
+test('disabled and deliberately empty tutorials do not get replaced by default instructions', async () => {
+  const client = setup();
+  client.setSettings([
+    { key: 'credential_tutorial_enabled', value: 'false' },
+    { key: 'credential_tutorial_title', value: '' },
+    { key: 'credential_tutorial_content', value: '' },
+  ]);
+  const settings = await client.getSettings();
+  assert.equal(settings.credential_tutorial_enabled, 'false');
+  assert.equal(settings.credential_tutorial_title, '');
+  assert.equal(settings.credential_tutorial_content, '');
 });

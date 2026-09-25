@@ -7,6 +7,12 @@ import {
   MAX_MAINTENANCE_ANNOUNCEMENT_LENGTH,
 } from '@/lib/maintenance';
 import { normalizeWhatsAppGroupLink } from '@/lib/phone';
+import {
+  CREDENTIAL_TUTORIAL_DEFAULTS,
+  MAX_CREDENTIAL_TUTORIAL_TITLE_LENGTH,
+  MAX_CREDENTIAL_TUTORIAL_CONTENT_LENGTH,
+} from '@/lib/credential-tutorial';
+import { UsageTutorialContent } from '@/components/BuyerUsageTutorial';
 
 interface Setting {
   key: string;
@@ -29,6 +35,9 @@ interface PromoOption {
 function getDefaults(): Setting[] {
   return [
     { key: 'support_whatsapp', value: '082244046330', label: 'Nomor WhatsApp Support' },
+    { key: 'credential_tutorial_enabled', value: CREDENTIAL_TUTORIAL_DEFAULTS.credential_tutorial_enabled, label: 'Tampilkan Tutorial Pemakaian Akun' },
+    { key: 'credential_tutorial_title', value: CREDENTIAL_TUTORIAL_DEFAULTS.credential_tutorial_title, label: 'Judul Tutorial Pemakaian Akun' },
+    { key: 'credential_tutorial_content', value: CREDENTIAL_TUTORIAL_DEFAULTS.credential_tutorial_content, label: 'Isi Tutorial Pemakaian Akun' },
     { key: 'maintenance_mode', value: 'false', label: 'Mode Maintenance Website' },
     {
       key: 'maintenance_announcement',
@@ -143,6 +152,9 @@ export default function SettingsPage() {
   }
 
   const waNumber = settings.find(s => s.key === 'support_whatsapp')?.value || '';
+  const tutorialEnabled = settings.find(s => s.key === 'credential_tutorial_enabled')?.value === 'true';
+  const tutorialTitle = settings.find(s => s.key === 'credential_tutorial_title')?.value ?? '';
+  const tutorialContent = settings.find(s => s.key === 'credential_tutorial_content')?.value ?? '';
   const maintenanceActive = settings.find(s => s.key === 'maintenance_mode')?.value === 'true';
   const maintenanceAnnouncement = settings.find(s => s.key === 'maintenance_announcement')?.value || '';
   const maintenanceGroupLink = settings.find(s => s.key === 'maintenance_whatsapp_group')?.value || '';
@@ -370,6 +382,75 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Tutorial Pemakaian Akun */}
+            <div style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-secondary)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px',
+              marginBottom: '24px',
+            }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '8px' }}>Tutorial Pemakaian Akun</h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '16px' }}>
+                Panduan ini tampil di bawah data email, password, dan kode 2FA pada detail Pesanan Saya serta halaman setelah pembayaran saat akun sudah tersedia. Berlaku untuk semua produk.
+              </p>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, marginBottom: '20px' }}>
+                <input
+                  type="checkbox"
+                  checked={tutorialEnabled}
+                  onChange={e => updateSetting('credential_tutorial_enabled', e.target.checked ? 'true' : 'false')}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--brand-success)' }}
+                />
+                Tampilkan tutorial ke pembeli
+              </label>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="credential-tutorial-title">Judul Tutorial</label>
+                <input
+                  id="credential-tutorial-title"
+                  className="form-input"
+                  value={tutorialTitle}
+                  maxLength={MAX_CREDENTIAL_TUTORIAL_TITLE_LENGTH}
+                  placeholder={CREDENTIAL_TUTORIAL_DEFAULTS.credential_tutorial_title}
+                  onChange={e => updateSetting('credential_tutorial_title', e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="credential-tutorial-content">Langkah-langkah Pemakaian</label>
+                <textarea
+                  id="credential-tutorial-content"
+                  className="form-input"
+                  rows={12}
+                  maxLength={MAX_CREDENTIAL_TUTORIAL_CONTENT_LENGTH}
+                  value={tutorialContent}
+                  onChange={e => updateSetting('credential_tutorial_content', e.target.value)}
+                  placeholder={'1. Buka aplikasi atau situs layanan.\n2. Masukkan email dan password.\n3. Ikuti langkah verifikasi jika diminta.'}
+                  aria-describedby="credential-tutorial-help"
+                  style={{ minHeight: '220px', resize: 'vertical', lineHeight: 1.7 }}
+                />
+                <p id="credential-tutorial-help" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
+                  Tulis langkah dengan format 1., 2., 3. pada baris baru. Mendukung **teks tebal**, daftar, dan [teks link](https://contoh.com). Kosongkan isi untuk menyembunyikan tutorial.
+                </p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'right', marginTop: '4px' }}>
+                  {tutorialContent.length}/{MAX_CREDENTIAL_TUTORIAL_CONTENT_LENGTH} karakter
+                </p>
+              </div>
+
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>PRATINJAU TAMPILAN PEMBELI</div>
+              {tutorialEnabled && tutorialContent.trim() ? (
+                <UsageTutorialContent title={tutorialTitle} content={tutorialContent} />
+              ) : (
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '12px' }}>
+                  Tutorial disembunyikan karena {tutorialEnabled ? 'isi masih kosong' : 'belum diaktifkan'}.
+                </p>
+              )}
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '16px', marginBottom: 0 }}>
+                Klik Simpan Pengaturan di bawah untuk menerapkan perubahan tutorial.
+              </p>
             </div>
 
             {/* ── Leaderboard Auto-Reset Settings ── */}

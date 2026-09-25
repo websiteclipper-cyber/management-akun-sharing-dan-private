@@ -7,6 +7,10 @@ import {
   MAX_MAINTENANCE_ANNOUNCEMENT_LENGTH,
 } from '@/lib/maintenance';
 import { normalizeWhatsAppGroupLink } from '@/lib/phone';
+import {
+  MAX_CREDENTIAL_TUTORIAL_TITLE_LENGTH,
+  MAX_CREDENTIAL_TUTORIAL_CONTENT_LENGTH,
+} from '@/lib/credential-tutorial';
 
 // Ensure site_settings table exists
 async function ensureTable() {
@@ -106,6 +110,22 @@ export async function POST(request: Request) {
         }, { status: 400 });
       }
       groupSetting.value = normalizedGroupLink;
+    }
+
+    for (const setting of payload) {
+      if (setting.key === 'credential_tutorial_enabled' && !['true', 'false'].includes(setting.value)) {
+        return NextResponse.json({ error: 'Status tutorial pemakaian tidak valid' }, { status: 400 });
+      }
+      if (setting.key === 'credential_tutorial_title' && setting.value.length > MAX_CREDENTIAL_TUTORIAL_TITLE_LENGTH) {
+        return NextResponse.json({
+          error: `Judul tutorial maksimal ${MAX_CREDENTIAL_TUTORIAL_TITLE_LENGTH} karakter`,
+        }, { status: 400 });
+      }
+      if (setting.key === 'credential_tutorial_content' && setting.value.length > MAX_CREDENTIAL_TUTORIAL_CONTENT_LENGTH) {
+        return NextResponse.json({
+          error: `Isi tutorial maksimal ${MAX_CREDENTIAL_TUTORIAL_CONTENT_LENGTH} karakter`,
+        }, { status: 400 });
+      }
     }
 
     const { error } = await supabase
