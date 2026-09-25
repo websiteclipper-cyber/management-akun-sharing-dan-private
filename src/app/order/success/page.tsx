@@ -6,6 +6,7 @@ import { useLocale } from '@/lib/locale-context';
 import Link from 'next/link';
 import PurchaseInvoice from '@/components/PurchaseInvoice';
 import BuyerCredentialField from '@/components/BuyerCredentialField';
+import BuyerUsageTutorial from '@/components/BuyerUsageTutorial';
 import { FiCheck, FiCheckCircle } from 'react-icons/fi';
 import { getRetryAfterMs, PollingError, startPolling } from '@/lib/polling';
 import styles from '../purchase-flow.module.css';
@@ -332,6 +333,7 @@ function PaymentSuccessPage() {
                     </div>
                   );
                 })}
+                <BuyerUsageTutorial key={orderNumber} />
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
