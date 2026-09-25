@@ -2,37 +2,37 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useSyncExternalStore } from 'react';
 import { supabase } from '@/lib/supabase';
 import { adminSelect } from '@/lib/adminApi';
 import {
-  FiArchive, FiAward, FiBell, FiBox, FiDollarSign,
-  FiGrid, FiHeadphones, FiKey, FiLink, FiLogOut, FiMenu, FiPercent,
-  FiRefreshCw, FiSettings, FiShield, FiShoppingCart, FiTag, FiUsers, FiX,
+  FiArchive, FiAward, FiBell, FiBox, FiDatabase, FiDollarSign,
+  FiFileText, FiHome, FiLink, FiLogOut, FiMenu, FiMessageSquare, FiPercent,
+  FiRefreshCw, FiSearch, FiSettings, FiShield, FiTag, FiUsers, FiX,
 } from 'react-icons/fi';
 import { ADMIN_SESSION_UPDATED_EVENT, AdminSession } from '@/lib/adminSession';
+import styles from './admin-shell.module.css';
 
 const navItems = [
-  { label: 'Dashboard', href: '/admin', icon: <FiGrid /> },
-  { section: 'Katalog' },
+  { label: 'Dashboard', href: '/admin', icon: <FiHome /> },
+  { label: 'Pesanan', href: '/admin/orders', icon: <FiFileText /> },
+  { label: 'Assignment', href: '/admin/assignments', icon: <FiLink /> },
   { label: 'Produk', href: '/admin/products', icon: <FiBox /> },
-  { label: 'Stok Akun', href: '/admin/stock-accounts', icon: <FiKey /> },
+  { label: 'Stok Akun', href: '/admin/stock-accounts', icon: <FiDatabase /> },
+  { label: 'Pelanggan', href: '/admin/buyers', icon: <FiUsers /> },
+  { label: 'Support', href: '/admin/support', icon: <FiMessageSquare /> },
+  { label: 'Pengaturan', href: '/admin/settings', icon: <FiSettings /> },
+  { section: 'Katalog & promosi' },
   { label: 'Promo & Diskon', href: '/admin/promos', icon: <FiTag /> },
   { label: 'Kode Diskon', href: '/admin/discounts', icon: <FiPercent /> },
-  { section: 'Transaksi' },
-  { label: 'Pesanan', href: '/admin/orders', icon: <FiShoppingCart /> },
-  { label: 'Assignment', href: '/admin/assignments', icon: <FiLink /> },
-  { section: 'Manajemen' },
+  { section: 'Manajemen mitra' },
   { label: 'Reseller / Mitra', href: '/admin/resellers', icon: <FiUsers /> },
   { label: 'Pengaturan Komisi', href: '/admin/commissions', icon: <FiDollarSign /> },
   { label: 'Leaderboard Mitra', href: '/admin/leaderboard', icon: <FiAward /> },
-  { label: 'Buyer', href: '/admin/buyers', icon: <FiUsers /> },
-  { label: 'Support Tickets', href: '/admin/support', icon: <FiHeadphones /> },
+  { section: 'Layanan & sistem' },
   { label: 'Klaim Garansi', href: '/admin/warranty', icon: <FiShield /> },
   { label: 'Pengajuan Refund', href: '/admin/refunds', icon: <FiRefreshCw /> },
-  { section: 'Sistem' },
   { label: 'Akun Backup', href: '/admin/backup-accounts', icon: <FiArchive /> },
-  { label: 'Pengaturan Umum', href: '/admin/settings', icon: <FiSettings /> },
 ];
 
 interface RealtimeNotification {
@@ -43,7 +43,11 @@ interface RealtimeNotification {
   read: boolean;
 }
 
+// Keep the first browser render aligned with the server's loading shell.
+const subscribeToHydration = () => () => {};
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const hydrated = useSyncExternalStore(subscribeToHydration, () => true, () => false);
   const pathname = usePathname();
   const router = useRouter();
   const isPublicAuthPath = [
@@ -65,6 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+  const [menuSearch, setMenuSearch] = useState('');
 
   useEffect(() => {
     const handleSessionUpdated = (event: Event) => {
@@ -200,7 +205,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  if (!admin) {
+  if (!hydrated || !admin) {
     return <div className="loading-page"><div className="loading-spinner" /></div>;
   }
 
@@ -229,18 +234,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="admin-layout">
-      {/* Mobile overlay */}
-      <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+    <div className={`admin-layout ${styles.shell}`}>
+      <a className={styles.skipLink} href="#admin-content">Lewati ke konten</a>
+      <button className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} aria-label="Tutup navigasi admin" tabIndex={sidebarOpen ? 0 : -1} />
 
-      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside id="admin-sidebar" className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
-          <h1>
-            <span className="brand-glow">✦</span> pastipremium.my.id
-          </h1>
-          <p>Admin Dashboard</p>
+          <Link href="/admin" onClick={() => setSidebarOpen(false)} className={styles.brand}>pastipremium.my.id</Link>
+          <p>Solusi Berlangganan AI</p>
+          <button className={styles.sidebarClose} onClick={() => setSidebarOpen(false)} aria-label="Tutup navigasi admin"><FiX /></button>
         </div>
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav" aria-label="Navigasi admin">
           {navItems.map((item, i) => {
             if ('section' in item) {
               return <div key={i} className="sidebar-section">{item.section}</div>;
@@ -249,34 +253,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               ? pathname === '/admin' 
               : pathname.startsWith(item.href!);
             
-            // Add badge for orders
-            const badge = null;
-
             return (
               <Link
                 key={i}
                 href={item.href!}
                 className={`sidebar-link ${isActive ? 'active' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
                 onClick={() => setSidebarOpen(false)}
               >
                 <span className="icon">{item.icon}</span>
                 {item.label}
-                {badge && (
-                  <span style={{
-                    marginLeft: 'auto',
-                    background: '#ef4444',
-                    color: '#fff',
-                    borderRadius: '999px',
-                    padding: '2px 8px',
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    minWidth: '22px',
-                    textAlign: 'center',
-                    animation: 'pulse 2s infinite',
-                  }}>
-                    {badge}
-                  </span>
-                )}
               </Link>
             );
           })}
@@ -297,199 +283,54 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
       <main className="admin-main">
-        <div className="mobile-only-topbar">
-          <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Buka navigasi admin" aria-expanded={sidebarOpen}><FiMenu /></button>
-          <span className="mobile-admin-brand"><b>PP</b> Admin</span>
-          {/* Notification bell (mobile) */}
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            aria-label="Buka notifikasi"
-            aria-expanded={showNotifications}
-            className="admin-notification-button"
-            style={{
-              position: 'relative',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-secondary)',
-              borderRadius: '999px',
-              fontSize: '1.3rem',
-              cursor: 'pointer',
-              padding: '6px',
-            }}
-          >
-            <FiBell />
-            {unreadCount > 0 && (
-              <span style={{
-                position: 'absolute', top: '-2px', right: '-2px',
-                background: '#ef4444', color: '#fff', borderRadius: '999px',
-                padding: '1px 5px', fontSize: '0.65rem', fontWeight: 700,
-                minWidth: '16px', textAlign: 'center',
-              }}>
-                {unreadCount}
-              </span>
-            )}
-          </button>
-          {showNotifications && (
-            <div className="mobile-notification-panel">
-              <div className="notification-panel-header">
-                <strong>Notifikasi {unreadCount > 0 && `(${unreadCount})`}</strong>
-                <button onClick={() => setShowNotifications(false)} aria-label="Tutup notifikasi"><FiX /></button>
-              </div>
-              <div className="notification-panel-list">
-                {notifications.length === 0 ? (
-                  <p>Belum ada notifikasi</p>
-                ) : notifications.map(notif => (
-                  <button key={notif.id} onClick={() => handleNotifClick(notif)} data-unread={!notif.read}>
-                    <strong>{notif.message}</strong>
-                    <small>{notif.time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</small>
-                  </button>
+        <header className={`${styles.utilityBar} ${pathname === '/admin' ? styles.dashboardBar : ''}`}>
+          <button className={styles.menuButton} onClick={() => setSidebarOpen(true)} aria-label="Buka navigasi admin" aria-expanded={sidebarOpen} aria-controls="admin-sidebar"><FiMenu /></button>
+          <span className={styles.mobileBrand}>pastipremium.my.id</span>
+          {pendingOrdersCount > 0 && pathname !== '/admin' && (
+            <Link href="/admin/orders" className={styles.pendingLink}>{pendingOrdersCount} belum bayar</Link>
+          )}
+          <div className={styles.search} onKeyDown={event => { if (event.key === 'Escape') setMenuSearch(''); }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setMenuSearch(''); }}>
+            <FiSearch aria-hidden="true" />
+            <input aria-label="Cari menu admin" placeholder="Cari menu admin..." value={menuSearch} onChange={event => setMenuSearch(event.target.value)} />
+            {menuSearch.trim() && (
+              <div className={styles.searchResults}>
+                {navItems.filter(item => item.label?.toLowerCase().includes(menuSearch.trim().toLowerCase())).map(item => (
+                  <Link key={item.href} href={item.href!} onClick={() => setMenuSearch('')}><span>{item.icon}</span>{item.label}</Link>
                 ))}
+                {!navItems.some(item => item.label?.toLowerCase().includes(menuSearch.trim().toLowerCase())) && <p>Menu tidak ditemukan.</p>}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Desktop notification bar — inline, not fixed */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-          gap: '12px', padding: '8px 28px',
-          background: 'rgba(255,255,255,0.92)',
-          borderBottom: '1px solid var(--border-primary)',
-          backdropFilter: 'blur(12px)',
-          position: 'sticky', top: 0, zIndex: 90,
-        }} className="desktop-notif-bar">
-          {/* Pending counts */}
-          {pendingOrdersCount > 0 && (
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <Link href="/admin/orders" style={{
-                background: 'var(--admin-warning-soft)', border: '1px solid rgba(180,83,9,0.22)',
-                borderRadius: '999px', padding: '4px 12px', fontSize: '0.75rem',
-                fontWeight: 700, color: 'var(--admin-warning)', textDecoration: 'none',
-              }}>
-                💳 {pendingOrdersCount} Belum Bayar
-              </Link>
-            </div>
-          )}
-
-          {/* Notification bell */}
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              style={{
-                background: 'var(--bg-card)', border: '1px solid var(--border-primary)',
-                borderRadius: '50%', width: '36px', height: '36px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', fontSize: '1rem', position: 'relative',
-                color: 'var(--text-secondary)',
-                transition: 'all 0.2s',
-              }}
-            >
+            )}
+          </div>
+          <div className={styles.notification} onKeyDown={event => { if (event.key === 'Escape') setShowNotifications(false); }}>
+            <button className={styles.bell} onClick={() => setShowNotifications(!showNotifications)} aria-label={`Notifikasi${unreadCount ? `, ${unreadCount} belum dibaca` : ''}`} aria-expanded={showNotifications} aria-controls="admin-notifications">
               <FiBell />
-              {unreadCount > 0 && (
-                <span style={{
-                  position: 'absolute', top: '-4px', right: '-4px',
-                  background: '#ef4444', color: '#fff', borderRadius: '999px',
-                  padding: '2px 6px', fontSize: '0.65rem', fontWeight: 700,
-                  minWidth: '18px', textAlign: 'center',
-                  animation: 'pulse 1.5s infinite',
-                }}>
-                  {unreadCount}
-                </span>
-              )}
+              {unreadCount > 0 && <span className={styles.notificationDot} />}
             </button>
-
-            {/* Notification dropdown */}
             {showNotifications && (
               <>
-                <div
-                  style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99 }}
-                  onClick={() => setShowNotifications(false)}
-                />
-                <div style={{
-                  position: 'absolute', top: '44px', right: 0,
-                  background: 'var(--bg-card)', border: '1px solid var(--border-primary)',
-                  borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)',
-                  width: '360px', maxHeight: '440px', overflow: 'hidden',
-                  zIndex: 100, animation: 'fadeIn 0.2s ease',
-                }}>
-                  <div style={{
-                    padding: '14px 16px', borderBottom: '1px solid var(--border-secondary)',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-                      Notifikasi {unreadCount > 0 && `(${unreadCount})`}
-                    </span>
-                    {unreadCount > 0 && (
-                      <button
-                        onClick={markAllRead}
-                        style={{
-                          background: 'none', border: 'none', color: 'var(--accent)',
-                          fontSize: '0.8rem', cursor: 'pointer', fontWeight: 600,
-                        }}
-                      >
-                        Tandai Dibaca
+                <button className={styles.notificationBackdrop} onClick={() => setShowNotifications(false)} aria-label="Tutup notifikasi" tabIndex={-1} />
+                <section className={styles.notificationPanel} id="admin-notifications" aria-label="Notifikasi admin">
+                  <div className={styles.notificationHeading}>
+                    <strong>Notifikasi {unreadCount > 0 && `(${unreadCount})`}</strong>
+                    <button onClick={() => setShowNotifications(false)} aria-label="Tutup notifikasi"><FiX /></button>
+                  </div>
+                  {unreadCount > 0 && <button className={styles.markRead} onClick={markAllRead}>Tandai semua dibaca</button>}
+                  <div className={styles.notificationList}>
+                    {notifications.length === 0 ? <p>Belum ada notifikasi</p> : notifications.map(notif => (
+                      <button key={notif.id} onClick={() => handleNotifClick(notif)} data-unread={!notif.read}>
+                        <span>{notif.message}</span>
+                        <small>{notif.time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</small>
                       </button>
-                    )}
+                    ))}
                   </div>
-                  <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
-                    {notifications.length === 0 ? (
-                      <div style={{
-                        padding: '32px 16px', textAlign: 'center',
-                        color: 'var(--text-muted)', fontSize: '0.85rem',
-                      }}>
-                        Belum ada notifikasi
-                      </div>
-                    ) : (
-                      notifications.map(notif => (
-                        <button
-                          key={notif.id}
-                          onClick={() => handleNotifClick(notif)}
-                          style={{
-                            display: 'block', width: '100%',
-                            padding: '12px 16px', textAlign: 'left',
-                            background: notif.read ? 'transparent' : 'var(--admin-accent-soft)',
-                            border: 'none', borderBottom: '1px solid var(--border-secondary)',
-                            cursor: 'pointer', transition: 'background 0.2s',
-                            color: 'inherit',
-                          }}
-                        >
-                          <div style={{
-                            fontSize: '0.85rem', fontWeight: notif.read ? 400 : 600,
-                            color: 'var(--text-primary)', marginBottom: '4px',
-                          }}>
-                            {notif.message}
-                          </div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                            {notif.time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
+                </section>
               </>
             )}
           </div>
-        </div>
+        </header>
 
-        <div className="admin-route-content">{children}</div>
+        <div id="admin-content" className="admin-route-content" tabIndex={-1}>{children}</div>
       </main>
-
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @media (max-width: 768px) {
-          .desktop-notif-bar { display: none !important; }
-        }
-        @media (min-width: 769px) {
-          .mobile-only-topbar { display: none !important; }
-        }
-      `}</style>
     </div>
   );
 }

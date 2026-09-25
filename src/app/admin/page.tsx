@@ -1,12 +1,20 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import {
+  FiAlertCircle, FiArrowRight, FiBox, FiBriefcase, FiCalendar,
+  FiCheckCircle, FiChevronDown, FiClock, FiFilter, FiRefreshCw, FiSearch, FiX,
+} from 'react-icons/fi';
+import { SiGooglegemini, SiOpenai } from 'react-icons/si';
+import styles from './dashboard.module.css';
 
 interface RecentOrder {
   id: number;
   order_number: string;
   total_amount: number;
   order_status: string;
+  payment_status?: string;
   created_at: string;
   buyer?: { name?: string | null; phone?: string | null } | null;
   product?: { name?: string | null; platform_name?: string | null } | null;
@@ -19,38 +27,136 @@ interface TopProduct {
 }
 
 interface SalesData {
-  // Summary cards
   totalRevenue: number;
   totalOrders: number;
   totalBuyers: number;
   totalStockActive: number;
-  // Today
   revenueToday: number;
   ordersToday: number;
   paidToday: number;
   pendingPayment: number;
   needsAssignment: number;
   openTickets: number;
-  // Products
   totalActiveProducts: number;
   sharingAvailable: number;
   privateAvailable: number;
   fullAccounts: number;
-  // Recent orders
   recentOrders: RecentOrder[];
-  // Top products
   topProducts: TopProduct[];
-  // Revenue per day (last 7 days)
   dailyRevenue: { date: string; revenue: number; orders: number }[];
-  // Order status breakdown
   statusBreakdown: Record<string, number>;
+}
+
+const statusLabels: Record<string, string> = {
+  pending: 'Menunggu pembayaran', pending_payment: 'Belum bayar', paid: 'Perlu assignment',
+  assigned: 'Diproses', delivered: 'Terkirim', completed: 'Selesai',
+  cancelled: 'Dibatalkan', refunded: 'Dikembalikan', failed: 'Gagal',
+};
+
+const statusTones: Record<string, string> = {
+  pending: 'blue', pending_payment: 'amber', paid: 'neutral', assigned: 'blue',
+  delivered: 'green', completed: 'green', cancelled: 'red', refunded: 'amber', failed: 'red',
+};
+
+function formatPrice(price: number) {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(price).replace(/\s/g, '');
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('id-ID').format(value);
+}
+
+function ProductIcon({ name }: { name: string }) {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('gemini')) return <SiGooglegemini className={styles.geminiIcon} aria-hidden="true" />;
+  if (lowerName.includes('business')) return <FiBriefcase aria-hidden="true" />;
+  if (lowerName.includes('chatgpt') || lowerName.includes('openai')) return <SiOpenai aria-hidden="true" />;
+  return <FiBox aria-hidden="true" />;
+}
+
+function RevenueChart({ days }: { days: SalesData['dailyRevenue'] }) {
+  const [activePoint, setActivePoint] = useState<number | null>(null);
+  const width = 640;
+  const height = 210;
+  const left = 70;
+  const right = 16;
+  const top = 18;
+  const bottom = 36;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+  const highestRevenue = Math.max(1, ...days.map(day => day.revenue));
+  const magnitude = 10 ** Math.floor(Math.log10(highestRevenue));
+  const maximum = Math.ceil(highestRevenue / magnitude) * magnitude;
+  const points = days.map((day, index) => ({
+    x: left + (days.length === 1 ? plotWidth / 2 : (index / (days.length - 1)) * plotWidth),
+    y: top + plotHeight - (day.revenue / maximum) * plotHeight,
+  }));
+  const line = points.map(point => `${point.x},${point.y}`).join(' ');
+  const selectedDay = activePoint === null ? undefined : days[activePoint];
+  const selectedPoint = activePoint === null ? undefined : points[activePoint];
+
+  return (
+    <div className={styles.chartWrap}>
+      <div className={styles.chartTooltip} aria-live="polite">
+        {selectedDay ? <><strong>{selectedDay.date}</strong><span>{formatPrice(selectedDay.revenue)} · {formatNumber(selectedDay.orders)} pesanan</span></> : <span>Pendapatan dari pesanan yang sudah dibayar</span>}
+      </div>
+      <div className={styles.chartScroll}>
+        <svg className={styles.chart} viewBox={`0 0 ${width} ${height}`} role="group" aria-label="Grafik pendapatan harian. Pilih titik untuk melihat pendapatan dan jumlah pesanan.">
+          <defs>
+            <linearGradient id="dashboard-revenue-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#18181b" stopOpacity=".12" />
+              <stop offset="100%" stopColor="#18181b" stopOpacity=".025" />
+            </linearGradient>
+          </defs>
+          {[0, 1, 2, 3].map(tick => {
+            const y = top + (tick / 3) * plotHeight;
+            const amount = maximum * (1 - tick / 3);
+            return (
+              <g key={tick}>
+                <line x1={left} x2={width - right} y1={y} y2={y} className={styles.gridLine} />
+                <text x={left - 10} y={y + 4} textAnchor="end" className={styles.axisLabel}>{formatNumber(Math.round(amount))}</text>
+              </g>
+            );
+          })}
+          {points.map((point, index) => (
+            <line key={index} x1={point.x} x2={point.x} y1={top} y2={height - bottom} className={styles.gridLine} />
+          ))}
+          {points.length > 0 && <polygon points={`${left},${height - bottom} ${line} ${points[points.length - 1].x},${height - bottom}`} fill="url(#dashboard-revenue-fill)" />}
+          <polyline points={line} fill="none" stroke="#27272a" strokeWidth="1.7" strokeLinejoin="round" strokeLinecap="round" />
+          {selectedPoint && <line x1={selectedPoint.x} x2={selectedPoint.x} y1={top} y2={height - bottom} stroke="#a1a1aa" strokeDasharray="3 4" />}
+          {days.map((day, index) => {
+            const point = points[index];
+            const showLabel = index % Math.ceil(days.length / 7) === 0 || index === days.length - 1;
+            return (
+              <g key={day.date}>
+                <circle cx={point.x} cy={point.y} r={activePoint === index ? 4 : 2.6} fill="#27272a" />
+                <circle cx={point.x} cy={point.y} r="9" fill="transparent" tabIndex={0} role="button"
+                  aria-label={`${day.date}: ${formatPrice(day.revenue)}, ${day.orders} pesanan`}
+                  onMouseEnter={() => setActivePoint(index)} onMouseLeave={() => setActivePoint(null)}
+                  onFocus={() => setActivePoint(index)} onBlur={() => setActivePoint(null)}
+                  onClick={() => setActivePoint(index)}
+                  onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setActivePoint(index); } }}
+                ><title>{day.date}: {formatPrice(day.revenue)} · {day.orders} pesanan</title></circle>
+                {showLabel && <text x={point.x} y={height - 10} textAnchor={index === days.length - 1 ? 'end' : 'middle'} className={styles.axisLabel}>{day.date.replace(/^[^\d]*/, '')}</text>}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    </div>
+  );
 }
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<SalesData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [expiringLoading, setExpiringLoading] = useState(false);
-  const chartScrollRef = useRef<HTMLDivElement>(null);
+  const [chartDays, setChartDays] = useState(30);
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderTab, setOrderTab] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [orderDate, setOrderDate] = useState('all');
 
   async function handleAutoExpire() {
     setExpiringLoading(true);
@@ -78,445 +184,163 @@ export default function AdminDashboardPage() {
   }
 
   async function loadDashboard() {
-    const token = localStorage.getItem('admin_token') || '';
-    const response = await fetch('/api/admin/dashboard', {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    if (response.ok) {
+    setLoadError('');
+    try {
+      const token = localStorage.getItem('admin_token') || '';
+      const response = await fetch('/api/admin/dashboard', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Dashboard gagal dimuat. Silakan coba lagi.');
       setData(await response.json() as SalesData);
+    } catch {
+      setLoadError('Dashboard gagal dimuat. Periksa koneksi lalu coba lagi.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    return;
-
-    /* Legacy browser queries retained temporarily as migration reference.
-       The early return above ensures they are never executed.
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString();
-
-    // Last 30 days
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    thirtyDaysAgo.setHours(0, 0, 0, 0);
-
-    const [
-      { count: totalActiveProducts },
-      { count: totalStockActive },
-      { count: sharingAvailable },
-      { count: privateAvailable },
-      { count: fullAccounts },
-      { count: ordersToday },
-      { count: paidToday },
-      { count: pendingPayment },
-      { count: needsAssignment },
-      { count: openTickets },
-      { count: totalBuyers },
-      { count: totalOrdersCount },
-      { data: recentOrders },
-    ] = await Promise.all([
-      supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-      supabase.from('stock_accounts').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-      supabase.from('stock_accounts').select('*', { count: 'exact', head: true }).eq('account_type', 'sharing').eq('status', 'active'),
-      supabase.from('stock_accounts').select('*', { count: 'exact', head: true }).eq('account_type', 'private').eq('status', 'active'),
-      supabase.from('stock_accounts').select('*', { count: 'exact', head: true }).eq('status', 'full'),
-      supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', todayISO),
-      supabase.from('orders').select('*', { count: 'exact', head: true }).eq('payment_status', 'paid').gte('created_at', todayISO),
-      supabase.from('orders').select('*', { count: 'exact', head: true }).eq('payment_status', 'pending_payment'),
-      supabase.from('orders').select('*', { count: 'exact', head: true }).eq('payment_status', 'paid').in('order_status', ['paid']),
-      supabase.from('support_tickets').select('*', { count: 'exact', head: true }).in('status', ['open', 'in_progress']),
-      supabase.from('buyers').select('*', { count: 'exact', head: true }),
-      supabase.from('orders').select('*', { count: 'exact', head: true }),
-      supabase.from('orders').select('*, buyer:buyers(name, phone), product:products(name, platform_name)').order('created_at', { ascending: false }).limit(10),
-    ]);
-
-    const totalOrders = totalOrdersCount || 0;
-
-    // Fetch total revenue in pages to bypass PostgREST 1000 limit
-    let totalRevenue = 0;
-    let revenuePage = 0;
-    const pageSize = 1000;
-    while (true) {
-      const { data: pageData, error: pageErr } = await supabase
-        .from('orders')
-        .select('total_amount')
-        .eq('payment_status', 'paid')
-        .range(revenuePage * pageSize, (revenuePage + 1) * pageSize - 1);
-      if (pageErr || !pageData || pageData.length === 0) break;
-      totalRevenue += (pageData as RevenueRow[]).reduce((sum, o) => sum + (o.total_amount || 0), 0);
-      if (pageData.length < pageSize) break;
-      revenuePage++;
-    }
-
-    // Fetch last 30 days orders in pages
-    let last30DaysOrders: RevenueRow[] = [];
-    let last30Page = 0;
-    while (true) {
-      const { data: pageData, error: pageErr } = await supabase
-        .from('orders')
-        .select('total_amount, created_at, payment_status, product_id')
-        .gte('created_at', thirtyDaysAgo.toISOString())
-        .eq('payment_status', 'paid')
-        .range(last30Page * pageSize, (last30Page + 1) * pageSize - 1);
-      if (pageErr || !pageData || pageData.length === 0) break;
-      last30DaysOrders = [...last30DaysOrders, ...(pageData as RevenueRow[])];
-      if (pageData.length < pageSize) break;
-      last30Page++;
-    }
-
-    // Revenue today
-    const todayPaidOrders = (last30DaysOrders || []).filter((o) => {
-      const d = new Date(o.created_at);
-      return d >= today;
-    });
-    const revenueToday = todayPaidOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-
-    // Daily revenue chart data (last 30 days)
-    const dailyRevenue: { date: string; revenue: number; orders: number }[] = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      d.setHours(0, 0, 0, 0);
-      const nextD = new Date(d);
-      nextD.setDate(nextD.getDate() + 1);
-
-      const dayOrders = (last30DaysOrders || []).filter((o) => {
-        const od = new Date(o.created_at);
-        return od >= d && od < nextD;
-      });
-
-      dailyRevenue.push({
-        date: d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }),
-        revenue: dayOrders.reduce((s, o) => s + (o.total_amount || 0), 0),
-        orders: dayOrders.length,
-      });
-    }
-
-    // Top products (paged fetch to prevent 1000 limit)
-    const productMap: Record<number, { name: string; count: number; revenue: number }> = {};
-    let productSales: ProductSalesRow[] = [];
-    let productPage = 0;
-    while (true) {
-      const { data: pageData, error: pageErr } = await supabase
-        .from('orders')
-        .select('product_id, total_amount, product:products(name)')
-        .eq('payment_status', 'paid')
-        .range(productPage * pageSize, (productPage + 1) * pageSize - 1);
-      if (pageErr || !pageData || pageData.length === 0) break;
-      productSales = [...productSales, ...(pageData as ProductSalesRow[])];
-      if (pageData.length < pageSize) break;
-      productPage++;
-    }
-
-    (productSales || []).forEach((o) => {
-      const pid = o.product_id;
-      if (pid === null || pid === undefined) return;
-      if (!productMap[pid]) {
-        productMap[pid] = { name: o.product?.name || `Product #${pid}`, count: 0, revenue: 0 };
-      }
-      productMap[pid].count++;
-      productMap[pid].revenue += o.total_amount || 0;
-    });
-
-    const topProducts = Object.values(productMap)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
-
-    // Status breakdown (using parallel counts rather than fetching all rows)
-    const statuses = ['pending', 'paid', 'assigned', 'delivered', 'completed', 'cancelled', 'refunded', 'pending_payment', 'failed'];
-    const statusCounts = await Promise.all(
-      statuses.map(async (status) => {
-        const { count } = await supabase
-          .from('orders')
-          .select('*', { count: 'exact', head: true })
-          .eq('order_status', status);
-        return { status, count: count || 0 };
-      })
-    );
-    const statusBreakdown = statusCounts.reduce((acc, curr) => {
-      acc[curr.status] = curr.count;
-      return acc;
-    }, {} as Record<string, number>);
-
-    setData({
-      totalRevenue,
-      totalOrders,
-      totalBuyers: totalBuyers || 0,
-      totalStockActive: totalStockActive || 0,
-      revenueToday,
-      ordersToday: ordersToday || 0,
-      paidToday: paidToday || 0,
-      pendingPayment: pendingPayment || 0,
-      needsAssignment: needsAssignment || 0,
-      openTickets: openTickets || 0,
-      totalActiveProducts: totalActiveProducts || 0,
-      sharingAvailable: sharingAvailable || 0,
-      privateAvailable: privateAvailable || 0,
-      fullAccounts: fullAccounts || 0,
-      recentOrders: (recentOrders || []) as RecentOrder[],
-      topProducts,
-      dailyRevenue,
-      statusBreakdown,
-    });
-    setLoading(false);
-    */
   }
 
-  useEffect(() => { loadDashboard(); }, []);
-
-  useEffect(() => {
-    // Automatically scroll the chart to the rightmost edge (latest dates)
-    // when data finishes loading.
-    if (chartScrollRef.current && data) {
-      chartScrollRef.current.scrollLeft = chartScrollRef.current.scrollWidth;
-    }
-  }, [data]);
-
-  function formatPrice(price: number) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(price);
-  }
-
-  function formatNumber(n: number) {
-    return new Intl.NumberFormat('id-ID').format(n);
-  }
-
-  function getStatusBadge(status: string) {
-    const map: Record<string, string> = {
-      pending: 'badge-neutral', paid: 'badge-info', assigned: 'badge-primary',
-      delivered: 'badge-success', completed: 'badge-success', cancelled: 'badge-danger',
-      refunded: 'badge-warning', pending_payment: 'badge-neutral', failed: 'badge-danger',
-    };
-    return map[status] || 'badge-neutral';
-  }
-
-  function getStatusLabel(status: string) {
-    const map: Record<string, string> = {
-      pending: 'Pending', paid: 'Paid', assigned: 'Assigned',
-      delivered: 'Delivered', completed: 'Completed', cancelled: 'Cancelled',
-      refunded: 'Refunded',
-    };
-    return map[status] || status;
-  }
+  useEffect(() => { void loadDashboard(); }, []);
 
   if (loading) {
-    return (
-      <div className="admin-content">
-        <div className="loading-page"><div className="loading-spinner" /></div>
-      </div>
-    );
+    return <div className={styles.loading} role="status"><div className="loading-spinner" /><p>Memuat dashboard...</p></div>;
   }
 
-  const maxRevenue = Math.max(...(data?.dailyRevenue.map(d => d.revenue) || [1]));
+  if (!data) {
+    return <div className={styles.loading} role="alert"><FiAlertCircle size={28} /><p>{loadError || 'Data dashboard belum tersedia.'}</p><button className={styles.button} onClick={() => { setLoading(true); void loadDashboard(); }}><FiRefreshCw /> Coba lagi</button></div>;
+  }
+
+  const breakdown = data.statusBreakdown;
+  const hasTasks = data.needsAssignment + data.pendingPayment + data.openTickets > 0;
+  const today = new Date();
+  const tabs = [
+    { id: 'all', label: 'Semua', count: data.totalOrders },
+    { id: 'paid', label: 'Perlu assignment', count: data.needsAssignment },
+    { id: 'pending', label: 'Belum bayar', count: data.pendingPayment },
+    { id: 'assigned', label: 'Diproses', count: breakdown.assigned || 0 },
+    { id: 'completed', label: 'Selesai', count: (breakdown.completed || 0) + (breakdown.delivered || 0) },
+    { id: 'cancelled', label: 'Dibatalkan', count: breakdown.cancelled || 0 },
+  ];
+  const visibleOrders = data.recentOrders.filter(order => {
+    const matchesTab = orderTab === 'all'
+      || (orderTab === 'pending' ? order.payment_status === 'pending_payment'
+        : orderTab === 'paid' ? order.order_status === 'paid' && order.payment_status === 'paid'
+        : orderTab === 'completed' ? ['completed', 'delivered'].includes(order.order_status)
+        : order.order_status === orderTab);
+    const query = orderSearch.trim().toLowerCase();
+    const matchesSearch = [order.order_number, order.buyer?.name, order.buyer?.phone, order.product?.name].some(value => value?.toLowerCase().includes(query));
+    const createdAt = new Date(order.created_at);
+    const weekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+    const matchesDate = orderDate === 'all' || (orderDate === 'today' ? createdAt.toDateString() === today.toDateString() : createdAt >= weekStart);
+    return matchesTab && matchesSearch && matchesDate;
+  });
 
   return (
-    <div className="admin-content">
-      <div className="admin-topbar">
-        <div>
-          <h2>Dashboard</h2>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Monitoring Penjualan — pastipremium.my.id</p>
+    <div className={styles.dashboard}>
+      <header className={styles.pageHeader}>
+        <p className={styles.eyebrow}>OVERVIEW / ADMIN</p>
+        <h1>Dashboard</h1>
+        <p className={styles.date}><FiCalendar aria-hidden="true" />{today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<span>Ringkasan bisnis Anda</span></p>
+      </header>
+
+      {loadError && <div className={styles.error} role="alert"><FiAlertCircle />{loadError}<button onClick={() => void loadDashboard()}>Coba lagi</button></div>}
+
+      <section className={styles.summary} aria-label="Ringkasan penjualan">
+        {[
+          { label: 'Total pendapatan', value: formatPrice(data.totalRevenue), hint: `${formatNumber(data.totalOrders)} total pesanan` },
+          { label: 'Pendapatan hari ini', value: formatPrice(data.revenueToday), hint: `${formatNumber(data.paidToday)} pesanan lunas hari ini` },
+          { label: 'Total pembeli', value: formatNumber(data.totalBuyers), hint: `${formatNumber(data.ordersToday)} pesanan hari ini` },
+          { label: 'Stok aktif', value: formatNumber(data.totalStockActive), hint: `${formatNumber(data.totalActiveProducts)} produk aktif` },
+        ].map(stat => <div className={styles.metric} key={stat.label} title={stat.hint}><strong>{stat.value}</strong><span>{stat.label}</span></div>)}
+      </section>
+
+      <section className={`${styles.taskBanner} ${!hasTasks ? styles.taskBannerClear : ''}`} aria-label="Tugas yang perlu ditangani">
+        <span className={styles.taskIntro}>{hasTasks ? <FiAlertCircle /> : <FiCheckCircle />}<strong>{hasTasks ? 'Ada tugas yang perlu ditangani:' : 'Semua tugas sudah tertangani'}</strong></span>
+        <div className={styles.taskLinks}>
+          <Link href="/admin/orders"><b>{formatNumber(data.needsAssignment)}</b> Perlu assignment</Link>
+          <Link href="/admin/orders"><b>{formatNumber(data.pendingPayment)}</b> Belum bayar</Link>
+          <Link href="/admin/support"><b>{formatNumber(data.openTickets)}</b> Tiket terbuka</Link>
         </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => { setLoading(true); loadDashboard(); }}>
-            🔄 Refresh
-          </button>
-          <button
-            className="btn btn-sm"
-            style={{
-              backgroundColor: 'var(--admin-warning-soft)',
-              color: 'var(--admin-warning)',
-              border: '1px solid rgba(180,83,9,0.22)',
-              fontWeight: 700,
-            }}
-            onClick={handleAutoExpire}
-            disabled={expiringLoading}
-          >
-            {expiringLoading ? <span className="loading-spinner" style={{ width: '14px', height: '14px' }} /> : '⏰ Run Auto-Expire'}
-          </button>
-        </div>
+        <Link className={styles.taskArrow} href="/admin/orders" aria-label="Buka pengelolaan pesanan"><FiArrowRight /></Link>
+      </section>
+
+      <div className={styles.analyticsGrid}>
+        <section className={styles.panel} aria-labelledby="revenue-heading">
+          <div className={styles.panelHeader}>
+            <div><h2 id="revenue-heading">Pendapatan</h2><p>{chartDays} hari terakhir</p></div>
+            <label className={styles.chartSelect}><span className={styles.srOnly}>Rentang grafik pendapatan</span><select value={chartDays} onChange={event => setChartDays(Number(event.target.value))}><option value={30}>30 hari</option><option value={7}>7 hari</option></select><FiChevronDown aria-hidden="true" /></label>
+          </div>
+          {data.dailyRevenue.length ? <RevenueChart key={chartDays} days={data.dailyRevenue.slice(-chartDays)} /> : <p className={styles.empty}>Belum ada data pendapatan.</p>}
+        </section>
+
+        <section className={styles.panel} aria-labelledby="products-heading">
+          <div className={styles.panelHeader}><h2 id="products-heading">Produk terlaris</h2><Link className={styles.textLink} href="/admin/products">Lihat semua produk <FiArrowRight /></Link></div>
+          <div className={`${styles.tableScroll} ${styles.productsScroll}`}>
+            <table className={styles.productsTable}>
+              <thead><tr><th scope="col">#</th><th scope="col">Produk</th><th scope="col">Terjual</th><th scope="col">Pendapatan</th></tr></thead>
+              <tbody>
+                {data.topProducts.map((product, index) => <tr key={`${product.name}-${index}`}><td>{index + 1}</td><td><span className={styles.product}><ProductIcon name={product.name} /><span>{product.name}</span></span></td><td>{formatNumber(product.count)}</td><td>{formatPrice(product.revenue)}</td></tr>)}
+                {!data.topProducts.length && <tr><td colSpan={4} className={styles.empty}>Belum ada data penjualan.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
-      <div className="admin-page-body" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
-
-        {/* ===== ROW 1: Revenue Summary ===== */}
-        <div className="admin-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-          <div style={{ background: 'linear-gradient(135deg, var(--admin-accent-strong), var(--admin-teal))', borderRadius: 'var(--radius-xl)', padding: '28px', color: '#fff', boxShadow: '0 18px 38px rgba(15, 118, 110, 0.16)' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, opacity: 0.75, marginBottom: '10px' }}>💰 Total Revenue</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.03em' }}>{formatPrice(data?.totalRevenue || 0)}</div>
-            <div style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '4px' }}>{formatNumber(data?.totalOrders || 0)} total pesanan</div>
-          </div>
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', padding: '28px', border: '1px solid var(--border-primary)', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, color: 'var(--text-muted)', marginBottom: '10px' }}>📈 Revenue Hari Ini</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--brand-success)' }}>{formatPrice(data?.revenueToday || 0)}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{data?.paidToday} pesanan lunas hari ini</div>
-          </div>
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', padding: '28px', border: '1px solid var(--border-primary)', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' as const, color: 'var(--text-muted)', marginBottom: '10px' }}>👥 Total Buyer</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, letterSpacing: '-0.03em' }}>{formatNumber(data?.totalBuyers || 0)}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>{data?.ordersToday} order hari ini</div>
+      <section className={`${styles.panel} ${styles.ordersPanel}`} aria-labelledby="orders-heading">
+        <div className={styles.panelHeader}>
+          <h2 id="orders-heading">Daftar pesanan</h2>
+          <div className={styles.orderTools}>
+            <label className={styles.orderSearch}><FiSearch aria-hidden="true" /><input aria-label="Cari pesanan terbaru" placeholder="Cari nomor, pembeli, produk..." value={orderSearch} onChange={event => setOrderSearch(event.target.value)} />{orderSearch && <button onClick={() => setOrderSearch('')} aria-label="Hapus pencarian"><FiX /></button>}</label>
+            <button className={`${styles.button} ${showFilters || orderDate !== 'all' ? styles.buttonActive : ''}`} onClick={() => setShowFilters(!showFilters)} aria-expanded={showFilters} aria-controls="dashboard-order-filters"><FiFilter />Filter{orderDate !== 'all' && <span className={styles.filterDot} />}</button>
           </div>
         </div>
-
-        {/* ===== ROW 2: Quick Stats ===== */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '12px' }}>
-          {[
-            { label: 'Produk Aktif', value: data?.totalActiveProducts, icon: '📦', color: '#2563eb', bg: '#eaf2ff' },
-            { label: 'Stok Aktif', value: data?.totalStockActive, icon: '🔑', color: '#0f766e', bg: '#e7f7f4' },
-            { label: 'Sharing', value: data?.sharingAvailable, icon: '👥', color: '#0284c7', bg: '#e0f2fe' },
-            { label: 'Private', value: data?.privateAvailable, icon: '🔒', color: '#4f46e5', bg: '#eef2ff' },
-            { label: 'Akun Penuh', value: data?.fullAccounts, icon: '🚫', color: '#dc2626', bg: '#fef2f2' },
-            { label: 'Pending Bayar', value: data?.pendingPayment, icon: '⏳', color: '#b45309', bg: '#fff7ed' },
-            { label: 'Perlu Assign', value: data?.needsAssignment, icon: '⚠️', color: '#d97706', bg: '#fffbeb' },
-            { label: 'Ticket Buka', value: data?.openTickets, icon: '🎫', color: '#0f766e', bg: '#e7f7f4' },
-          ].map((w, i) => (
-            <div key={i} className="stat-card">
-              <div className="stat-icon" style={{ color: w.color, background: w.bg }}>{w.icon}</div>
-              <div className="stat-value">{w.value}</div>
-              <div className="stat-label">{w.label}</div>
-            </div>
-          ))}
+        {showFilters && <div className={styles.filterRow} id="dashboard-order-filters"><label>Tanggal pesanan<select value={orderDate} onChange={event => setOrderDate(event.target.value)}><option value="all">Semua tanggal</option><option value="today">Hari ini</option><option value="week">7 hari terakhir</option></select></label><button onClick={() => { setOrderDate('all'); setOrderSearch(''); setOrderTab('all'); }}>Reset filter</button></div>}
+        <div className={styles.tabs} role="group" aria-label="Filter status pesanan">
+          {tabs.map(tab => <button key={tab.id} className={orderTab === tab.id ? styles.activeTab : ''} aria-pressed={orderTab === tab.id} onClick={() => setOrderTab(tab.id)}>{tab.label}<span>{formatNumber(tab.count)}</span></button>)}
         </div>
-
-        {/* ===== ROW 3: Chart + Top Products ===== */}
-        <div className="admin-dashboard-split" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-
-          {/* Revenue Chart (Bar) */}
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-primary)', padding: '24px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px' }}>📊 Revenue 30 Hari Terakhir</h3>
-            <div ref={chartScrollRef} className="custom-scrollbar" style={{ overflowX: 'auto', paddingBottom: '16px', scrollbarWidth: 'thin' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px', height: '180px', minWidth: '900px' }}>
-                {data?.dailyRevenue.map((d, i) => (
-                  <div key={i} style={{ flex: 1, minWidth: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      {d.orders > 0 ? formatPrice(d.revenue) : '-'}
-                    </div>
-                    <div
-                      style={{
-                        width: '100%',
-                        maxWidth: '48px',
-                        height: `${maxRevenue > 0 ? Math.max((d.revenue / maxRevenue) * 140, d.revenue > 0 ? 8 : 3) : 3}px`,
-                        background: d.revenue > 0 ? 'linear-gradient(180deg, var(--admin-accent), var(--admin-teal))' : 'var(--border-secondary)',
-                        borderRadius: '6px 6px 2px 2px',
-                        transition: 'height 0.5s ease',
-                      }}
-                    />
-                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-                      {d.date.split(' ').slice(0, 2).join(' ')}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Top Products */}
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-primary)', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px' }}>🏆 Produk Terlaris</h3>
-            {(data?.topProducts || []).length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Belum ada data penjualan.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {data?.topProducts.map((p, i) => {
-                  const maxProdRevenue = data?.topProducts[0]?.revenue || 1;
-                  return (
-                    <div key={i}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`} {p.name}
-                        </span>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--brand-success)', fontWeight: 600 }}>
-                          {formatPrice(p.revenue)}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ flex: 1, height: '6px', borderRadius: '3px', background: 'var(--border-secondary)', overflow: 'hidden' }}>
-                          <div style={{
-                            width: `${(p.revenue / maxProdRevenue) * 100}%`,
-                            height: '100%',
-                            borderRadius: '3px',
-                            background: i === 0 ? 'var(--admin-accent)' : i === 1 ? '#0f766e' : '#93c5fd',
-                            transition: 'width 0.5s ease',
-                          }} />
-                        </div>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', minWidth: '50px', textAlign: 'right' }}>{p.count} sold</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+        <div className={`${styles.tableScroll} ${styles.ordersScroll}`}>
+          <table className={styles.ordersTable}>
+            <thead><tr><th scope="col"># Pesanan</th><th scope="col">Tanggal</th><th scope="col">Produk</th><th scope="col">Pembeli</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col">Aksi</th></tr></thead>
+            <tbody>
+              {visibleOrders.map(order => <tr key={order.id}>
+                <td className={styles.orderNumber}>{order.order_number}</td>
+                <td className={styles.orderDate}>{new Date(order.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                <td><span className={styles.product}><ProductIcon name={order.product?.name || ''} /><span>{order.product?.name || '—'}</span></span></td>
+                <td>{order.buyer?.name || '—'}</td>
+                <td className={styles.amount}>{formatPrice(order.total_amount)}</td>
+                <td><span className={styles.statusBadge} data-tone={statusTones[order.order_status] || 'neutral'}>{statusLabels[order.order_status] || order.order_status}</span></td>
+                <td><Link className={styles.orderAction} href="/admin/orders" aria-label={`Kelola pesanan ${order.order_number}`} title="Buka pengelolaan pesanan"><FiArrowRight /></Link></td>
+              </tr>)}
+              {!visibleOrders.length && <tr><td colSpan={7} className={styles.empty}>{data.recentOrders.length ? 'Tidak ada pesanan terbaru yang cocok dengan filter.' : 'Belum ada pesanan.'}{(orderSearch || orderTab !== 'all' || orderDate !== 'all') && <button onClick={() => { setOrderSearch(''); setOrderTab('all'); setOrderDate('all'); }}>Reset pencarian & filter</button>}</td></tr>}
+            </tbody>
+          </table>
         </div>
+        <div className={styles.tableFooter}><span>Menampilkan {visibleOrders.length} dari {data.recentOrders.length} pesanan terbaru. Angka status mencakup semua pesanan.</span><Link className={styles.textLink} href="/admin/orders">Lihat semua pesanan <FiArrowRight /></Link></div>
+      </section>
 
-        {/* ===== ROW 4: Order Status Breakdown + Recent Orders ===== */}
-        <div className="admin-dashboard-detail-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
-
-          {/* Order Status Donut-style */}
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-primary)', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px' }}>📋 Status Pesanan</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {Object.entries(data?.statusBreakdown || {}).sort((a, b) => b[1] - a[1]).map(([status, count]) => {
-                const total = data?.totalOrders || 1;
-                const pct = Math.round((count / total) * 100);
-                const colors: Record<string, string> = {
-                  pending: '#71717a', paid: '#3b82f6', assigned: '#8b5cf6',
-                  delivered: '#22c55e', completed: '#22c55e', cancelled: '#ef4444', refunded: '#eab308',
-                };
-                return (
-                  <div key={status}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: colors[status] || '#636e72', display: 'inline-block' }} />
-                        {getStatusLabel(status)}
-                      </span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{count} ({pct}%)</span>
-                    </div>
-                    <div style={{ height: '5px', borderRadius: '3px', background: 'var(--border-secondary)', overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: '3px', background: colors[status] || '#636e72', transition: 'width 0.5s ease' }} />
-                    </div>
-                  </div>
-                );
-              })}
-              {Object.keys(data?.statusBreakdown || {}).length === 0 && (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Belum ada pesanan.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Recent Orders */}
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-primary)', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '20px' }}>🕐 Pesanan Terbaru</h3>
-            <div className="table-container" style={{ maxHeight: '340px', overflowY: 'auto' }}>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Order</th>
-                    <th>Buyer</th>
-                    <th>Produk</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Waktu</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(data?.recentOrders || []).map((o) => (
-                    <tr key={o.id}>
-                      <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--brand-primary-light)' }}>{o.order_number}</td>
-                      <td style={{ fontSize: '0.85rem' }}>{o.buyer?.name || '-'}</td>
-                      <td style={{ fontSize: '0.85rem' }}>{o.product?.name || '-'}</td>
-                      <td style={{ color: 'var(--brand-success)', fontWeight: 600, fontSize: '0.85rem' }}>{formatPrice(o.total_amount)}</td>
-                      <td><span className={`badge ${getStatusBadge(o.order_status)}`} style={{ fontSize: '0.7rem' }}>{o.order_status}</span></td>
-                      <td style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(o.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
-                    </tr>
-                  ))}
-                  {(data?.recentOrders || []).length === 0 && (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada pesanan</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
+      <div className={styles.detailsGrid}>
+        <section className={styles.panel} aria-labelledby="stock-heading">
+          <div className={styles.panelHeader}><h2 id="stock-heading">Ringkasan stok</h2><Link className={styles.textLink} href="/admin/stock-accounts">Kelola stok <FiArrowRight /></Link></div>
+          <dl className={styles.stockStats}>{[
+            { label: 'Produk aktif', value: data.totalActiveProducts },
+            { label: 'Akun sharing', value: data.sharingAvailable },
+            { label: 'Akun private', value: data.privateAvailable },
+            { label: 'Akun penuh', value: data.fullAccounts },
+          ].map(stat => <div key={stat.label}><dt>{stat.label}</dt><dd>{formatNumber(stat.value)}</dd></div>)}</dl>
+        </section>
+        <section className={styles.panel} aria-labelledby="status-heading">
+          <div className={styles.panelHeader}><h2 id="status-heading">Status pesanan</h2><span className={styles.muted}>{formatNumber(data.totalOrders)} total</span></div>
+          <div className={styles.statusOverview}>{Object.entries(breakdown).sort((a, b) => b[1] - a[1]).map(([status, count]) => <div key={status}><span className={styles.statusDot} data-tone={statusTones[status] || 'neutral'} /><span>{statusLabels[status] || status}</span><strong>{formatNumber(count)}</strong><small>{Math.round(count / (data.totalOrders || 1) * 100)}%</small></div>)}{!Object.keys(breakdown).length && <p className={styles.empty}>Belum ada pesanan.</p>}</div>
+        </section>
       </div>
+
+      <footer className={styles.dashboardFooter}>
+        <p><span className={styles.liveDot} />{formatNumber(data.ordersToday)} pesanan hari ini<span className={styles.footerDivider}>/</span>{formatNumber(data.paidToday)} sudah dibayar</p>
+        <div className={styles.footerActions}>
+          <button className={styles.button} onClick={() => { setLoading(true); void loadDashboard(); }}><FiRefreshCw />Refresh</button>
+          <button className={styles.button} onClick={handleAutoExpire} disabled={expiringLoading}>{expiringLoading ? <FiRefreshCw className={styles.spinning} /> : <FiClock />}{expiringLoading ? 'Memproses...' : 'Run Auto-Expire'}</button>
+        </div>
+      </footer>
     </div>
   );
 }
