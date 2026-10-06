@@ -34,6 +34,11 @@
 .chartSelect { position: relative; display: flex; align-items: center; }
 .chartSelect select { appearance: none; padding: 7px 28px 7px 10px; border: 1px solid #e5e5eb; border-radius: 5px; background: #fff; color: #3f3f46; font: inherit; font-size: 10px; cursor: pointer; }
 .chartSelect > svg { position: absolute; right: 9px; width: 12px; pointer-events: none; }
+.chartNavigation { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 0 15px 12px; }
+.chartPaging { display: flex; gap: 6px; }
+.chartDate { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; color: #676775; font-size: 10px; }
+.chartDate input { min-width: 0; padding: 6px 8px; border: 1px solid #e5e5eb; border-radius: 5px; background: #fff; color: #3f3f46; font: inherit; }
+.chartNavigation .button:disabled { cursor: not-allowed; }
 .chartWrap { padding: 0 12px 8px 2px; }
 .chartTooltip { display: flex; min-height: 23px; align-items: center; gap: 10px; padding-left: 18px; color: #92929d; font-size: 9px; }
 .chartTooltip strong { color: #52525b; font-weight: 500; }
