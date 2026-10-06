@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAdminFromRequest } from '@/lib/auth';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
+import { buildRevenueHistory, jakartaDateKey } from '@/lib/dashboard-revenue';
 
 interface DashboardOrder {
   id: number;
@@ -52,14 +53,10 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  const thirtyDaysAgo = new Date(today);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const today = jakartaDateKey(now);
   const paidOrders = orders.filter((order) => order.payment_status === 'paid');
-  const last30Paid = paidOrders.filter((order) => new Date(order.created_at) >= thirtyDaysAgo);
-  const todayOrders = orders.filter((order) => new Date(order.created_at) >= today);
-  const todayPaid = paidOrders.filter((order) => new Date(order.created_at) >= today);
+  const todayOrders = orders.filter((order) => jakartaDateKey(order.created_at) === today);
+  const todayPaid = paidOrders.filter((order) => jakartaDateKey(order.created_at) === today);
 
   const productMap: Record<number, { name: string; count: number; revenue: number }> = {};
   for (const order of paidOrders) {
@@ -71,21 +68,7 @@ export async function GET(request: Request) {
     productMap[order.product_id] = row;
   }
 
-  const dailyRevenue = Array.from({ length: 30 }, (_, index) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() - (29 - index));
-    const nextDate = new Date(date);
-    nextDate.setDate(date.getDate() + 1);
-    const dayOrders = last30Paid.filter((order) => {
-      const createdAt = new Date(order.created_at);
-      return createdAt >= date && createdAt < nextDate;
-    });
-    return {
-      date: date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }),
-      revenue: dayOrders.reduce((total, order) => total + Number(order.total_amount || 0), 0),
-      orders: dayOrders.length,
-    };
-  });
+  const dailyRevenue = buildRevenueHistory(orders, now);
 
   const statuses = ['pending', 'paid', 'assigned', 'delivered', 'completed', 'cancelled', 'refunded', 'pending_payment', 'failed'];
   const statusBreakdown = Object.fromEntries(statuses.map((status) => [

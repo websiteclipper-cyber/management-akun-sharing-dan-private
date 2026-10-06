@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import {
   FiAlertCircle, FiArrowRight, FiBox, FiBriefcase, FiCalendar,
-  FiCheckCircle, FiChevronDown, FiClock, FiFilter, FiRefreshCw, FiSearch, FiX,
+  FiCheckCircle, FiChevronDown, FiChevronLeft, FiChevronRight, FiClock, FiFilter, FiRefreshCw, FiSearch, FiX,
 } from 'react-icons/fi';
 import { SiGooglegemini, SiOpenai } from 'react-icons/si';
 import styles from './dashboard.module.css';
@@ -43,7 +43,7 @@ interface SalesData {
   fullAccounts: number;
   recentOrders: RecentOrder[];
   topProducts: TopProduct[];
-  dailyRevenue: { date: string; revenue: number; orders: number }[];
+  dailyRevenue: { date: string; dateKey: string; revenue: number; orders: number }[];
   statusBreakdown: Record<string, number>;
 }
 
@@ -98,7 +98,7 @@ function RevenueChart({ days }: { days: SalesData['dailyRevenue'] }) {
   return (
     <div className={styles.chartWrap}>
       <div className={styles.chartTooltip} aria-live="polite">
-        {selectedDay ? <><strong>{selectedDay.date}</strong><span>{formatPrice(selectedDay.revenue)} · {formatNumber(selectedDay.orders)} pesanan</span></> : <span>Pendapatan dari pesanan yang sudah dibayar</span>}
+        {selectedDay ? <><strong>{selectedDay.date} {selectedDay.dateKey.slice(0, 4)}</strong><span>{formatPrice(selectedDay.revenue)} · {formatNumber(selectedDay.orders)} pesanan</span></> : <span>Pendapatan dari pesanan yang sudah dibayar · WIB</span>}
       </div>
       <div className={styles.chartScroll}>
         <svg className={styles.chart} viewBox={`0 0 ${width} ${height}`} role="group" aria-label="Grafik pendapatan harian. Pilih titik untuk melihat pendapatan dan jumlah pesanan.">
@@ -128,7 +128,7 @@ function RevenueChart({ days }: { days: SalesData['dailyRevenue'] }) {
             const point = points[index];
             const showLabel = index % Math.ceil(days.length / 7) === 0 || index === days.length - 1;
             return (
-              <g key={day.date}>
+              <g key={day.dateKey}>
                 <circle cx={point.x} cy={point.y} r={activePoint === index ? 4 : 2.6} fill="#27272a" />
                 <circle cx={point.x} cy={point.y} r="9" fill="transparent" tabIndex={0} role="button"
                   aria-label={`${day.date}: ${formatPrice(day.revenue)}, ${day.orders} pesanan`}
@@ -153,6 +153,7 @@ export default function AdminDashboardPage() {
   const [loadError, setLoadError] = useState('');
   const [expiringLoading, setExpiringLoading] = useState(false);
   const [chartDays, setChartDays] = useState(30);
+  const [chartEndDate, setChartEndDate] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
   const [orderTab, setOrderTab] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
@@ -210,6 +211,14 @@ export default function AdminDashboardPage() {
   }
 
   const breakdown = data.statusBreakdown;
+  const history = data.dailyRevenue;
+  const lastIndex = history.length - 1;
+  const selectedIndex = chartEndDate ? history.findIndex(day => day.dateKey === chartEndDate) : lastIndex;
+  const endIndex = selectedIndex < 0 ? lastIndex : selectedIndex;
+  const startIndex = Math.max(0, endIndex - chartDays + 1);
+  const chartHistory = history.slice(startIndex, endIndex + 1);
+  const formatChartDate = (key: string) => new Date(`${key}T00:00:00Z`).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const chartPeriod = chartHistory.length ? `${formatChartDate(chartHistory[0].dateKey)} – ${formatChartDate(chartHistory[chartHistory.length - 1].dateKey)}` : '';
   const hasTasks = data.needsAssignment + data.pendingPayment + data.openTickets > 0;
   const today = new Date();
   const tabs = [
@@ -266,10 +275,18 @@ export default function AdminDashboardPage() {
       <div className={styles.analyticsGrid}>
         <section className={styles.panel} aria-labelledby="revenue-heading">
           <div className={styles.panelHeader}>
-            <div><h2 id="revenue-heading">Pendapatan</h2><p>{chartDays} hari terakhir</p></div>
+            <div><h2 id="revenue-heading">Pendapatan</h2><p aria-live="polite">{chartPeriod}</p></div>
             <label className={styles.chartSelect}><span className={styles.srOnly}>Rentang grafik pendapatan</span><select value={chartDays} onChange={event => setChartDays(Number(event.target.value))}><option value={30}>30 hari</option><option value={7}>7 hari</option></select><FiChevronDown aria-hidden="true" /></label>
           </div>
-          {data.dailyRevenue.length ? <RevenueChart key={chartDays} days={data.dailyRevenue.slice(-chartDays)} /> : <p className={styles.empty}>Belum ada data pendapatan.</p>}
+          {history.length > 0 && <div className={styles.chartNavigation}>
+            <div className={styles.chartPaging}>
+              <button className={styles.button} disabled={startIndex === 0} onClick={() => setChartEndDate(history[startIndex - 1].dateKey)} aria-label={`${chartDays} hari sebelumnya`}><FiChevronLeft />Sebelumnya</button>
+              <button className={styles.button} disabled={endIndex === lastIndex} onClick={() => setChartEndDate(history[Math.min(lastIndex, endIndex + chartDays)].dateKey)} aria-label={`${chartDays} hari berikutnya`}>Berikutnya<FiChevronRight /></button>
+            </div>
+            <label className={styles.chartDate}>Sampai tanggal<input type="date" value={history[endIndex].dateKey} min={history[0].dateKey} max={history[lastIndex].dateKey} onChange={event => { if (event.target.validity.valid && event.target.value) setChartEndDate(event.target.value); }} /></label>
+            <button className={styles.button} disabled={endIndex === lastIndex} onClick={() => setChartEndDate('')}>Terbaru</button>
+          </div>}
+          {chartHistory.length ? <RevenueChart key={`${chartDays}-${history[endIndex].dateKey}`} days={chartHistory} /> : <p className={styles.empty}>Belum ada data pendapatan.</p>}
         </section>
 
         <section className={styles.panel} aria-labelledby="products-heading">
