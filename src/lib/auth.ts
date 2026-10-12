@@ -1,9 +1,5 @@
 import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase';
-import {
-  isBuyerIdentityBanned,
-  recordBannedBuyerIdentity,
-} from '@/lib/buyerBanIdentity';
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET || process.env.ENCRYPTION_KEY;
@@ -173,6 +169,8 @@ export interface BuyerAccess {
 
 // Re-check the database on every protected buyer request. A signed token proves
 // identity, but it must not let a buyer keep access after an admin bans them.
+// Ban status is intentionally scoped to this buyer row. Network identifiers
+// such as a shared public IP must never turn one account ban into a site-wide ban.
 export async function getBuyerAccessFromRequest(request: Request): Promise<BuyerAccess | null> {
   const tokenBuyer = getBuyerFromRequest(request);
   if (!tokenBuyer) return null;
@@ -189,19 +187,6 @@ export async function getBuyerAccessFromRequest(request: Request): Promise<Buyer
     String(buyer.email || '').trim().toLowerCase() !== tokenBuyer.email.trim().toLowerCase()
   ) return null;
 
-  let status = String(buyer.status || '');
-  if (status === 'blocked') {
-    await recordBannedBuyerIdentity(Number(buyer.id), request, buyer.email, buyer.phone);
-  } else if (
-    status === 'active'
-    && await isBuyerIdentityBanned({
-      request,
-      email: buyer.email,
-      phone: buyer.phone,
-    })
-  ) {
-    status = 'blocked';
-  }
 
   return {
     buyer: {
@@ -210,7 +195,7 @@ export async function getBuyerAccessFromRequest(request: Request): Promise<Buyer
       email: String(buyer.email || ''),
       phone: String(buyer.phone || ''),
     },
-    status,
+    status: String(buyer.status || ''),
   };
 }
 
@@ -232,5 +217,3 @@ export function getResellerFromRequest(request: Request): ResellerPayload | null
 
   return payload as unknown as ResellerPayload;
 }
-
-

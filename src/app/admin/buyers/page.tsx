@@ -42,7 +42,7 @@ export default function BuyersPage() {
     const action = isBanned ? 'unban' : 'ban';
     const confirmation = isBanned
       ? `Buka kembali akses untuk ${name}?`
-      : `Ban ${name}? Akun, nomor WA, dan IP buyer dari riwayat pesanan akan langsung diblokir.`;
+      : `Ban ${name}? Hanya akun buyer ini yang akan diblokir.`;
 
     if (!window.confirm(confirmation)) return;
 
@@ -118,8 +118,8 @@ export default function BuyersPage() {
         >
           <strong>Fitur banned buyer:</strong> buyer yang diban akan melihat pemberitahuan
           pelanggaran ketentuan dan tidak dapat membeli, membayar, melihat pesanan, atau
-          membuka data akun sampai di-unban. Ban juga berlaku untuk nomor WA dan IP publik
-          buyer yang pernah tercatat pada pesanan.
+          membuka data akun sampai di-unban. Ban hanya berlaku untuk akun buyer yang dipilih;
+          buyer lain pada jaringan atau perangkat yang sama tetap dapat masuk.
         </div>
 
         <div

@@ -3,10 +3,6 @@ import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { createKlikQrisTransaction, KlikQrisTransaction } from '@/lib/klikqris';
 import { findKlikQrisPayment, getStoredCreateData } from '@/lib/klikqris-payment';
 import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
-import {
-  isBuyerIdentityBanned,
-  recordBannedBuyerIdentity,
-} from '@/lib/buyerBanIdentity';
 import { getBuyerAccessFromRequest } from '@/lib/auth';
 import { consumePublicRateLimit, readJsonBody } from '@/lib/publicApiSecurity';
 
@@ -63,18 +59,7 @@ export async function POST(request: NextRequest) {
     const buyerStatus = buyerRelation && typeof buyerRelation === 'object' && 'status' in buyerRelation
       ? String(buyerRelation.status || '')
       : '';
-    const buyerId = buyerRelation && typeof buyerRelation === 'object' && 'id' in buyerRelation
-      ? Number(buyerRelation.id)
-      : 0;
-    const buyerEmail = buyerRelation && typeof buyerRelation === 'object' && 'email' in buyerRelation
-      ? buyerRelation.email
-      : null;
-    const buyerPhone = buyerRelation && typeof buyerRelation === 'object' && 'phone' in buyerRelation
-      ? buyerRelation.phone
-      : null;
-
     if (isBuyerBannedStatus(buyerStatus)) {
-      if (buyerId) await recordBannedBuyerIdentity(buyerId, request, buyerEmail, buyerPhone);
       return NextResponse.json(
         { banned: true, error: BUYER_BAN_MESSAGE },
         { status: 403 },
@@ -82,12 +67,6 @@ export async function POST(request: NextRequest) {
     }
     if (buyerStatus !== 'active') {
       return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
-    }
-    if (await isBuyerIdentityBanned({ request, email: buyerEmail, phone: buyerPhone })) {
-      return NextResponse.json(
-        { banned: true, error: BUYER_BAN_MESSAGE },
-        { status: 403 },
-      );
     }
 
     if (order.payment_status === 'paid') {
