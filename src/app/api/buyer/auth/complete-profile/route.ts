@@ -4,10 +4,6 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { findBuyerByVerifiedEmail } from '@/lib/buyerProfile';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
 import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
-import {
-  isBuyerIdentityBanned,
-  recordBannedBuyerIdentity,
-} from '@/lib/buyerBanIdentity';
 
 export async function POST(request: NextRequest) {
   const authorization = request.headers.get('authorization');
@@ -37,12 +33,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Gagal membaca profil buyer.' }, { status: 500 });
   }
   if (existingBuyer && isBuyerBannedStatus(existingBuyer.status)) {
-    await recordBannedBuyerIdentity(
-      existingBuyer.id,
-      request,
-      existingBuyer.email,
-      existingBuyer.phone,
-    );
     return NextResponse.json(
       { banned: true, error: BUYER_BAN_MESSAGE },
       { status: 403 },
@@ -50,17 +40,6 @@ export async function POST(request: NextRequest) {
   }
   if (existingBuyer?.status && existingBuyer.status !== 'active') {
     return NextResponse.json({ error: 'Akun buyer tidak aktif.' }, { status: 403 });
-  }
-
-  try {
-    if (await isBuyerIdentityBanned({ request, email, phone })) {
-      return NextResponse.json(
-        { banned: true, error: BUYER_BAN_MESSAGE },
-        { status: 403 },
-      );
-    }
-  } catch {
-    return NextResponse.json({ error: 'Gagal memeriksa status ban buyer.' }, { status: 500 });
   }
 
   const now = new Date().toISOString();
