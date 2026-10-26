@@ -10,14 +10,18 @@ export async function GET(request: Request) {
 
   try {
     // Get reseller stats
-    const { data: resellerData } = await supabase
+    const { data: resellerData, error: resellerError } = await supabase
       .from('resellers')
-      .select('*')
+      .select('id, name, ref_code, phone, status, total_sales, total_commission, unpaid_commission, default_commission_type, default_commission_value')
       .eq('id', reseller.id)
-      .single();
+      .maybeSingle();
 
-    if (!resellerData) {
-      return NextResponse.json({ error: 'Reseller not found' }, { status: 404 });
+    if (resellerError) {
+      return NextResponse.json({ error: 'Layanan sementara tidak tersedia' }, { status: 503 });
+    }
+
+    if (!resellerData || resellerData.status !== 'active' || resellerData.ref_code !== reseller.ref_code) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Update IP on dashboard load
