@@ -2,7 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 // ============================================================
 // SERVICE ROLE CLIENT (Server-side only — bypasses RLS)
@@ -15,14 +15,14 @@ export function getServiceClient(): SupabaseClient {
   if (_adminClient) return _adminClient;
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    // Fallback to anon key if service key not set (dev mode)
-    console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY not set — falling back to anon key. Set it in production!');
-    _adminClient = createClient(supabaseUrl, supabaseAnonKey);
-  } else {
-    _adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    throw new Error('Server Supabase configuration is missing.');
   }
+  if (!supabaseServiceKey.startsWith('sb_secret_')) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY must contain a secret API key (sb_secret_...).');
+  }
+  _adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
   return _adminClient;
 }
 
