@@ -8,6 +8,7 @@ import {
   clearResellerLoginFailures,
   createResellerAuthAbortSignal,
   getResellerClientIp,
+  isResellerLoginAttemptsUnavailable,
   normalizeResellerRefCode,
   recordResellerLoginFailure,
 } from '@/lib/resellerAuthSecurity';
@@ -55,8 +56,24 @@ export async function POST(request: NextRequest) {
       resellerPromise,
     ]);
 
-    if (attemptResult.error || resellerResult.error) {
+    const attemptsTableUnavailable =
+      isResellerLoginAttemptsUnavailable(attemptResult.error);
+
+    if (
+      resellerResult.error ||
+      (attemptResult.error && !attemptsTableUnavailable)
+    ) {
+      console.error('Unable to read reseller authentication data.', {
+        attemptsErrorCode: attemptResult.error?.code || null,
+        resellerErrorCode: resellerResult.error?.code || null,
+      });
       throw new Error('Unable to read reseller authentication data.');
+    }
+
+    if (attemptsTableUnavailable) {
+      console.warn(
+        'Reseller login attempts table is unavailable; using the local request rate limit only.',
+      );
     }
 
     const attempts = attemptResult.count || 0;
@@ -156,7 +173,13 @@ export async function POST(request: NextRequest) {
         status: reseller.status,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error(
+      'Reseller login request failed.',
+      error instanceof Error
+        ? { name: error.name, message: error.message }
+        : { name: 'UnknownError' },
+    );
     return NextResponse.json(
       { error: 'Layanan login sedang sibuk. Silakan coba lagi beberapa saat.' },
       { status: 503 },
