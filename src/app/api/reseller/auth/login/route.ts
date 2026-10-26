@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const reseller = resellerResult.data;
     if (!reseller) {
       await recordResellerLoginFailure(refCode, ip);
-      return NextResponse.json({ error: 'Kode referral tidak ditemukan' }, { status: 404 });
+      return NextResponse.json({ error: 'Kode referral atau PIN tidak valid' }, { status: 401 });
     }
 
     // Verify PIN matches
@@ -93,13 +93,13 @@ export async function POST(request: NextRequest) {
 
     if (!isPinValid) {
       await recordResellerLoginFailure(refCode, ip);
-      const remainingAttempts = 4 - attempts;
-      return NextResponse.json({ error: `PIN tidak valid. Sisa ${remainingAttempts} percobaan.` }, { status: 401 });
+      return NextResponse.json({ error: 'Kode referral atau PIN tidak valid' }, { status: 401 });
     }
 
     // Check if reseller is active
     if (reseller.status !== 'active') {
-      return NextResponse.json({ error: 'Akun reseller Anda tidak aktif. Hubungi admin.' }, { status: 403 });
+      await recordResellerLoginFailure(refCode, ip);
+      return NextResponse.json({ error: 'Kode referral atau PIN tidak valid' }, { status: 401 });
     }
 
     // Sign JWT token
