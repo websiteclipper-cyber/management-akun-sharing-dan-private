@@ -103,6 +103,9 @@ Simulasi pembayaran tidak diekspos sebagai endpoint aplikasi.
   Jika ada transaksi, rekonsiliasi dan simpan ID serta data transaksi yang benar;
   jika sudah dipastikan tidak ada transaksi yang dapat dibayar, reset marker menjadi
   NULL sebelum mencoba lagi. Jangan mereset marker saat hasil request belum diketahui.
+  Penolakan create yang pasti (HTTP 400, 404, atau 409 sesuai kontrak KiPay)
+  melepaskan marker otomatis agar konfigurasi yang sudah dikoreksi bisa dicoba lagi.
+  Respons jaringan/5xx dan kegagalan setelah transaksi dibuat tetap mempertahankan marker.
 - Error pencatatan komisi dicatat server untuk rekonsiliasi admin; hanya proses
   pertama yang mengubah pending menjadi paid yang membukukan komisi.
 - Integrasi ini menggunakan tabel serta RPC pengiriman yang sudah ada tanpa migrasi

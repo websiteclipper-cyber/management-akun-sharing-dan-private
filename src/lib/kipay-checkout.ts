@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import { createKiPayTransaction, getKiPayConfig, getKiPayQrImage } from '@/lib/kipay';
+import { createKiPayTransaction, getKiPayConfig, getKiPayQrImage, KiPayApiError, type KiPayTransaction } from '@/lib/kipay';
 import { findKiPayPayment, kiPayCreateData } from '@/lib/kipay-payment';
 import { getStoredCreateData } from '@/lib/klikqris-payment';
 
@@ -31,7 +31,22 @@ export async function createOrLoadKiPayPayment(order: CheckoutOrder) {
         error: 'Pembayaran sedang disiapkan atau perlu diperiksa admin. Muat ulang sebentar lagi; jangan buat pembayaran ganda.',
       }, { status: 409 });
     } else {
-      const transaction = await createKiPayTransaction(order.order_number, amount);
+      let transaction: KiPayTransaction;
+      try {
+        transaction = await createKiPayTransaction(order.order_number, amount);
+      } catch (error) {
+        // Documented 400/404/409 create responses reject the request without
+        // creating an invoice. Release only those claims; network/5xx outcomes
+        // remain locked because KiPay may already have accepted the payment.
+        if (error instanceof KiPayApiError && [400, 404, 409].includes(error.httpStatus)) {
+          const { error: releaseError } = await supabase.from('orders')
+            .update({ payment_reference: null, updated_at: new Date().toISOString() })
+            .eq('id', order.id).eq('payment_status', 'pending_payment')
+            .eq('payment_reference', 'kipay-creating');
+          if (releaseError) throw new Error('Pembayaran ditolak dan perlu diperiksa admin sebelum dicoba lagi.');
+        }
+        throw error;
+      }
       const now = new Date().toISOString();
       const { data: stored, error } = await supabase.from('payments').insert({
         order_id: order.id, gateway_name: 'kipay', gateway_reference: transaction.trx_id,

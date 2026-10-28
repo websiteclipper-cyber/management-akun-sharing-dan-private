@@ -34,6 +34,8 @@ function client(fetch = async () => Response.json(transaction), overrides = {}) 
   return load('./kipay.ts', { 'node:crypto': crypto }, { fetch, process: { env: { ...env, ...overrides } } });
 }
 
+const { KiPayApiError } = client();
+
 function signedHeaders(body, timestamp = new Date().toISOString()) {
   const delivery = 'delivery-test';
   const signature = createHmac('sha256', env.KIPAY_WEBHOOK_SECRET).update(`${timestamp}.${delivery}.${body}`).digest('hex');
@@ -141,6 +143,7 @@ function checkoutSetup(createTransaction = async () => client().normalizeKiPayTr
       kiPayCreateData: value => ({ ...value, total_amount: value.amount }),
     },
     '@/lib/kipay': {
+      KiPayApiError,
       getKiPayConfig: () => ({}), getKiPayQrImage: async () => 'data:image/png;base64,test',
       createKiPayTransaction: async (...args) => { creates++; return createTransaction(...args); },
     },
@@ -168,6 +171,31 @@ test('an ambiguous creation failure is not automatically retried and cannot crea
   await assert.rejects(checkout.createOrLoadKiPayPayment(checkout.rows.orders[0]), /timeout/);
   const response = await checkout.createOrLoadKiPayPayment(checkout.rows.orders[0]);
   assert.equal(response.status, 409);
+  assert.equal(checkout.creates(), 1);
+});
+
+test('documented create rejections release the claim so corrected configuration can retry', async () => {
+  for (const status of [400, 404, 409]) {
+    let attempts = 0;
+    const checkout = checkoutSetup(async () => {
+      if (attempts++ === 0) throw new KiPayApiError(status);
+      return client().normalizeKiPayTransaction(transaction);
+    });
+    const order = checkout.rows.orders[0];
+    await assert.rejects(checkout.createOrLoadKiPayPayment(order), error => error.httpStatus === status);
+    assert.equal(order.payment_reference, null);
+    const response = await checkout.createOrLoadKiPayPayment(order);
+    assert.equal(response.status, 200);
+    assert.equal(checkout.rows.payments.length, 1);
+  }
+});
+
+test('upstream server failures keep the claim because invoice creation is uncertain', async () => {
+  const checkout = checkoutSetup(async () => { throw new KiPayApiError(500); });
+  const order = checkout.rows.orders[0];
+  await assert.rejects(checkout.createOrLoadKiPayPayment(order));
+  assert.equal(order.payment_reference, 'kipay-creating');
+  assert.equal((await checkout.createOrLoadKiPayPayment(order)).status, 409);
   assert.equal(checkout.creates(), 1);
 });
 
