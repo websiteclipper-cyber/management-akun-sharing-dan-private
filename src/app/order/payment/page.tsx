@@ -17,10 +17,10 @@ interface PaymentData {
   expired_at: string | null;
 }
 
-export default function KlikQrisPaymentPageWrapper() {
+export default function PaymentPageWrapper() {
   return (
     <Suspense fallback={<LoadingPage />}>
-      <KlikQrisPaymentPage />
+      <PaymentPage />
     </Suspense>
   );
 }
@@ -33,7 +33,7 @@ function LoadingPage() {
   );
 }
 
-function KlikQrisPaymentPage() {
+function PaymentPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderNumber = searchParams.get('order') || '';
@@ -52,10 +52,10 @@ function KlikQrisPaymentPage() {
 
     let cancelled = false;
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 20_000);
+    const timeout = window.setTimeout(() => controller.abort(), 30_000);
     async function createOrLoadPayment() {
       try {
-        const response = await fetch('/api/public/klikqris/create', {
+        const response = await fetch('/api/public/payments/create', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -74,6 +74,10 @@ function KlikQrisPaymentPage() {
 
         if (result.already_paid || result.status === 'SUCCESS') {
           router.replace(`/order/success?order=${encodeURIComponent(orderNumber)}`);
+          return;
+        }
+        if (result.status === 'EXPIRED') {
+          setStatus('expired');
           return;
         }
 
@@ -190,7 +194,7 @@ function KlikQrisPaymentPage() {
                 alignItems: 'center', justifyContent: 'center',
               }}>
                 {qrisSource ? (
-                  // The QR image is returned directly by KlikQRIS for this transaction.
+                  // KiPay QR images are fetched by the server to protect its API key.
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={qrisSource} alt={`QRIS order ${orderNumber}`} width={260} height={260} style={{ maxWidth: '100%', height: 'auto' }} />
                 ) : (
@@ -217,7 +221,7 @@ function KlikQrisPaymentPage() {
 
               <div className={styles.paymentMeta} style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '18px' }}>
                 <div>Order: <strong>{orderNumber}</strong></div>
-                {payment.expired_at && <div><FiClock aria-hidden="true" /> Berlaku sampai: {payment.expired_at} WIB</div>}
+                {payment.expired_at && <div><FiClock aria-hidden="true" /> Berlaku sampai: {payment.expired_at}</div>}
               </div>
 
               <div className={styles.paymentInstructions}>

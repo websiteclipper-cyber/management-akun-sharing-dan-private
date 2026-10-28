@@ -7,6 +7,7 @@ import {
   findKlikQrisPayment,
   getStoredCreateData,
 } from '@/lib/klikqris-payment';
+import { findKiPayPayment, syncKiPayPayment } from '@/lib/kipay-payment';
 
 export const runtime = 'nodejs';
 
@@ -31,6 +32,12 @@ export async function POST(request: Request) {
 
     for (const order of pendingOrders) {
       try {
+        const kiPayPayment = await findKiPayPayment(order.id);
+        if (kiPayPayment) {
+          const result = await syncKiPayPayment(kiPayPayment, order.order_number);
+          results.push({ order_number: order.order_number, status: result.status, synced: result.synced });
+          continue;
+        }
         const payment = await findKlikQrisPayment(order.id);
         if (!payment) {
           results.push({ order_number: order.order_number, status: 'belum ada transaksi QRIS', synced: false });
@@ -97,7 +104,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Gagal menyinkronkan KlikQRIS.' },
+      { error: error instanceof Error ? error.message : 'Gagal menyinkronkan pembayaran.' },
       { status: 500 },
     );
   }
