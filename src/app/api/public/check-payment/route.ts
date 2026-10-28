@@ -9,10 +9,11 @@ import {
 import { BUYER_BAN_MESSAGE, isBuyerBannedStatus } from '@/lib/buyerBan';
 import { getBuyerAccessFromRequest } from '@/lib/auth';
 import { consumePublicRateLimit, readJsonBody } from '@/lib/publicApiSecurity';
+import { findKiPayPayment, syncKiPayPayment } from '@/lib/kipay-payment';
 
 export const runtime = 'nodejs';
 
-// Buyer-facing fallback when a KlikQRIS webhook is delayed or missed.
+// Buyer-facing fallback when a payment webhook is delayed or missed.
 export async function POST(request: NextRequest) {
   try {
     const access = await getBuyerAccessFromRequest(request);
@@ -66,6 +67,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, status: 'paid', already_paid: true });
     }
 
+    const kiPayPayment = await findKiPayPayment(order.id);
+    if (kiPayPayment) {
+      const result = await syncKiPayPayment(kiPayPayment, order.order_number);
+      return NextResponse.json({ success: true, ...result });
+    }
     const payment = await findKlikQrisPayment(order.id);
     if (!payment) {
       return NextResponse.json({ success: true, status: 'pending', synced: false });
@@ -120,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, status: 'pending', synced: false });
   } catch (error) {
-    console.error('KlikQRIS payment check error:', error);
+    console.error('Payment status check failed.');
     if (error instanceof Error && error.message === 'REQUEST_TOO_LARGE') {
       return NextResponse.json({ error: 'Request terlalu besar.' }, { status: 413 });
     }
@@ -128,7 +134,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Content-Type harus application/json.' }, { status: 415 });
     }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Gagal mengecek pembayaran KlikQRIS.' },
+      { error: error instanceof Error ? error.message : 'Gagal mengecek pembayaran.' },
       { status: 502 },
     );
   }

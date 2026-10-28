@@ -18,6 +18,7 @@ export interface StoredKlikQrisPayment {
   status: string;
   amount: number | string;
   payload_raw: Record<string, unknown> | null;
+  gateway_reference?: string;
 }
 
 export interface KlikQrisConfirmation {
@@ -37,20 +38,32 @@ export function getStoredCreateData(payment: StoredKlikQrisPayment): Record<stri
 }
 
 export async function findKlikQrisPayment(orderId: number): Promise<StoredKlikQrisPayment | null> {
+  return findGatewayPayment(orderId, 'klikqris');
+}
+
+export async function findGatewayPayment(orderId: number, gatewayName: 'klikqris' | 'kipay'): Promise<StoredKlikQrisPayment | null> {
   const { data, error } = await supabase
     .from('payments')
-    .select('id, order_id, status, amount, payload_raw')
+    .select('id, order_id, status, amount, payload_raw, gateway_reference')
     .eq('order_id', orderId)
-    .eq('gateway_name', 'klikqris')
+    .eq('gateway_name', gatewayName)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (error) throw new Error(`Gagal membaca transaksi KlikQRIS: ${error.message}`);
+  if (error) throw new Error(`Gagal membaca transaksi ${gatewayName}.`);
   return data as StoredKlikQrisPayment | null;
 }
 
 export async function completeKlikQrisPayment(confirmation: KlikQrisConfirmation) {
+  return completeGatewayPayment({ ...confirmation, gatewayName: 'klikqris' });
+}
+
+export async function completeGatewayPayment(confirmation: KlikQrisConfirmation & {
+  gatewayName: 'klikqris' | 'kipay';
+  gatewayReference?: string;
+}) {
+  const gateway = confirmation.gatewayName;
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
     .select('id, order_number, product_id, reseller_id, total_amount, payment_status, quantity')
@@ -62,16 +75,19 @@ export async function completeKlikQrisPayment(confirmation: KlikQrisConfirmation
   const expectedBaseAmount = Number(order.total_amount);
 
   if (confirmation.amount !== expectedBaseAmount) {
-    throw new Error(`Nominal dasar tidak cocok: KlikQRIS=${confirmation.amount}, order=${expectedBaseAmount}.`);
+    throw new Error(`Nominal dasar ${gateway} tidak cocok dengan order.`);
   }
 
-  const payment = await findKlikQrisPayment(order.id);
-  if (!payment) throw new Error('Data transaksi awal KlikQRIS tidak ditemukan.');
+  const payment = await findGatewayPayment(order.id, gateway);
+  if (!payment) throw new Error(`Data transaksi awal ${gateway} tidak ditemukan.`);
+  if (confirmation.gatewayReference && payment.gateway_reference !== confirmation.gatewayReference) {
+    throw new Error('Referensi pembayaran tidak cocok.');
+  }
 
   const createData = getStoredCreateData(payment);
   const expectedTotalAmount = Number(createData?.total_amount ?? payment.amount);
   if (!Number.isFinite(expectedTotalAmount) || confirmation.totalAmount !== expectedTotalAmount) {
-    throw new Error(`Total pembayaran tidak cocok: KlikQRIS=${confirmation.totalAmount}, tersimpan=${expectedTotalAmount}.`);
+    throw new Error(`Total pembayaran ${gateway} tidak cocok dengan transaksi awal.`);
   }
 
   if (!['pending_payment', 'paid'].includes(order.payment_status)) {
@@ -90,8 +106,8 @@ export async function completeKlikQrisPayment(confirmation: KlikQrisConfirmation
         payment_status: 'paid',
         order_status: 'paid',
         paid_at: paidAt,
-        payment_method: `klikqris_${paymentMethod.toLowerCase()}`,
-        payment_reference: `klikqris-${order.order_number}`,
+        payment_method: `${gateway}_${paymentMethod.toLowerCase()}`,
+        payment_reference: confirmation.gatewayReference || `klikqris-${order.order_number}`,
         updated_at: now,
       })
       .eq('id', order.id)
@@ -161,6 +177,13 @@ export async function completeKlikQrisPayment(confirmation: KlikQrisConfirmation
     }
   }
 
+  // The assignment RPC locks the order and enforces its quantity. A concurrent
+  // confirmation may have assigned a unit, so reload before reporting delivery.
+  const { data: finalAssignments, error: finalAssignmentError } = await supabase
+    .from('account_assignments').select('id').eq('order_id', order.id).eq('status', 'active');
+  if (finalAssignmentError) throw new Error('Gagal membaca hasil pengiriman akun.');
+  for (const assignment of finalAssignments || []) assignmentIds.add(Number(assignment.id));
+
   if (assignmentIds.size > 0) {
     await supabase
       .from('account_assignments')
@@ -182,7 +205,9 @@ export async function completeKlikQrisPayment(confirmation: KlikQrisConfirmation
 
   const assignmentId = assignmentIds.values().next().value ?? null;
 
-  await ensureResellerCommission(order, now);
+  // Only the winner of the pending -> paid compare-and-set books a commission.
+  // A repeated webhook must not race another insert for the same order.
+  if (newlyPaid) await ensureResellerCommission(order, now);
 
   if (newlyPaid) {
     const { data: product } = await supabase
@@ -197,7 +222,7 @@ export async function completeKlikQrisPayment(confirmation: KlikQrisConfirmation
         ? `Sebagian akun terkirim (${assignmentIds.size}/${orderQuantity}); sisanya perlu assignment manual.`
         : 'Perlu assign akun manual.';
     sendTelegramNotification(
-      `💰 <b>PEMBAYARAN MASUK VIA KLIKQRIS!</b>\n\n` +
+      `💰 <b>PEMBAYARAN MASUK VIA ${gateway.toUpperCase()}!</b>\n\n` +
       `<b>Order:</b> <code>${order.order_number}</code>\n` +
       `<b>Produk:</b> ${product?.name || '-'}\n` +
       `<b>Nominal:</b> Rp ${confirmation.totalAmount.toLocaleString('id-ID')}\n` +
