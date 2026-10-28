@@ -13,6 +13,13 @@ export interface KiPayTransaction {
   qr_payload: string | null;
 }
 
+export class KiPayApiError extends Error {
+  constructor(readonly httpStatus: number) {
+    super(`KiPay menolak permintaan pembayaran (HTTP ${httpStatus}).`);
+    this.name = 'KiPayApiError';
+  }
+}
+
 export function getKiPayConfig() {
   const apiKey = process.env.KIPAY_API_KEY?.trim();
   const mode = process.env.KIPAY_ENV?.trim() || 'sandbox';
@@ -36,7 +43,7 @@ async function apiRequest(path: string, init: RequestInit = {}) {
     // Neither upstream bodies nor fetch errors are safe to log: the URL contains the API key.
     throw new Error('Layanan KiPay belum dapat dihubungi. Coba periksa status kembali.');
   }
-  if (!response.ok) throw new Error(`KiPay menolak permintaan pembayaran (HTTP ${response.status}).`);
+  if (!response.ok) throw new KiPayApiError(response.status);
   return response;
 }
 
