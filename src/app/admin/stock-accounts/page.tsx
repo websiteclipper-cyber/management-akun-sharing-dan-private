@@ -65,7 +65,7 @@ export default function StockAccountsPage() {
         'stock_accounts',
         'id, product_id, account_identifier, profile_info, pin_info, notes_internal, account_type, max_slot, current_used_slot, status, purchase_cost, acquired_at, created_at, updated_at, product:products(*)',
       ),
-      adminSelect('products', '*', { status: 'active' }),
+      adminSelect('products'),
       fetch('/api/admin/backup-accounts?summary=1', { headers: getAdminAuthHeaders() }),
     ]);
     if (accountResult.error || productResult.error || !backupResponse.ok) {
@@ -95,7 +95,14 @@ export default function StockAccountsPage() {
     setLoading(false);
   }
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    async function initialize() {
+      const productId = new URLSearchParams(window.location.search).get('product_id');
+      await loadData();
+      if (productId && /^\d+$/.test(productId)) setFilterProduct(productId);
+    }
+    void initialize();
+  }, []);
 
   async function loadBuyers(accountId: number) {
     const { data } = await adminSelect(
@@ -568,6 +575,7 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
     notes_internal: account?.notes_internal || '',
     purchase_cost: account?.purchase_cost?.toString() || '',
     current_used_slot: isEdit ? (account?.current_used_slot?.toString() || '0') : '0',
+    max_slot: account?.max_slot?.toString() || '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -632,6 +640,7 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
         headers: { 'Content-Type': 'application/json', ...getAdminAuthHeaders() },
         body: JSON.stringify({
           id: isEdit ? account?.id : undefined,
+          expected_updated_at: isEdit ? account?.updated_at : undefined,
           product_id: parseInt(form.product_id),
           account_identifier: form.account_identifier.trim(),
           account_secret: form.account_secret || (!isEdit && identifierIsUrl ? '-' : undefined),
@@ -641,8 +650,8 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
           notes_internal: form.notes_internal || null,
           purchase_cost: form.purchase_cost ? parseFloat(form.purchase_cost) : null,
           account_type: selectedProduct?.account_type || 'sharing',
-          max_slot: selectedProduct?.default_max_slot || 4,
-          current_used_slot: isEdit ? parseInt(form.current_used_slot) : undefined,
+          max_slot: Number(form.max_slot || selectedProduct?.default_max_slot || 1),
+          current_used_slot: isEdit ? Number(form.current_used_slot) : undefined,
         }),
       });
       const data = await res.json();
@@ -667,7 +676,7 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Produk</label>
-            <select className="form-select" value={form.product_id} onChange={e => setForm({...form, product_id: e.target.value})} required>
+            <select className="form-select" value={form.product_id} onChange={e => setForm({...form, product_id: e.target.value, max_slot: products.find(p => p.id.toString() === e.target.value)?.default_max_slot.toString() || '1'})} required>
               <option value="">Pilih produk...</option>
               {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.account_type})</option>)}
             </select>
@@ -756,13 +765,21 @@ function StockAccountForm({ account, isCopy, products, onClose, onSave }: {
               <label className="form-label">Harga Beli</label>
               <input type="number" className="form-input" value={form.purchase_cost} onChange={e => setForm({...form, purchase_cost: e.target.value})} placeholder="25000" />
             </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="stock-capacity">Kapasitas Slot Akun</label>
+              <input id="stock-capacity" type="number" className="form-input" min="1" max="2147483647" step="1" required value={form.max_slot || selectedProduct?.default_max_slot || 1} onChange={e => setForm({...form, max_slot: e.target.value})} />
+            </div>
             {isEdit && (
               <div className="form-group">
                 <label className="form-label">Slot Terpakai (Usage)</label>
-                <input type="number" className="form-input" value={form.current_used_slot} onChange={e => setForm({...form, current_used_slot: e.target.value})} min="0" />
+                <input type="number" className="form-input" value={form.current_used_slot} onChange={e => setForm({...form, current_used_slot: e.target.value})} min="0" max={Number(form.max_slot || selectedProduct?.default_max_slot || 1)} step="1" required />
               </div>
             )}
           </div>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '16px', fontSize: '0.8rem' }}>
+            Stok tersedia akun ini: <strong>{Math.max(0, Number(form.max_slot || selectedProduct?.default_max_slot || 1) - Number(form.current_used_slot))}</strong> slot.
+            {isEdit && account && !['active', 'full'].includes(account.status) && ' Akun ini tidak dijual karena statusnya nonaktif. Ubah status di tabel untuk menjualnya.'}
+          </p>
           <div className="form-group">
             <label className="form-label">Catatan Internal</label>
             <textarea className="form-textarea" value={form.notes_internal} onChange={e => setForm({...form, notes_internal: e.target.value})} placeholder="Catatan..." />

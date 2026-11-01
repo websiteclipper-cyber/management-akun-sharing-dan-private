@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { adminUpdate, adminInsert, adminDelete, adminSelect } from '@/lib/adminApi';
 import { Product } from '@/lib/types';
 import ProductTermsMarkdown from '@/components/ProductTermsMarkdown';
@@ -244,6 +245,7 @@ export default function ProductsPage() {
                     <td>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button className="btn btn-secondary btn-sm" onClick={() => { setEditItem(p); setIsCopy(false); setShowForm(true); }}>Edit</button>
+                        <Link className="btn btn-secondary btn-sm" href={`/admin/stock-accounts?product_id=${p.id}`}>Kelola Stok</Link>
                         <button className="btn btn-info btn-sm" onClick={() => { setEditItem(p); setIsCopy(true); setShowForm(true); }}>Copy</button>
                         <button 
                           className={`btn btn-sm ${p.status === 'active' ? 'btn-danger' : 'btn-success'}`}

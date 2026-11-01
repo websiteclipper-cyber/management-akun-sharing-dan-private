@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { getAdminFromRequest, isSuperAdmin } from '@/lib/auth';
 import { readJsonBody } from '@/lib/publicApiSecurity';
@@ -121,6 +122,7 @@ export async function POST(request: Request) {
           .insert(data)
           .select();
         if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 400 });
+        if (['stock_accounts', 'products', 'promos'].includes(table)) revalidateTag('public-home-catalog', { expire: 0 });
         return NextResponse.json({ success: true, data: insertData });
       }
 
@@ -134,6 +136,7 @@ export async function POST(request: Request) {
         }
         const { data: updateData, error: updateErr } = await updateQuery.select();
         if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 400 });
+        if (['stock_accounts', 'products', 'promos'].includes(table)) revalidateTag('public-home-catalog', { expire: 0 });
         return NextResponse.json({ success: true, data: updateData });
       }
 
@@ -145,6 +148,7 @@ export async function POST(request: Request) {
         }
         const { error: deleteErr } = await deleteQuery;
         if (deleteErr) return NextResponse.json({ error: deleteErr.message }, { status: 400 });
+        if (['stock_accounts', 'products', 'promos'].includes(table)) revalidateTag('public-home-catalog', { expire: 0 });
         return NextResponse.json({ success: true });
       }
 
