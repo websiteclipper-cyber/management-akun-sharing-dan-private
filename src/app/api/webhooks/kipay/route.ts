@@ -33,6 +33,15 @@ export async function POST(request: NextRequest) {
     }
     const rawBody = Buffer.concat(chunks).toString('utf8');
     if (!verifyKiPayWebhook(rawBody, request.headers)) {
+      // Diagnose clock or signing configuration without logging credentials,
+      // signatures, delivery IDs, or buyer/payment payloads.
+      const sentAt = Date.parse(request.headers.get('x-webhook-timestamp') || '');
+      console.error('KiPay webhook verification rejected.', {
+        timestampValid: Number.isFinite(sentAt),
+        ageSeconds: Number.isFinite(sentAt) ? Math.round((Date.now() - sentAt) / 1000) : null,
+        signaturePresent: !!request.headers.get('x-webhook-signature'),
+        deliveryPresent: !!request.headers.get('x-webhook-delivery'),
+      });
       return NextResponse.json({ error: 'Signature tidak valid.' }, { status: 401 });
     }
     const payload = JSON.parse(rawBody);
