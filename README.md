@@ -39,7 +39,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 Checkout baru memakai KiPay secara default. Transaksi KlikQRIS yang sudah tersimpan
 tetap ditangani oleh gateway asalnya. Implementasi mengikuti
-[dokumentasi resmi KiPay](https://kipay.id/docs).
+[dokumentasi resmi KiPay](https://kipay.biz.id/docs).
 
 ### Konfigurasi KiPay
 

@@ -36,7 +36,7 @@ try {
     bytes: Buffer.from(image.split(',')[1], 'base64').length }));
 
   const key = process.env.KIPAY_API_KEY.trim();
-  const response = await fetch(`https://api.kipay.id/api/pay/${encodeURIComponent(key)}/transactions/${encodeURIComponent(created.trx_id)}/simulate`, {
+  const response = await fetch(`https://api.kipay.biz.id/api/pay/${encodeURIComponent(key)}/transactions/${encodeURIComponent(created.trx_id)}/simulate`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ provider: 'shopeepay' }), redirect: 'error', signal: AbortSignal.timeout(10_000),
   });

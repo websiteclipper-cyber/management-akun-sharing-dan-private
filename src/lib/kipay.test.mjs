@@ -10,7 +10,7 @@ const env = { KIPAY_API_KEY: 'synthetic-project-key', KIPAY_ENV: 'sandbox', KIPA
 const transaction = {
   trx_id: 'SBX-20261028-TEST01', mode: 'sandbox', requested_amount: 10000,
   amount: 10215, status: 'pending', note: 'PP-TEST', expires_at: '2026-10-28 12:15:00',
-  qr_payload: '000201-test', qr_url: 'https://api.kipay.id/api/pay/synthetic-project-key/qr.png',
+  qr_payload: '000201-test', qr_url: 'https://api.kipay.biz.id/api/pay/synthetic-project-key/qr.png',
 };
 const next = { NextResponse: { json: (body, init) => Response.json(body, init) } };
 
@@ -47,7 +47,7 @@ test('KiPay POST uses server credentials, order reference and base amount; remov
   let request;
   const api = client(async (url, init) => { request = { url, ...init }; return Response.json(transaction); });
   const created = await api.createKiPayTransaction('PP-TEST', 10000);
-  assert.equal(request.url, 'https://api.kipay.id/api/pay/synthetic-project-key/transactions');
+  assert.equal(request.url, 'https://api.kipay.biz.id/api/pay/synthetic-project-key/transactions');
   assert.deepEqual(JSON.parse(request.body), { amount: 10000, note: 'PP-TEST' });
   assert.equal(request.cache, 'no-store');
   assert.equal(request.redirect, 'error');

@@ -1,4 +1,4 @@
-// Server-side only. Official contract: https://kipay.id/docs/api
+// Server-side only. Official contract: https://kipay.biz.id/docs/api
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export interface KiPayTransaction {
@@ -32,7 +32,7 @@ async function apiRequest(path: string, init: RequestInit = {}) {
   const { apiKey } = getKiPayConfig();
   let response: Response;
   try {
-    response = await fetch(`https://api.kipay.id/api/pay/${encodeURIComponent(apiKey)}/transactions${path}`, {
+    response = await fetch(`https://api.kipay.biz.id/api/pay/${encodeURIComponent(apiKey)}/transactions${path}`, {
       ...init,
       headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...init.headers },
       cache: 'no-store',
