@@ -2,8 +2,10 @@ import { after, NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import bcrypt from 'bcryptjs';
 import { signToken } from '@/lib/auth';
+import { recordAdminLoginAttempt } from '@/lib/adminLoginHistory';
+import { readJsonBody } from '@/lib/publicApiSecurity';
 import {
-  checkAdminAuthRateLimit,
+  checkAdminLoginCooldown,
   cleanupAdminAuthEvents,
   clearAdminLoginFailures,
   createAdminAuthAbortSignal,
@@ -13,27 +15,39 @@ import {
   recordAdminAuthEvent,
 } from '@/lib/adminAuthSecurity';
 
+function cooldownResponse(retryAfterSeconds: number) {
+  const minutes = Math.ceil(retryAfterSeconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const wait = hours > 0
+    ? `${hours} jam${minutes % 60 ? ` ${minutes % 60} menit` : ''}`
+    : `${minutes} menit`;
+  return NextResponse.json(
+    { error: `Terlalu banyak percobaan login gagal. Coba lagi dalam ${wait}.`, retryAfterSeconds },
+    {
+      status: 429,
+      headers: { 'Retry-After': String(retryAfterSeconds), 'Cache-Control': 'no-store' },
+    },
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const body = await readJsonBody<{ email?: unknown; password?: unknown }>(request, 4096);
+    const { email, password } = body || {};
     const normalizedEmail = normalizeAdminEmail(email);
 
-    if (!normalizedEmail || typeof password !== 'string' || !password) {
+    if (!normalizedEmail || normalizedEmail.length > 254 || typeof password !== 'string' || !password || password.length > 128) {
       return NextResponse.json({ error: 'Email dan password wajib diisi' }, { status: 400 });
     }
 
+    const loginStartedAt = new Date().toISOString();
     const fingerprint = getAdminAuthFingerprint(request, normalizedEmail);
-    const rateLimitPromise = checkAdminAuthRateLimit(fingerprint, {
-      eventType: 'login_failure',
-      windowMinutes: 15,
-      maxPerEmail: 5,
-      maxPerIp: 20,
-    });
+    const rateLimitPromise = checkAdminLoginCooldown(fingerprint);
 
     const adminPromise = supabase
       .from('admins')
       .select('id, name, email, role, status, password_hash, token_version')
-      .ilike('email', normalizedEmail)
+      .ilike('email', normalizedEmail.replace(/[\\%_]/g, '\\$&'))
       .eq('status', 'active')
       .abortSignal(createAdminAuthAbortSignal())
       .maybeSingle();
@@ -46,13 +60,8 @@ export async function POST(request: NextRequest) {
     ]);
 
     if (rateLimit.limited) {
-      return NextResponse.json(
-        { error: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.' },
-        {
-          status: 429,
-          headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) },
-        },
-      );
+      await recordAdminLoginAttempt(request, { email: normalizedEmail, outcome: 'blocked', admin });
+      return cooldownResponse(rateLimit.retryAfterSeconds);
     }
 
     if (error) {
@@ -64,9 +73,28 @@ export async function POST(request: NextRequest) {
       admin?.password_hash || DUMMY_ADMIN_PASSWORD_HASH,
     );
     if (!admin || !validPassword) {
-      await recordAdminAuthEvent(fingerprint, 'login_failure');
+      await Promise.all([
+        recordAdminAuthEvent(fingerprint, 'login_failure'),
+        recordAdminLoginAttempt(request, { email: normalizedEmail, outcome: 'failed', admin }),
+      ]);
+      // The fifth failed password starts the cooldown immediately, rather than
+      // waiting for the next login request to tell the client it is blocked.
+      const cooldown = await checkAdminLoginCooldown(fingerprint);
+      if (cooldown.limited) return cooldownResponse(cooldown.retryAfterSeconds);
       return NextResponse.json({ error: 'Email atau password salah' }, { status: 401 });
     }
+
+    // A concurrent failed request may have started a cooldown while bcrypt
+    // was running. Check again before issuing access or clearing any failures.
+    const currentCooldown = await checkAdminLoginCooldown(fingerprint);
+    if (currentCooldown.limited) {
+      await recordAdminLoginAttempt(request, { email: normalizedEmail, outcome: 'blocked', admin });
+      return cooldownResponse(currentCooldown.retryAfterSeconds);
+    }
+
+    // Persist evidence before issuing access. Rate-limit maintenance below must
+    // never delete this separate, append-only login history.
+    await recordAdminLoginAttempt(request, { email: normalizedEmail, outcome: 'success', admin });
 
     // Generate JWT token
     const token = signToken({
@@ -82,7 +110,7 @@ export async function POST(request: NextRequest) {
     // them after the response so telemetry maintenance cannot delay login.
     after(async () => {
       const results = await Promise.allSettled([
-        clearAdminLoginFailures(fingerprint),
+        clearAdminLoginFailures(fingerprint, loginStartedAt),
         cleanupAdminAuthEvents(),
         supabase
           .from('admins')
@@ -105,7 +133,13 @@ export async function POST(request: NextRequest) {
       },
       token,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof SyntaxError || (error instanceof Error && error.message === 'UNSUPPORTED_CONTENT_TYPE')) {
+      return NextResponse.json({ error: 'Format permintaan login tidak valid.' }, { status: 400 });
+    }
+    if (error instanceof Error && error.message === 'REQUEST_TOO_LARGE') {
+      return NextResponse.json({ error: 'Permintaan login terlalu besar.' }, { status: 413 });
+    }
     return NextResponse.json(
       { error: 'Layanan login sedang lambat. Silakan coba lagi beberapa saat.' },
       { status: 503 },

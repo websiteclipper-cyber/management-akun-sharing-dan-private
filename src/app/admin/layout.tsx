@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback, useSyncExternalStore } from 'react';
 import { supabase } from '@/lib/supabase';
 import { adminSelect } from '@/lib/adminApi';
 import {
-  FiArchive, FiAward, FiBell, FiBox, FiDatabase, FiDollarSign,
+  FiArchive, FiAward, FiBell, FiBox, FiClock, FiDatabase, FiDollarSign,
   FiFileText, FiHome, FiLink, FiLogOut, FiMenu, FiMessageSquare, FiPercent,
   FiRefreshCw, FiSearch, FiSettings, FiShield, FiTag, FiUsers, FiX,
 } from 'react-icons/fi';
@@ -30,6 +30,7 @@ const navItems = [
   { label: 'Pengaturan Komisi', href: '/admin/commissions', icon: <FiDollarSign /> },
   { label: 'Leaderboard Mitra', href: '/admin/leaderboard', icon: <FiAward /> },
   { section: 'Layanan & sistem' },
+  { label: 'Riwayat Login', href: '/admin/login-history', icon: <FiClock />, superAdminOnly: true },
   { label: 'Klaim Garansi', href: '/admin/warranty', icon: <FiShield /> },
   { label: 'Pengajuan Refund', href: '/admin/refunds', icon: <FiRefreshCw /> },
   { label: 'Akun Backup', href: '/admin/backup-accounts', icon: <FiArchive /> },
@@ -218,6 +219,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const visibleNavItems = navItems.filter(item => !item.superAdminOnly || admin.role === 'super_admin');
 
   function markAllRead() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -245,7 +247,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button className={styles.sidebarClose} onClick={() => setSidebarOpen(false)} aria-label="Tutup navigasi admin"><FiX /></button>
         </div>
         <nav className="sidebar-nav" aria-label="Navigasi admin">
-          {navItems.map((item, i) => {
+          {visibleNavItems.map((item, i) => {
             if ('section' in item) {
               return <div key={i} className="sidebar-section">{item.section}</div>;
             }
@@ -294,10 +296,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <input aria-label="Cari menu admin" placeholder="Cari menu admin..." value={menuSearch} onChange={event => setMenuSearch(event.target.value)} />
             {menuSearch.trim() && (
               <div className={styles.searchResults}>
-                {navItems.filter(item => item.label?.toLowerCase().includes(menuSearch.trim().toLowerCase())).map(item => (
+                {visibleNavItems.filter(item => item.label?.toLowerCase().includes(menuSearch.trim().toLowerCase())).map(item => (
                   <Link key={item.href} href={item.href!} onClick={() => setMenuSearch('')}><span>{item.icon}</span>{item.label}</Link>
                 ))}
-                {!navItems.some(item => item.label?.toLowerCase().includes(menuSearch.trim().toLowerCase())) && <p>Menu tidak ditemukan.</p>}
+                {!visibleNavItems.some(item => item.label?.toLowerCase().includes(menuSearch.trim().toLowerCase())) && <p>Menu tidak ditemukan.</p>}
               </div>
             )}
           </div>

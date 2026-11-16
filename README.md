@@ -35,6 +35,46 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+## Riwayat login admin
+
+Superadmin dapat membuka **Layanan & sistem → Riwayat Login** (`/admin/login-history`).
+Halaman menampilkan waktu WIB, akun, status berhasil/gagal/dibatasi, browser,
+sistem operasi, jenis perangkat, alamat IP, dan perkiraan kota/negara. Filter
+tersedia untuk status dan 7/30/90 hari atau seluruh riwayat, dengan paginasi.
+
+Terapkan migrasi `supabase/migrations/20261111051006_admin_login_history.sql`
+sebelum menerbitkan kode login baru. Login berhasil memerlukan pencatatan riwayat
+yang sukses; ketika penyimpanan tidak tersedia, server merespons 503 tanpa token.
+Riwayat terpisah dari penghitung rate limit sehingga tidak ikut terhapus setelah
+login berhasil atau pembersihan `admin_auth_events`.
+
+Tabel memakai RLS dan hanya memberi server hak SELECT/INSERT. Pengunjung dan
+pengguna Supabase biasa tidak memiliki akses; dashboard tidak menyediakan
+pengubahan/penghapusan riwayat. Password dan token tidak disimpan dalam riwayat.
+
+IP dan lokasi produksi memakai [header tepercaya Vercel](https://vercel.com/docs/headers/request-headers).
+Lokasi tidak memerlukan layanan geolokasi pihak ketiga atau izin GPS. Pada hosting
+lain, tambahkan dukungan proxy tepercaya sebelum mengaktifkan pembacaan header;
+IP/lokasi yang tidak tersedia tidak ditebak dari cookie atau negara default.
+Perangkat mengikuti User-Agent browser dan lokasi IP dapat berbeda karena VPN
+atau jaringan seluler. Aktivitas sebelum fitur aktif tidak dapat direkonstruksi.
+Jika ada akses asing, gunakan reset password admin; reset menaikkan token version
+sehingga sesi akun tersebut yang sudah terbit tidak berlaku lagi.
+
+Login admin dibatasi selama **5 jam sejak kegagalan kelima** apabila ada lima
+kegagalan dalam rentang lima jam, dihitung terpisah berdasarkan email dan IP.
+Mengganti IP tidak menghapus hitungan email; mengganti email tidak menghapus
+hitungan IP. Kegagalan kelima langsung merespons 429, beserta `Retry-After` dan
+sisa waktu tunggu. Permintaan saat cooldown dicatat sebagai dibatasi, tanpa
+memeriksa password atau memperpanjang cooldown. Setelah cooldown berakhir,
+tersedia lima percobaan baru. Login berhasil membersihkan kegagalan email yang
+mendahului permintaan tersebut, tanpa menghapus riwayat login atau kegagalan dari
+permintaan yang lebih baru. Pembatasan reset password tetap terpisah.
+Perubahan cooldown menggunakan tabel `admin_auth_events` yang sudah ada dan
+tidak memerlukan migrasi tambahan.
+
+Verifikasi: `node --test src/lib/admin-login-history.test.mjs src/lib/admin-login-cooldown.test.mjs`, `npx tsc --noEmit --incremental false`, dan `npm run build`.
+
 ## Integrasi pembayaran KiPay
 
 Checkout baru memakai KiPay secara default. Transaksi KlikQRIS yang sudah tersimpan

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getAdminClientIp } from '@/lib/adminLoginMetadata';
 
 export type AdminAuthEventType = 'login_failure' | 'password_reset_request';
 
@@ -19,6 +20,8 @@ export const DUMMY_ADMIN_PASSWORD_HASH =
   '$2b$12$ZdiNFAKzeHFACnOHpWQ3MuyCOf6ca6UGMdJ71zTbQqAoH/CULvRzi';
 
 const ADMIN_AUTH_QUERY_TIMEOUT_MS = 10_000;
+export const ADMIN_LOGIN_MAX_FAILURES = 5;
+export const ADMIN_LOGIN_COOLDOWN_SECONDS = 5 * 60 * 60;
 
 export function createAdminAuthAbortSignal(): AbortSignal {
   return AbortSignal.timeout(ADMIN_AUTH_QUERY_TIMEOUT_MS);
@@ -36,17 +39,6 @@ function getSecuritySecret(): string {
   return secret;
 }
 
-function getClientIp(request: Request): string {
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  const firstForwardedIp = forwardedFor?.split(',')[0]?.trim();
-  return (
-    firstForwardedIp ||
-    request.headers.get('x-real-ip')?.trim() ||
-    request.headers.get('x-vercel-forwarded-for')?.trim() ||
-    'unknown'
-  ).slice(0, 128);
-}
-
 function secureHash(value: string): string {
   return crypto
     .createHmac('sha256', getSecuritySecret())
@@ -60,8 +52,55 @@ export function getAdminAuthFingerprint(
 ): AdminAuthFingerprint {
   return {
     emailHash: secureHash(`admin-email:${normalizedEmail}`),
-    ipHash: secureHash(`admin-ip:${getClientIp(request)}`),
+    ipHash: secureHash(`admin-ip:${getAdminClientIp(request) || 'unknown'}`),
   };
+}
+
+export async function checkAdminLoginCooldown(
+  fingerprint: AdminAuthFingerprint,
+): Promise<{ limited: boolean; retryAfterSeconds: number }> {
+  const cooldownMs = ADMIN_LOGIN_COOLDOWN_SECONDS * 1000;
+  // Keep the entire failure window preceding a still-active cooldown. Filtering
+  // only the last five hours would unlock early as the first failure ages out.
+  const cutoff = new Date(Date.now() - 2 * cooldownMs).toISOString();
+  const signal = createAdminAuthAbortSignal();
+  const recentFailures = (column: 'email_hash' | 'ip_hash', hash: string) =>
+    supabaseAdmin
+      .from('admin_auth_events')
+      .select('attempted_at')
+      .eq('event_type', 'login_failure')
+      .eq(column, hash)
+      .gte('attempted_at', cutoff)
+      .order('attempted_at', { ascending: false })
+      .limit(ADMIN_LOGIN_MAX_FAILURES)
+      .abortSignal(signal);
+
+  const [emailResult, ipResult] = await Promise.all([
+    recentFailures('email_hash', fingerprint.emailHash),
+    recentFailures('ip_hash', fingerprint.ipHash),
+  ]);
+  if (emailResult.error || ipResult.error) {
+    throw new Error('Unable to verify admin login cooldown.');
+  }
+
+  const now = Date.now();
+  const remainingSeconds = (attempts: { attempted_at: string }[] | null) => {
+    if (!attempts || attempts.length < ADMIN_LOGIN_MAX_FAILURES) return 0;
+    const latest = Date.parse(attempts[0].attempted_at);
+    const earliest = Date.parse(attempts[ADMIN_LOGIN_MAX_FAILURES - 1].attempted_at);
+    if (!Number.isFinite(latest) || !Number.isFinite(earliest)) {
+      throw new Error('Invalid admin login failure timestamp.');
+    }
+    // A full failure window between these events starts fresh attempts after
+    // the previous cooldown, even when its old events have not been cleaned up.
+    if (latest - earliest >= cooldownMs) return 0;
+    return Math.max(0, Math.ceil((latest + cooldownMs - now) / 1000));
+  };
+  const retryAfterSeconds = Math.max(
+    remainingSeconds(emailResult.data),
+    remainingSeconds(ipResult.data),
+  );
+  return { limited: retryAfterSeconds > 0, retryAfterSeconds };
 }
 
 export async function checkAdminAuthRateLimit(
@@ -119,12 +158,16 @@ export async function recordAdminAuthEvent(
 
 export async function clearAdminLoginFailures(
   fingerprint: AdminAuthFingerprint,
+  loginStartedAt: string,
 ): Promise<void> {
   const { error } = await supabaseAdmin
     .from('admin_auth_events')
     .delete()
     .eq('event_type', 'login_failure')
     .eq('email_hash', fingerprint.emailHash)
+    // Maintenance may run after newer requests. Never erase their failures or
+    // an active cooldown triggered after this successful login started.
+    .lt('attempted_at', loginStartedAt)
     .abortSignal(createAdminAuthAbortSignal());
 
   if (error) {
